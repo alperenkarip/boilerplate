@@ -7,7 +7,7 @@
 - **Doküman türü:** Specification / implementation blueprint / bootstrap reference
 - **Durum:** Accepted
 - **Tarih:** 2026-03-31
-- **Kapsam:** Bu belge, boilerplate'in repo bootstrap'ı tamamlandıktan sonra ilk çalışan ürünü ayağa kaldırmak için gereken varsayılan ekranları, varsayılan component'leri, her biri için kullanılacak kütüphane/framework seçimlerini, Apple HIG uyum durumlarını ve bootstrap sırasını tanımlar. Bu belge mimari karar üretmez; canonical stack kararlarını (ADR-001→ADR-011, 36, 37, 38) somut bileşen ve ekran planına dönüştürür.
+- **Kapsam:** Bu belge, boilerplate'in repo bootstrap'ı tamamlandıktan sonra ilk çalışan ürünü ayağa kaldırmak için gereken varsayılan ekranları, varsayılan component'leri, her biri için kullanılacak kütüphane/framework seçimlerini, Apple HIG uyum durumlarını ve bootstrap sırasını tanımlar. Bu belge mimari karar üretmez; canonical stack kararlarını (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) somut bileşen ve ekran planına dönüştürür.
 - **Bağlı olduğu üst dokümanlar:**
   - `04-design-system-architecture.md`
   - `20-initial-implementation-checklist.md`
@@ -113,7 +113,7 @@ Bu tez şu sonuçları doğurur:
 
 # 4. Kütüphane Seçim İlkeleri
 
-Canonical stack (React 19.2.x, Vite 7.x, Expo SDK 55.x, RN 0.83.x, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Tailwind 4.x, NativeWind 5.x, Sentry, i18next) zaten kilitlidir. Ancak bu stack tek başına tüm UI ihtiyaçlarını karşılamaz. Animasyon, gesture, image loading, haptic feedback, biometric auth, bottom sheet, keyboard handling gibi alanlar yardımcı kütüphane gerektirir.
+Canonical stack (React 19.2.x, Vite 7.x intentional baseline, Expo SDK 55.x, RN 0.83.x, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Tailwind 4.x, NativeWind 5.x candidate track, Sentry, i18next) zaten kilitlidir. Ancak bu stack tek başına tüm UI ihtiyaçlarını karşılamaz. Animasyon, gesture, image loading, haptic feedback, biometric auth, bottom sheet, keyboard handling gibi alanlar yardımcı kütüphane gerektirir.
 
 Bu bölüm, yardımcı kütüphane seçimlerinin hangi ilkelerle yapıldığını tanımlar.
 
@@ -4952,6 +4952,6 @@ Bu doküman, boilerplate projesinin ilk çalışan ürüne ulaşması için gere
 - 20 anti-pattern, ekip genelinde "neyi yapmayacağız" konusunda net bir çerçeve çizer.
 - 8 onay kriteri, "tamamlandı" tanımını subjektiflikten kurtarır.
 
-**Bu doküman tek başına mimari karar üretmez.** Canonical stack kararları (ADR-001→ADR-011, 36, 37, 38) ve governance kuralları (23-component-governance, 25-error-empty-loading, 32-definition-of-done) bu dokümanın üst katman referanslarıdır. Bu doküman, o kararları somut ve uygulanabilir bir plana dönüştürür.
+**Bu doküman tek başına mimari karar üretmez.** Canonical stack kararları (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) ve governance kuralları (23-component-governance, 25-error-empty-loading, 32-definition-of-done) bu dokümanın üst katman referanslarıdır. Bu doküman, o kararları somut ve uygulanabilir bir plana dönüştürür.
 
 **Bir sonraki adım:** Faz 0 — token dosyalarının oluşturulması (`packages/design-tokens`). Token dosyaları hazır olduğunda Faz 1 primitive'lerine geçilir.

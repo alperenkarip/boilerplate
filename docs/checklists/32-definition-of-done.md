@@ -469,7 +469,7 @@ Aşağıdaki davranışlar bu proje kapsamında doğrudan zayıf kabul edilir:
 
 AI aracıyla gerçekleştirilen iş için standart DoD maddelerine ek olarak:
 
-- [ ] **SPEC varsa:** SPEC kabul kriterleri karşılanmış mı? (SPEC = `.moai/specs/SPEC-XXX.md` — MoAI-ADK ile oluşturulan görev spesifikasyonu. Karmaşık görevlerde `/moai plan` komutuyla üretilir. Basit görevlerde SPEC zorunlu değildir.)
+- [ ] **SPEC varsa:** SPEC kabul kriterleri karşılanmış mı? (SPEC = `.moai/specs/<SPEC-ID>.md` — MoAI-ADK ile oluşturulan görev spesifikasyonu. Karmaşık görevlerde `/moai plan` komutuyla üretilir. Basit görevlerde SPEC zorunlu değildir.)
 - [ ] AI aracına verilen talimat, ilgili spec ve ADR ile tutarlı mı?
 - [ ] **Stitch çıktısı kullanıldıysa:** `DESIGN.md` güncel mi? (`DESIGN.md` = Stitch MCP aracıyla Figma'dan export edilen tasarım verisi dosyasıdır. Component üretiminde referans alınır.) `22-design-tokens-spec.md` ile eşleşiyor mu?
 - [ ] **Codex review yapıldı mı?** P0/P1 bulgu kalmadı mı? (Codex = OpenAI Codex CLI — `AGENTS.md` talimatlarına göre kod inceleme yapan terminal AI ajanıdır.)

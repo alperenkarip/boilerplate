@@ -105,7 +105,7 @@ Bu belge haritası yalnızca boilerplate seviyesindeki dökümanları kapsar. Bo
 - **`docs/`** → boilerplate standartları, kuralları, ADR'leri, audit ve governance belgeleri. Otorite kaynağı boilerplate'tir.
 - **`project/`** → projeye özel kapsam, gereksinimler, spec'ler, kararlar. Otorite kaynağı proje ekibidir.
 
-`project/` dizininin iç yapısı, dosya isimlendirmesi ve organizasyonu tamamen projeye bırakılır. Boilerplate bu dizinin içeriğine kural koymaz. Proje dökümanları boilerplate kararlarını referans alabilir ama canonical karar katmanını (ADR-001→011, 36, 37, 38) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
+`project/` dizininin iç yapısı, dosya isimlendirmesi ve organizasyonu tamamen projeye bırakılır. Boilerplate bu dizinin içeriğine kural koymaz. Proje dökümanları boilerplate kararlarını referans alabilir ama canonical karar katmanını (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
 
 ---
 
@@ -156,7 +156,7 @@ Bu artık eksik yorum olur.
 
 Şu andan sonra:
 
-> **ADR-001 → ADR-011 + 36 + 37 + 38 birlikte canonical technical decision layer olarak yorumlanmalıdır.**
+> **ADR-001 → ADR-012 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` canonical technical decision layer olarak yorumlanmalıdır.**
 
 Bu ne demektir?
 
@@ -392,7 +392,7 @@ Oku:
 - `41-ai-instruction-standards.md`
 - `CLAUDE.md` (proje talimatı)
 - `AGENTS.md` (denetim talimatı)
-- İlgili SPEC varsa: `.moai/specs/SPEC-XXX.md`
+- İlgili SPEC varsa: `.moai/specs/<SPEC-ID>.md`
 - Stitch işi varsa: `46-stitch-pipeline-spec.md` + `DESIGN.md`
 
 ---

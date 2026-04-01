@@ -7,7 +7,7 @@
 - Apple HIG uyumlu, design system merkezli
 
 ## Canonical Kararlar — BUNLAR AÇILAMAZ
-Bu kararlar ADR-001→012, 36, 37, 38 ile kilitlenmiştir.
+Bu kararlar ADR-001→ADR-012 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
 Alternatifleri tartışma, sorgulatma veya bypass etme.
 
 - Web runtime: React + Vite + React Router 7.x, SPA-first (ADR-001)
@@ -16,7 +16,7 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - State management: Zustand 5.x (ADR-004)
 - Data fetching: TanStack Query 5.x (ADR-005)
 - Forms: React Hook Form 7.x + Zod 4.x (ADR-006)
-- Styling/tokens: Tailwind CSS 4.x (web) + NativeWind 5.x (mobile), semantic token-first (ADR-007)
+- Styling/tokens: Tailwind CSS 4.x (web) + NativeWind 5.x candidate track (mobile), semantic token-first (ADR-007). Bootstrap öncesi release-status doğrulaması zorunludur.
 - Testing: Vitest 4.x (web) + Jest 30.x (mobile) + Testing Library + Playwright 1.58.x E2E (ADR-008)
 - Observability: Sentry + vendor-agnostic analytics abstraction (ADR-009)
 - Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) (ADR-010)
@@ -82,7 +82,7 @@ pnpm build            # Tüm workspace'i derle
 1. `00-project-charter.md` (en yüksek)
 2. `01-working-principles.md`
 3. İlgili alan standardı (03-16)
-4. ADR-001 → ADR-011
+4. ADR-001 → ADR-012
 5. `36-canonical-stack-decision.md`
 6. İlgili operasyonel belge (19-34)
 7. `35-document-map.md` (navigasyon)

@@ -123,7 +123,7 @@ Bu belge aşağıdaki alanlarda canonical karar verir:
 
 Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 
-- **Web runtime:** React 19.x + Vite 7.x + React Router 7.x
+- **Web runtime:** React 19.x + Vite 7.x intentional baseline + React Router 7.x
 - **Mobile runtime:** React Native 0.83.x + Expo SDK 55.x
 - **Repo/workspace:** Monorepo + pnpm 10.x + Turborepo 2.x
 - **Type system:** TypeScript 5.9.x baseline
@@ -132,7 +132,7 @@ Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 - **Forms:** React Hook Form 7.x
 - **Validation/schema:** Zod 4.x
 - **Web styling:** Tailwind CSS 4.x
-- **Mobile styling:** NativeWind 5.x track
+- **Mobile styling:** NativeWind 5.x candidate track (pre-release status bootstrap öncesi doğrulanır)
 - **Token authority:** shared design tokens + semantic token layer
 - **Web testing:** Vitest 4.x + Testing Library
 - **Mobile component/integration testing:** Jest 30.x + Testing Library
@@ -443,7 +443,7 @@ Schema ve contract katmanı olarak da düşünülür.
 ## 12.1. Seçim
 
 - **Web styling runtime:** Tailwind CSS 4.x
-- **Mobile styling runtime:** NativeWind 5.x track
+- **Mobile styling runtime:** NativeWind 5.x candidate track
 - **Design authority:** shared design tokens + semantic token layer
 - **Theming:** semantic role driven, light/dark first-class, hardcoded escape hatch denied by default
 
@@ -478,7 +478,7 @@ Tam tersine:
 - cross-platform styling dilini tekilleştirmek zorlaşır
 
 ## 12.5. Dikkat edilmesi gereken risk
-NativeWind 5.x hattı dikkatli izlenmelidir.
+NativeWind 5.x hattı dikkatli izlenmelidir. 2026-04-01 doğrulamasında v5 dokümantasyonu hâlâ pre-release olarak işaretlenmiştir; bu nedenle bootstrap öncesi release-status kontrolü zorunludur ve GA olmadan sessiz production lock-in yapılamaz.
 Bu nedenle bu karar:
 - “kurduk, bitti” değil
 - audit ve compatibility matrix ile birlikte yaşar
@@ -495,7 +495,7 @@ Bu nedenle bu karar:
 
 ## 13.2. Neden mobile tarafında 8 değil 7?
 
-Çünkü güncel resmi durumda React Navigation 8 hâlâ pre-release statüsündedir ve yeni minimum gereksinimler getirir; Expo SDK 55+, RN 0.83+, TS 5.9.2+ ve dev build gerektirir. Bu nedenle baseline olarak değil, izlenen gelecek hat olarak değerlendirilir.citeturn450627view0turn931020view0
+Çünkü güncel resmi durumda React Navigation 8 hâlâ pre-release statüsündedir ve yeni minimum gereksinimler getirir; bu nedenle baseline olarak değil, izlenen gelecek hat olarak değerlendirilir. Bu durum upgrade öncesi resmi release notlarıyla yeniden doğrulanmalıdır.
 
 ## 13.3. Ne anlama gelir?
 
@@ -540,12 +540,12 @@ bir arada sağlar.
 
 ## 14.3. Neden web-side Jest default değil?
 
-Vite tabanlı web zincirinde Vitest daha doğal ve daha hızlıdır. Vite 7.x için Vitest desteği resmi olarak 3.2’den itibaren vardır; 4.x hattı da mevcut ve modern baseline için uygundur.citeturn417413view3turn291965search10
+Vite tabanlı web zincirinde Vitest daha doğal ve daha hızlıdır. Vite 7.x için Vitest desteği olgunlaşmış durumdadır; 4.x hattı modern baseline için uygundur. Bu eşleşme major upgrade öncesi resmi release notlarıyla yeniden doğrulanmalıdır.
 
 ## 14.4. Neden RN-side Vitest değil?
 
 RN ekosisteminde Jest hâlâ daha güvenli ve daha doğal test omurgasıdır.  
-Ayrıca Jest 30.x artık stable durumdadır ve Node 18+ / TS 5.4+ baseline ister; bizim Node/TS hattımız bunun üzerindedir.citeturn931020view4turn417413view4turn931020view3
+Ayrıca Jest 30.x stable kabul edilir ve bizim Node/TS hattımız bu gereksinimlerin üzerindedir. Exact alt sürüm ve peer koşulları bootstrap öncesi manifest düzeyinde doğrulanmalıdır.
 
 ---
 
@@ -975,14 +975,14 @@ Bu belge yeterli kabul edilir eğer:
 
 Bu boilerplate için canonical teknik blueprint şudur:
 
-- Web: React 19.x + Vite 7.x + React Router 7.x
+- Web: React 19.x + Vite 7.x intentional baseline + React Router 7.x
 - Mobile: React Native 0.83.x + Expo SDK 55.x
 - Repo: Monorepo + pnpm 10.x + Turborepo 2.x
 - State: Zustand 5.x
 - Server-state: TanStack Query 5.x
 - Forms: React Hook Form 7.x
 - Validation: Zod 4.x
-- Styling: Tailwind CSS 4.x + NativeWind 5.x track + semantic token layer
+- Styling: Tailwind CSS 4.x + NativeWind 5.x candidate track + semantic token layer
 - Testing: Vitest 4.x + Jest 30.x + Testing Library + Playwright
 - Observability: Sentry + analytics abstraction
 - Auth/session: web cookie-preferred + mobile secure storage adapter

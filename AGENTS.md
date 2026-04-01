@@ -33,7 +33,7 @@
 - State: Zustand 5.x
 - Data: TanStack Query 5.x
 - Forms: React Hook Form 7.x + Zod 4.x
-- Styling: Tailwind CSS 4.x + NativeWind 5.x
+- Styling: Tailwind CSS 4.x + NativeWind 5.x candidate track (bootstrap öncesi release-status doğrulaması zorunlu)
 - Testing: Vitest 4.x + Jest 30.x + Playwright 1.58.x
 - Observability: Sentry
 - Auth: HttpOnly cookies (web) + Expo SecureStore (mobile)

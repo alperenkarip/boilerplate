@@ -65,7 +65,7 @@ Otorite sırası yukarıdan aşağıya:
 
 ```
 Katman 1: Boilerplate doküman seti (00–39)
-Katman 2: ADR kararları (ADR-001 → ADR-012, ADR-036, ADR-037, ADR-038)
+Katman 2: ADR kararları (ADR-001 → ADR-012) + canonical governance karar belgeleri (`36-canonical-stack-decision.md`, `37-dependency-policy.md`, `38-version-compatibility-matrix.md`)
 Katman 3: Talimat dosyaları (CLAUDE.md, AGENTS.md, .moai/config/, DESIGN.md)
 Katman 4: AI aracının runtime davranışı
 ```
@@ -148,8 +148,8 @@ EARS (Easy Approach to Requirements Syntax) ile belirsiz olmayan spesifikasyonla
 | Komut | İşlev |
 |-------|-------|
 | `/moai plan` | SPEC dokümanı oluştur (EARS formatında) |
-| `/moai run SPEC-XXX` | SPEC'i DDD/TDD ile implement et |
-| `/moai sync SPEC-XXX` | Dokümanları senkronize et, PR hazırla |
+| `/moai run <SPEC-ID>` | SPEC'i DDD/TDD ile implement et |
+| `/moai sync <SPEC-ID>` | Dokümanları senkronize et, PR hazırla |
 | `/moai fix` | Tek geçiş: tara → sınıfla → düzelt → doğrula |
 | `/moai loop` | İteratif düzeltme (maks 100 iterasyon) |
 | `/moai project` | Proje dokümanları üret |
@@ -264,7 +264,7 @@ npx skills add google-labs-code/stitch-skills --skill react:components --global
 - Görsel token'ları design system değişkenlerine map'ler.
 - JSX/TSX + scoped styling çıktısı üretir.
 
-**Bu boilerplate için rolü:** Arayüz tasarımı ve tema token sistemi üretimi. DESIGN.md üzerinden Claude Code'a tasarım context'i sağlar. Stitch MCP ile canlı tasarım verisi çekilir. Tailwind CSS 4.x (ADR-007) ve NativeWind 5.x ile uyumlu çıktı üretir.
+**Bu boilerplate için rolü:** Arayüz tasarımı ve tema token sistemi üretimi. DESIGN.md üzerinden Claude Code'a tasarım context'i sağlar. Stitch MCP ile canlı tasarım verisi çekilir. Tailwind CSS 4.x (ADR-007) ve NativeWind 5.x candidate track ile uyumlu çıktı üretir; bootstrap öncesi release-status kontrolü zorunludur.
 
 **Sınırları:**
 - DESIGN.md, `22-design-tokens-spec.md`'nin türevidir; uyumsuzluk durumunda 22 kazanır.
@@ -284,14 +284,14 @@ Bu en sık kullanılan etkileşim hattıdır. Akış:
 ```
 /moai plan → SPEC üret (EARS formatı)
      ↓
-/moai run SPEC-XXX → Claude Code implement eder (TDD veya DDD)
+/moai run <SPEC-ID> → Claude Code implement eder (TDD veya DDD)
      ↓
 /moai sync → doküman senkronizasyonu + PR hazırla
 ```
 
 **Bağlantı mekanizması:** Claude Code'un native slash command sistemi. MoAI-ADK, Claude Code'a yapılandırılmış talimat gönderir; Claude Code bu talimatları uygular.
 
-**Veri akışı:** `.moai/specs/SPEC-XXX.md` → Claude Code'un context'i → implementation → PR
+**Veri akışı:** `.moai/specs/<SPEC-ID>.md` → Claude Code'un context'i → implementation → PR
 
 ## 5.2. Google Stitch → Claude Code: Design-to-Code
 
@@ -410,7 +410,7 @@ Farklı görev türleri için hangi araçların hangi sırayla kullanılacağın
 ```
 1. /moai plan → SPEC üret (EARS formatında)
 2. SPEC review → geliştirici onayı
-3. /moai run SPEC-XXX → Claude Code implement eder
+3. /moai run <SPEC-ID> → Claude Code implement eder
 4. Test yaz ve çalıştır (Vitest 4.x / Jest 30.x — ADR-008)
 5. PR aç
 6. @codex review
@@ -471,7 +471,7 @@ Farklı görev türleri için hangi araçların hangi sırayla kullanılacağın
 1. İlgili ADR güncelle veya yeni ADR yaz
 2. /moai plan → etki analizi + SPEC
 3. Boilerplate dokümanlarını güncelle
-4. /moai run SPEC-XXX → implement et
+4. /moai run <SPEC-ID> → implement et
 5. Tüm etkilenen test'leri güncelle
 6. PR aç
 7. @codex review
@@ -497,7 +497,7 @@ Her talimat dosyası yalnızca kendi aracını yönlendirir. Bir aracın talimat
 
 ## 8.2. Tutarlılık Kuralı
 
-Tüm talimat dosyaları canonical kararları (ADR-001 → ADR-012, ADR-036, ADR-037, ADR-038) aynı biçimde yansıtmak zorundadır.
+Tüm talimat dosyaları canonical karar katmanını (ADR-001 → ADR-012 + 36/37/38 canonical governance belgeleri) aynı biçimde yansıtmak zorundadır.
 
 Örnek: ADR-007 Tailwind CSS 4.x kararı varsa:
 - CLAUDE.md'de styling yönlendirmesi Tailwind CSS 4.x referansı içermelidir.
@@ -786,7 +786,7 @@ Bu ilk görev tüm araçların doğru çalıştığını doğrular.
 ```
 1. /moai plan → küçük bir iyileştirme için SPEC üret
 2. SPEC'i incele, gerekirse düzelt
-3. /moai run SPEC-XXX → implementation
+3. /moai run <SPEC-ID> → implementation
 4. PR aç → review → merge
 ```
 

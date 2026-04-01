@@ -41,12 +41,19 @@ jobs:
       - name: Kullanılmayan dependency kontrolü
         run: |
           echo "Kullanılmayan dependency kontrolü"
-          # npx depcheck (proje bootstrap sonrası etkinleştirilir)
+          if pnpm exec depcheck --version >/dev/null 2>&1; then
+            pnpm exec depcheck
+          else
+            echo "ℹ️ depcheck kurulu değil; derived project bootstrap sonrası etkinleştirilmelidir"
+          fi
 
       - name: Lisans uyumluluk kontrolü
         run: |
           echo "Lisans kontrolü"
-          # npx license-checker --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC"
+          if pnpm exec license-checker --version >/dev/null 2>&1; then
+            pnpm exec license-checker --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC"
+          else
+            echo "ℹ️ license-checker kurulu değil; derived project bootstrap sonrası etkinleştirilmelidir"
 
   # ────────────────────────────────────────────
   # 2. Version compatibility kontrolü
@@ -73,7 +80,13 @@ jobs:
       - name: Canonical stack versiyon kontrolü
         run: |
           echo "Canonical stack versiyon baseline kontrolü"
-          # scripts/check-compatibility.ts çalıştırılır (bootstrap sonrası)
+          if [ -f scripts/check-compatibility.ts ] || [ -f scripts/check-compatibility.mjs ] || [ -f scripts/check-compatibility.js ]; then
+            if [ -f scripts/check-compatibility.ts ]; then pnpm exec tsx scripts/check-compatibility.ts; fi
+            if [ -f scripts/check-compatibility.mjs ]; then node scripts/check-compatibility.mjs; fi
+            if [ -f scripts/check-compatibility.js ]; then node scripts/check-compatibility.js; fi
+          else
+            echo "ℹ️ compatibility check script'i henüz yok; bootstrap tamamlandığında eklenmelidir"
+          fi
 
   # ────────────────────────────────────────────
   # 3. Doküman freshness kontrolü
@@ -90,28 +103,45 @@ jobs:
         run: |
           echo "=== 6 aydan eski düzenlenen belgeler ==="
           SIX_MONTHS_AGO=$(date -d '6 months ago' +%Y-%m-%d 2>/dev/null || date -v-6m +%Y-%m-%d)
-          for f in docs/*.md *.md; do
-            if [ -f "$f" ]; then
-              LAST_MODIFIED=$(git log -1 --format="%ai" -- "$f" 2>/dev/null | cut -d' ' -f1)
-              if [ -n "$LAST_MODIFIED" ] && [ "$LAST_MODIFIED" \< "$SIX_MONTHS_AGO" ]; then
-                echo "⚠️  $f — son güncelleme: $LAST_MODIFIED"
-              fi
+          find . -type f -name '*.md' -not -path './node_modules/*' -not -path './.git/*' | while read -r f; do
+            LAST_MODIFIED=$(git log -1 --format="%ai" -- "$f" 2>/dev/null | cut -d' ' -f1)
+            if [ -n "$LAST_MODIFIED" ] && [ "$LAST_MODIFIED" \< "$SIX_MONTHS_AGO" ]; then
+              echo "⚠️  $f — son güncelleme: $LAST_MODIFIED"
             fi
           done
 
       - name: Kırık referans kontrolü
         run: |
           echo "=== Kırık belge referansları ==="
-          for f in *.md docs/*.md; do
-            if [ -f "$f" ]; then
-              # Markdown link'lerindeki .md referanslarını kontrol et
-              grep -oP '`\K[0-9]+-[^`]+\.md' "$f" 2>/dev/null | while read ref; do
-                if [ ! -f "$ref" ] && [ ! -f "docs/$ref" ]; then
-                  echo "⚠️  $f → $ref bulunamadı"
-                fi
-              done
-            fi
-          done
+          python <<'PY2'
+          from pathlib import Path
+          import re, sys
+          root = Path('.').resolve()
+          link_re = re.compile(r'\[[^\]]+\]\(([^)]+)\)')
+          errors = []
+          for path in root.rglob('*.md'):
+              if '.git' in path.parts or 'node_modules' in path.parts:
+                  continue
+              text = path.read_text(encoding='utf-8', errors='ignore')
+              for target in link_re.findall(text):
+                  if '://' in target or target.startswith('#') or target.startswith('mailto:'):
+                      continue
+                  target = target.split('#')[0]
+                  if not target:
+                      continue
+                  resolved = (path.parent / target).resolve()
+                  try:
+                      resolved.relative_to(root)
+                  except Exception:
+                      errors.append(f'{path.relative_to(root)}: repo dışına çıkan referans -> {target}')
+                      continue
+                  if not resolved.exists():
+                      errors.append(f'{path.relative_to(root)}: kırık referans -> {target}')
+          if errors:
+              print('\n'.join(errors))
+              sys.exit(1)
+          print('✅ Kırık markdown referansı yok')
+          PY2
 
   # ────────────────────────────────────────────
   # 4. Exception süre kontrolü

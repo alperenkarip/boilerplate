@@ -1099,7 +1099,7 @@ Designer bir component tasarladığında, geliştiricinin doğru implementasyon 
 
 ### Figma Dev Mode ile aktarılan bilgiler
 
-- **Boyutlar ve spacing**: Component'in genişliği, yüksekliği, iç padding'leri, child elemanlar arası gap değerleri. Piksel değeri yerine token adı kullanılmalıdır (16px değil `spacing.md`).
+- **Boyutlar ve spacing**: Component'in genişliği, yüksekliği, iç padding'leri, child elemanlar arası gap değerleri. Piksel değeri yerine token adı kullanılmalıdır (16px değil `tokens.spacing.4`).
 - **Token adları**: Hangi renk token'ı, hangi tipografi token'ı, hangi shadow token'ı kullanıldığı. Bu sayede geliştirici hex kodu kopyalamak yerine doğru token'a referans verir.
 - **State matrisi**: Component'in hangi state'leri var (default, hover, pressed, disabled, focused, error, loading). Her state'in görsel farkları (renk değişimi, opacity, border değişimi vb.).
 - **Responsive davranış**: Component farklı ekran boyutlarında nasıl davranıyor? Sabit mi, esnek mi? Metin taşarsa ne oluyor? Minimum ve maksimum boyutlar nedir?
@@ -1668,7 +1668,7 @@ Aşağıdaki dosyalar git'te tutulur ve PR review kapsamındadır:
 - `.moai/config/` (MoAI-ADK konfigürasyonu)
 - `DESIGN.md` (Stitch tasarım sistemi — Stitch'ten export edilir, elle düzenlenmez)
 
-Bu dosyalardaki değişiklik, canonical katmanla (ADR-001→011, 36, 37, 38) tutarlılık açısından review edilir.
+Bu dosyalardaki değişiklik, canonical katmanla (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) tutarlılık açısından review edilir.
 
 ## 37.4. Otorite Sırası
 

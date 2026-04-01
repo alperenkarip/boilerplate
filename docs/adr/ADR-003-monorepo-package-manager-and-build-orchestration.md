@@ -235,10 +235,10 @@ Monorepo için doğal ve güçlü workspace modeli sunar.
 Daha kontrollü ve daha görünür dependency davranışı üretir.
 
 ### C. Disk ve install verimliliği
-pnpm’nin içerik-adreslenmiş store ve verimli install modeli monorepo için güçlü avantajdır.citeturn380833search12turn380833search8
+pnpm’nin içerik-adreslenmiş store ve verimli install modeli monorepo için güçlü avantajdır.
 
 ### D. 10.x hattı güncel ve aktif
-pnpm 10 hattı güncel, aktif bakım alan ve güvenlik/disiplin yönü güçlenen bir hattır.citeturn380833search0turn380833search8
+pnpm 10 hattı güncel, aktif bakım alan ve güvenlik/disiplin yönü güçlenen bir hattır.
 
 ## 8.3. Neden npm değil?
 
@@ -282,7 +282,7 @@ Monorepo içindeki build/test/lint/typecheck görevleri için açık ve güçlü
 Aynı görev mantığı local ve CI’da anlamlı şekilde taşınabilir.
 
 ### C. Incremental build ve cache davranışı
-Content-aware caching ve selective task execution monorepo için büyük avantajdır. Turborepo bu alanın ana değer önerisidir.citeturn380833search13turn380833search17turn380833search9
+Content-aware caching ve selective task execution monorepo için büyük avantajdır. Turborepo bu alanın ana değer önerisidir.
 
 ### D. Bu proje için doğru sadelik seviyesi
 Nx gibi daha ağır kurumsal workflow katmanlarına kıyasla daha yalın ama güçlü bir model sunar.

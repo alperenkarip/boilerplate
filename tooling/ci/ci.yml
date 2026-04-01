@@ -169,7 +169,7 @@ jobs:
         run: |
           # packages/ → apps/ yönünde import olmamalı
           echo "=== Boundary Check: packages/ → apps/ import taraması ==="
-          VIOLATIONS=$(grep -r "from ['\"].*apps/" packages/ --include="*.ts" --include="*.tsx" 2>/dev/null || true)
+          VIOLATIONS=$(grep -R -E "from ['\"][^'\"]*apps/|require\(['\"][^'\"]*apps/" packages/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.mjs" --include="*.cjs" 2>/dev/null || true)
           if [ -n "$VIOLATIONS" ]; then
             echo "❌ BOUNDARY İHLALİ: packages/ → apps/ yönünde import tespit edildi:"
             echo "$VIOLATIONS"
@@ -204,7 +204,7 @@ jobs:
       - name: Secret leak detection
         run: |
           echo "=== Secret Leak Taraması ==="
-          LEAKS=$(grep -r -E "(api_key|apikey|secret_key|password|token)\s*[:=]\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.tsx" --include="*.js" apps/ packages/ 2>/dev/null || true)
+          LEAKS=$(grep -R -E "(api_key|apikey|secret_key|password|token)\s*[:=]\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" apps/ packages/ 2>/dev/null || true)
           if [ -n "$LEAKS" ]; then
             echo "❌ OLASI SECRET LEAK TESPİT EDİLDİ:"
             echo "$LEAKS"

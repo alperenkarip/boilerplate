@@ -912,8 +912,8 @@ Karmaşık görevlerde (yeni feature, yeni modül, mimari değişiklik):
 
 1. `/moai plan` ile SPEC oluştur (EARS formatında)
 2. SPEC’in canonical kararlarla (ADR seti) tutarlılığını doğrula
-3. `/moai run SPEC-XXX` ile implement et
-4. `/moai sync SPEC-XXX` ile dokümanları senkronize et
+3. `/moai run <SPEC-ID>` ile implement et
+4. `/moai sync <SPEC-ID>` ile dokümanları senkronize et
 
 Basit görevlerde (bug fix, küçük düzeltme) SPEC zorunlu değildir. Görev karmaşıklığına göre araç kullanım eşiği için `40-ai-workflow-and-tooling.md` bölüm 7’ye bakınız.
 

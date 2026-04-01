@@ -13,7 +13,7 @@
   - `29-release-and-versioning-rules.md`
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
-  - `ADR-001` → `ADR-011`
+  - `ADR-001` → `ADR-012`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `19-roadmap-to-implementation.md`
   - `20-initial-implementation-checklist.md`
@@ -93,7 +93,7 @@ Projede hangi **major/minor ailelerin** canonical kabul edildiğini tanımlar.
 - React 19.2.x hattı
 - Expo SDK 55.x hattı
 - React Native 0.83.x hattı
-- Vite 7.x hattı
+- Vite 7.x intentional baseline hattı
 - Tailwind 4.x hattı
 
 ## 4.2. Exact project pin
@@ -133,13 +133,13 @@ Bu boilerplate için çekirdek omurga aşağıdaki sürüm hattı üzerinden kab
 - **TypeScript:** 5.9.x stable baseline
 - **Web React:** 19.2.x
 - **React DOM:** 19.2.x
-- **Vite:** 7.x
+- **Vite:** 7.x intentional baseline (Vite 8 watchlist)
 - **React Router:** 7.x
 - **Mobile Runtime:** Expo SDK 55.x
 - **React Native:** 0.83.x
 - **React Native Web:** 0.21.x
 - **Tailwind CSS:** 4.x
-- **NativeWind:** 5.x baseline track
+- **NativeWind:** 5.x candidate track (pre-release status doğrulanmadan production baseline sayılmaz)
 - **Zustand:** 5.x
 - **TanStack Query:** 5.x
 - **React Hook Form:** 7.x
@@ -167,7 +167,7 @@ Bu boilerplate’in default Node baseline’ı:
 
 Çünkü çekirdek stack’in iki kritik ayağı bunu aynı anda karşılar:
 - Expo SDK 55 reference track
-- Vite 7 requirement track
+- Vite 7 intentional baseline track
 
 ## 7.3. Neden 22.x seçilmiyor?
 
@@ -218,7 +218,7 @@ Bu nedenle React Native uyumluluğu yalnızca API değil, native ecosystem readi
 
 - **React 19.2.x**
 - **React DOM 19.2.x**
-- **Vite 7.x**
+- **Vite 7.x intentional baseline**
 - **React Router 7.x**
 
 ## 9.2. Kural
@@ -238,7 +238,7 @@ Daha eski major hatlara dönmek veya alternatif router eklemek baseline dışıd
 ## 10.1. Canonical eşleşme
 
 - **Tailwind CSS 4.x**
-- **NativeWind 5.x baseline**
+- **NativeWind 5.x candidate track**
 - **Shared semantic token layer**
 
 ## 10.2. Neden kritik?
@@ -393,7 +393,7 @@ TS 6.x gibi major sıçramalar compatibility re-validation olmadan baseline’a 
 | React Native | 0.83.x | Expo 55 ile bağlı | Expo’dan bağımsız sıçratılmaz |
 | React Native Web | 0.21.x | Expo track ile hizalı | Web parity etkisi düşünülmeli |
 | Tailwind CSS | 4.x | Web styling baseline | 3.x geri dönüş canonical dışı |
-| NativeWind | 5.x | Mobile styling baseline track | 4.x/5.x geçişi styling audit ister |
+| NativeWind | 5.x candidate track | Mobile styling için pre-release izleme hattı | GA olmadan bootstrap lock-in yasak; 4.x/5.x geçişi styling audit ister |
 | Zustand | 5.x | State management canonical | İkinci state library eklenmez |
 | TanStack Query | 5.x | Server-state canonical | v4 hattı baseline dışı |
 | React Hook Form | 7.x | Forms baseline | Alternative engine eklenmez |
@@ -635,9 +635,9 @@ Aşağıdaki kombinasyonlar varsayılan olarak blocker veya çok yüksek risk sa
 
 1. Expo SDK 55.x ile React Native 0.83 dışı random hat
 2. React 19.2 hattı ile React DOM farklı minör hat
-3. Vite 7.x ile Node 20.19 altı
+3. Vite 7.x intentional baseline ile Node 20.19 altı
 4. Tailwind 4.x ile eski config alışkanlıklarını sürdürme
-5. NativeWind 5.x hattını eski mobile styling assumptions ile karıştırma
+5. NativeWind 5.x candidate hattını eski mobile styling assumptions ile karıştırma
 6. Zod 4.x ile eski schema helper ekosistemini doğrulamadan kullanma
 7. Jest major değiştirip RN test config’ini audit etmemek
 8. React Navigation 8.x’i stable kabul edip baseline’a sessizce almak
@@ -767,4 +767,4 @@ Bu doküman yeterli kabul edilir eğer:
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 7.x, React Router 7.x, Tailwind 4.x, NativeWind 5.x, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Playwright 1.58.x, React Navigation 7.x ve i18next 26.x hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.
+> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 7.x intentional baseline, React Router 7.x, Tailwind 4.x, NativeWind 5.x candidate track, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Playwright 1.58.x, React Navigation 7.x ve i18next 26.x hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.

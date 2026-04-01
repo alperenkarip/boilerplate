@@ -369,7 +369,7 @@ Stitch çıktısından hangi token katmanının türetileceği önceden belirlen
 | Token Katmanı | Açıklama | Örnek |
 |---|---|---|
 | Primitive | Ham değerler (renk hex, font size px) | `#1A73E8`, `16px` |
-| Semantic | Anlam taşıyan token (amaca bağlı) | `color.primary`, `spacing.md` |
+| Semantic | Anlam taşıyan token (amaca bağlı) | `color.primary`, `tokens.spacing.4` |
 | Component | Component'e özgü token | `button.background`, `card.border-radius` |
 
 Stitch çıktısı önce primitive değerler üretir.
@@ -386,7 +386,7 @@ Rastgele isimlendirme ve rastgele konumlandırma kabul edilmez.
 
 | Dosya Türü | Format | Konum | Notlar |
 |---|---|---|---|
-| SPEC | `SPEC-{NNN}.md` | `.moai/specs/` | Sıralı, 3 basamak. Silinen numara tekrar kullanılmaz. |
+| SPEC | `SPEC-001.md` biçimi | `.moai/specs/` | Sıralı, 3 basamak. Silinen numara tekrar kullanılmaz. |
 | DESIGN.md | `DESIGN.md` | Proje kökü | Tek dosya. Yalnızca Stitch export'u olarak üretilir. |
 | CLAUDE.md | `CLAUDE.md` | Proje kökü | Tek dosya. Global `~/.claude/CLAUDE.md` ayrı katmandır. |
 | AGENTS.md (kök) | `AGENTS.md` | Proje kökü | Zorunlu. |
@@ -495,7 +495,7 @@ Bir talimat dosyasının veya SPEC dokümanının kabul edilebilir sayılması i
 - [ ] Canonical kararlarla çelişme var mı?
 - [ ] İlgili boilerplate dokümanlarına referans içeriyor mu?
 - [ ] Bağımlı olduğu diğer SPEC'ler açıkça belirtilmiş mi?
-- [ ] Dosya adı `SPEC-{NNN}.md` formatında mı?
+- [ ] Dosya adı `SPEC-001.md` biçiminde mi?
 - [ ] `.moai/specs/` dizininde mi?
 
 ## 10.4. DESIGN.md Onay Kriterleri
