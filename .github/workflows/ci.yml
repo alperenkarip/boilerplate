@@ -1,0 +1,173 @@
+# CI Pipeline — Boilerplate Quality Gates
+# Referans: 15-quality-gates-and-ci-rules.md
+#
+# Bu workflow her PR'da ve main push'ta çalışır.
+# Derived project'te .github/workflows/ci.yml olarak kopyalanır.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+
+jobs:
+  # ────────────────────────────────────────────
+  # 1. Setup ve bağımlılık kurulumu
+  # ────────────────────────────────────────────
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/cache/save@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+  # ────────────────────────────────────────────
+  # 2. TypeScript type check — BLOCKER
+  # ────────────────────────────────────────────
+  typecheck:
+    name: TypeCheck
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm typecheck
+        # Severity: BLOCKER — typecheck hataları merge'i engeller
+
+  # ────────────────────────────────────────────
+  # 3. Lint — BLOCKER
+  # ────────────────────────────────────────────
+  lint:
+    name: Lint
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm lint
+        # Token tüketim, boundary enforcement, a11y lint dahil
+
+  # ────────────────────────────────────────────
+  # 4. Unit ve integration testleri — BLOCKER
+  # ────────────────────────────────────────────
+  test:
+    name: Test
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm test
+        # Vitest (web) + Jest (mobile) — affected packages only
+
+  # ────────────────────────────────────────────
+  # 5. Build sanity — BLOCKER
+  # ────────────────────────────────────────────
+  build:
+    name: Build
+    needs: [typecheck, lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm build
+        # Tüm workspace package'ları ve app'ler build edilir
+
+  # ────────────────────────────────────────────
+  # 6. Boundary check — MAJOR
+  # ────────────────────────────────────────────
+  boundary:
+    name: Boundary Check
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Import direction validation
+        run: |
+          # packages/ → apps/ yönünde import olmamalı
+          # Bu script proje bootstrap sırasında özelleştirilir
+          echo "Boundary check — import direction validation"
+          # pnpm boundary:check

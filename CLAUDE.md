@@ -24,8 +24,8 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile) (ADR-012)
 
 ## Dependency Kuralları
-- Yeni dependency eklemeden önce docs/37-dependency-policy.md kontrol et
-- Versiyon uyumluluğu için docs/38-version-compatibility-matrix.md kontrol et
+- Yeni dependency eklemeden önce docs/governance/37-dependency-policy.md kontrol et
+- Versiyon uyumluluğu için docs/governance/38-version-compatibility-matrix.md kontrol et
 - Canonical stack'teki kütüphanelerin alternatiflerini önerme
 
 ## MoAI-ADK Entegrasyonu
@@ -37,7 +37,7 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 ## Stitch Entegrasyonu
 - Stitch MCP aktiftir: tasarım verileri çekilebilir
 - DESIGN.md dosyası varsa, component üretiminde referans al
-- Token çıktılarını docs/22-design-tokens-spec.md katmanlarıyla eşle
+- Token çıktılarını docs/design-system/22-design-tokens-spec.md katmanlarıyla eşle
 - DESIGN.md 22-design-tokens-spec.md'nin türevdir; çelişki varsa 22 kazanır
 
 ## Dosya Organizasyonu
@@ -49,14 +49,14 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Import yönü: feature → shared OK, shared → feature YASAK
 
 ## Referans Dokümanlar (Detay İçin Oku)
-- Component governance → docs/23-component-governance-rules.md
-- Platform adaptation → docs/26-platform-adaptation-rules.md
-- Error/empty/loading states → docs/25-error-empty-loading-states.md
-- Navigation patterns → docs/08-navigation-and-flow-rules.md
-- Security baseline → docs/27-security-and-secrets-baseline.md
-- Accessibility → docs/12-accessibility-standard.md
-- Motion/interaction → docs/24-motion-and-interaction-standard.md
-- Performance → docs/13-performance-standard.md
+- Component governance → docs/design-system/23-component-governance-rules.md
+- Platform adaptation → docs/design-system/26-platform-adaptation-rules.md
+- Error/empty/loading states → docs/design-system/25-error-empty-loading-states.md
+- Navigation patterns → docs/architecture/08-navigation-and-flow-rules.md
+- Security baseline → docs/quality/27-security-and-secrets-baseline.md
+- Accessibility → docs/quality/12-accessibility-standard.md
+- Motion/interaction → docs/design-system/24-motion-and-interaction-standard.md
+- Performance → docs/quality/13-performance-standard.md
 
 ## Kodlama Standartları
 - TypeScript strict mode zorunlu — `any` tipi yasak

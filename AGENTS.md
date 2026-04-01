@@ -44,7 +44,7 @@
 - Hardcoded renk değerleri yerine semantic token kullan
 - Hardcoded spacing yerine spacing scale token kullan
 - Hardcoded tipografi yerine typography token kullan
-- Token isimlendirme: docs/22-design-tokens-spec.md kurallarına uy
+- Token isimlendirme: docs/design-system/22-design-tokens-spec.md kurallarına uy
 
 ## Security Rules
 - `.env` değerinin koda hardcode edilmesi — REDDET

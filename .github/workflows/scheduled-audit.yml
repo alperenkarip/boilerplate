@@ -1,0 +1,141 @@
+# Scheduled Audit Pipeline — Periyodik Kalite Denetimi
+# Referans: 31-audit-checklist.md, 37-dependency-policy.md, 38-version-compatibility-matrix.md
+#
+# Bu workflow haftalık çalışır ve baseline drift'i tespit eder.
+# Derived project'te .github/workflows/scheduled-audit.yml olarak kopyalanır.
+
+name: Scheduled Audit
+
+on:
+  schedule:
+    # Her Pazartesi 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Manuel tetikleme
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+
+jobs:
+  # ────────────────────────────────────────────
+  # 1. Dependency sağlık kontrolü
+  # ────────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: pnpm install --frozen-lockfile
+
+      - name: Güvenlik açığı taraması
+        run: pnpm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Kullanılmayan dependency kontrolü
+        run: |
+          echo "Kullanılmayan dependency kontrolü"
+          # npx depcheck (proje bootstrap sonrası etkinleştirilir)
+
+      - name: Lisans uyumluluk kontrolü
+        run: |
+          echo "Lisans kontrolü"
+          # npx license-checker --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC"
+
+  # ────────────────────────────────────────────
+  # 2. Version compatibility kontrolü
+  # ────────────────────────────────────────────
+  compatibility-check:
+    name: Compatibility Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: pnpm install --frozen-lockfile
+
+      - name: Node versiyon kontrolü
+        run: |
+          EXPECTED_NODE=$(cat .nvmrc 2>/dev/null || echo "20")
+          CURRENT_NODE=$(node --version | sed 's/v//')
+          echo "Beklenen: $EXPECTED_NODE, Mevcut: $CURRENT_NODE"
+
+      - name: Canonical stack versiyon kontrolü
+        run: |
+          echo "Canonical stack versiyon baseline kontrolü"
+          # scripts/check-compatibility.ts çalıştırılır (bootstrap sonrası)
+
+  # ────────────────────────────────────────────
+  # 3. Doküman freshness kontrolü
+  # ────────────────────────────────────────────
+  doc-freshness:
+    name: Doc Freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 6 aydan eski belge kontrolü
+        run: |
+          echo "=== 6 aydan eski düzenlenen belgeler ==="
+          SIX_MONTHS_AGO=$(date -d '6 months ago' +%Y-%m-%d 2>/dev/null || date -v-6m +%Y-%m-%d)
+          for f in docs/*.md *.md; do
+            if [ -f "$f" ]; then
+              LAST_MODIFIED=$(git log -1 --format="%ai" -- "$f" 2>/dev/null | cut -d' ' -f1)
+              if [ -n "$LAST_MODIFIED" ] && [ "$LAST_MODIFIED" \< "$SIX_MONTHS_AGO" ]; then
+                echo "⚠️  $f — son güncelleme: $LAST_MODIFIED"
+              fi
+            fi
+          done
+
+      - name: Kırık referans kontrolü
+        run: |
+          echo "=== Kırık belge referansları ==="
+          for f in *.md docs/*.md; do
+            if [ -f "$f" ]; then
+              # Markdown link'lerindeki .md referanslarını kontrol et
+              grep -oP '`\K[0-9]+-[^`]+\.md' "$f" 2>/dev/null | while read ref; do
+                if [ ! -f "$ref" ] && [ ! -f "docs/$ref" ]; then
+                  echo "⚠️  $f → $ref bulunamadı"
+                fi
+              done
+            fi
+          done
+
+  # ────────────────────────────────────────────
+  # 4. Exception süre kontrolü
+  # ────────────────────────────────────────────
+  exception-audit:
+    name: Exception Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Süresi dolmuş exception kontrolü
+        run: |
+          echo "=== Exception Audit ==="
+          TODAY=$(date +%Y-%m-%d)
+          if [ -d "exceptions" ]; then
+            for f in exceptions/*.yaml exceptions/*.yml; do
+              if [ -f "$f" ]; then
+                EXPIRY=$(grep 'expiry:' "$f" | head -1 | awk '{print $2}' | tr -d '"')
+                STATUS=$(grep 'status:' "$f" | head -1 | awk '{print $2}' | tr -d '"')
+                if [ "$STATUS" = "active" ] && [ -n "$EXPIRY" ] && [ "$EXPIRY" \< "$TODAY" ]; then
+                  echo "🔴 SÜRESİ DOLMUŞ: $f (expiry: $EXPIRY)"
+                fi
+              fi
+            done
+          else
+            echo "exceptions/ dizini yok — sorun yok"
+          fi
