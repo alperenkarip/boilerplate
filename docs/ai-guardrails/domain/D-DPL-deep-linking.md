@@ -67,6 +67,6 @@ son-güncelleme: 2026-04-01
 - Fallback URL eksik → her route için web fallback tanımla
 
 ## Kaynak
-- Deep linking kararı → docs/adr/ADR-014-deep-linking-strategy.md
+- Deep linking kararı → docs/adr/ADR-014-deep-linking-and-universal-links.md
 - Navigation kuralları → docs/architecture/08-navigation-and-flow-rules.md
 - Platform adaptation → docs/design-system/26-platform-adaptation-rules.md

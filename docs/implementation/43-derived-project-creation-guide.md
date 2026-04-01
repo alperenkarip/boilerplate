@@ -160,7 +160,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 1. `45-boilerplate-project-boundary-contract.md` belgesini oku. Ozellikle Bolum 3 (miras tipleri), Bolum 4 (override izin tablosu) ve Bolum 10 (anti-pattern'ler) onemli.
 
-2. Zorunlu miras kurallarini kabul et: canonical stack (ADR-001 → ADR-012), dependency policy (`37-dependency-policy.md`), compatibility matrix (`38-version-compatibility-matrix.md`), WCAG AA esigi, security baseline (`27-security-and-secrets-baseline.md`).
+2. Zorunlu miras kurallarini kabul et: canonical technical decision layer (ADR-001 → ADR-017), dependency policy (`37-dependency-policy.md`), compatibility matrix (`38-version-compatibility-matrix.md`), WCAG AA esigi, security baseline (`27-security-and-secrets-baseline.md`).
 
 3. Override gereksinimlerin varsa Bolum 7'deki sureci baslat ve `44-exception-and-exemption-policy.md` ile uyumlu sekilde belgele.
 
@@ -291,7 +291,7 @@ Proje ADR'leri `18-adr-template.md` sablonunu kullanir. Ek zorunlu alanlar: boil
 
 ## 5.4. Celiski Yasagi
 
-Proje ADR'si hicbir durumda boilerplate ADR'sini gecersiz kilamaz. Canonical stack kararlari (ADR-001 → ADR-012) degistirilemez. Override sureci bile kurallari kaldirmaz, sadece belirli kosullarda farkli uygulanmasini mumkun kilar.
+Proje ADR'si hicbir durumda boilerplate ADR'sini gecersiz kilamaz. Canonical stack kararlari (ADR-001 → ADR-017) degistirilemez. Override sureci bile kurallari kaldirmaz, sadece belirli kosullarda farkli uygulanmasini mumkun kilar.
 
 ---
 

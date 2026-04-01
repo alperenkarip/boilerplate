@@ -21,7 +21,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-012`
+  - `ADR-001` → `ADR-017`
 - **Doğrudan etkileyeceği belgeler:**
   - `31-audit-checklist.md`
   - `32-definition-of-done.md`
@@ -78,6 +78,19 @@ Bu belge şu sorulara net cevap verir:
 ---
 
 # 3. Temel Tez
+
+## 3.1. Repo modları ve faz ayrımı
+
+Bu arşiv iki farklı modda okunabilir ve contribution davranışı buna göre değişir:
+
+1. **Docs-only / pre-bootstrap mode**  
+   Bu modda repo henüz çalışan monorepo değildir. Amaç doküman, ADR, guardrail ve governance katmanını olgunlaştırmaktır. `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `apps/` ve `packages/` yapısı henüz bulunmayabilir. Bu modda yapılacak katkılar ağırlıklı olarak belge, karar, audit, AI talimatı ve workflow şablonu katkılarıdır.
+
+2. **Bootstrap-ready / derived project mode**  
+   Bu modda repo veya türetilmiş proje artık çalışan workspace'e dönüşmüştür. `pnpm install`, `pnpm dev`, `pnpm dev:mobile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` gibi komutlar ancak bu aşamada normatif kabul edilir.
+
+**Zorunlu kural:** Bu belgedeki kurulum ve çalışma komutları docs-only mod için değil, bootstrap-ready / derived project mod için bağlayıcıdır. Docs-only modda aynı komutların eksik olması kusur sayılmaz; kusur, bu faz ayrımının gözden kaçırılmasıdır.
+
 
 Bu proje kapsamında temel tez şudur:
 
@@ -184,6 +197,8 @@ Clone işlemi tüm branch'leri, commit geçmişini ve proje dosyalarını indiri
 ```bash
 pnpm install
 ```
+
+> **Faz notu:** Bu bölüm yalnızca bootstrap-ready / derived project modunda geçerlidir. Docs-only arşivde bu komutların çalışmaması beklenen durumdur.
 
 Bu komutu repo'nun **root dizininde** çalıştır. pnpm, monorepo yapısında tüm workspace package'larının bağımlılıklarını tek seferde kurar. `node_modules` klasörlerini her package içine oluşturur ve paylaşılan bağımlılıkları symlink ile yönetir. Bu adım birkaç dakika sürebilir; internet bağlantısına ve bağımlılık sayısına bağlıdır.
 
@@ -596,7 +611,7 @@ Yerel geliştirmede de commitlint'i husky git hook'u ile entegre etmek önerilir
 
 ## 12.6. PR Template
 
-Repo'da `.github/pull_request_template.md` dosyası bulunmalıdır. Bu dosya, GitHub'da yeni PR açıldığında PR açıklama alanını otomatik olarak doldurur. Bu sayede her PR aynı yapıda bilgi içerir, reviewer'ın beklentileri net olur ve eksik bilgi hemen fark edilir.
+Repo'da `.github/PULL_REQUEST_TEMPLATE.md` dosyası bulunmalıdır. Bu dosya, GitHub'da yeni PR açıldığında PR açıklama alanını otomatik olarak doldurur. Bu sayede her PR aynı yapıda bilgi içerir, reviewer'ın beklentileri net olur ve eksik bilgi hemen fark edilir.
 
 ### 12.6.1. Template Yapısı
 

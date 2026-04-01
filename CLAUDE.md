@@ -7,7 +7,7 @@
 - Apple HIG uyumlu, design system merkezli
 
 ## Canonical Kararlar — BUNLAR AÇILAMAZ
-Bu kararlar ADR-001→ADR-012 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
+Bu kararlar ADR-001 → ADR-017 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
 Alternatifleri tartışma, sorgulatma veya bypass etme.
 
 - Web runtime: React + Vite + React Router 7.x, SPA-first (ADR-001)

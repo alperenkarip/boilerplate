@@ -482,7 +482,7 @@ Git dışında talimat dosyası tutulmaz.
 Talimat dosyası değişikliklerinin commit mesajlarında değişikliğin kapsamı belirtilmelidir.
 
 Örnekler:
-- `CLAUDE.md: canonical kararlar listesi güncellendi (ADR-012 eklendi)`
+- `CLAUDE.md: canonical kararlar listesi güncellendi (ADR-013–ADR-017 eklendi)`
 - `AGENTS.md: testing requirements bölümü eklendi`
 - `SPEC-015 eklendi: kullanıcı profil ekranı`
 - `DESIGN.md: 2026-04-01 Stitch export'u ile güncellendi`

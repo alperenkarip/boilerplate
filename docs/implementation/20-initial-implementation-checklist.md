@@ -14,7 +14,7 @@
   - `21-repo-structure-spec.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-012`
+  - `ADR-001` → `ADR-017`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `22-design-tokens-spec.md`
   - `23-component-governance-rules.md`
@@ -100,7 +100,7 @@ Aşağıdakiler sağlanmadan checklist teknik olarak başlatılamaz:
 - full consistency audit yapılmış olmalı
 - `21-repo-structure-spec.md` exact başlangıç topolojisini vermiş olmalı
 - `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` kabul edilmiş olmalı
-- `ADR-001` → `ADR-012` tek canonical karar katmanı olarak kabul edilmiş olmalı
+- `ADR-001` → `ADR-017` tek canonical karar katmanı olarak kabul edilmiş olmalı
 
 Bu önkoşullar yoksa checklist kullanımı erkendir.
 

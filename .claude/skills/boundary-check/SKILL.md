@@ -27,7 +27,7 @@ allowed-tools:
 1. **Boundary contract'ı oku:** `docs/governance/45-boilerplate-project-boundary-contract.md`
 
 2. **Zorunlu miras kontrolleri:**
-   - Canonical stack dışı dependency: `package.json`'da ADR-001→012 ile çelişen paket var mı?
+   - Canonical stack dışı dependency: `package.json`'da ADR-001→ADR-017 ile çelişen paket var mı?
    - A11y seviyesi AA altına düşürülmüş mü?
    - Security baseline gevşetilmiş mi?
 

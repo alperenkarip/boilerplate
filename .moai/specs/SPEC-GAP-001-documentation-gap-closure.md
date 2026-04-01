@@ -80,7 +80,7 @@ Bu SPEC, 2026 internet araştırması ve mevcut doküman seti karşılaştırmas
 
 ## 3. Uyumluluk Kısıtları
 
-1. Mevcut canonical stack kararları (ADR-001→ADR-012) korunacak, çelişilmeyecek
+1. Mevcut canonical stack kararları (ADR-001 → ADR-017) korunacak, çelişilmeyecek
 2. Mevcut otorite hiyerarşisi korunacak (00 > 01 > alan standardı > ADR > governance)
 3. Yeni ADR'ler mevcut ADR'lerin üstüne geçmeyecek, onları tamamlayacak
 4. Mevcut doküman genişletmelerinde orijinal yapı ve bölüm numaraları korunacak, yeni bölümler sona eklenecek

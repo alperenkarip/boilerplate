@@ -115,7 +115,7 @@ Asagidaki tablo, her kural kaynaginin miras tipini ve override iznini tek yerde 
 
 | # | Kural Kaynagi | Miras Tipi | Override Izni | Aciklama |
 |---|---|---|---|---|
-| 1 | ADR-001 → ADR-012 (canonical stack) | Zorunlu miras | Override yasak, sadece ADR revision ile | Teknoloji secimi, mimari omurga, testing/styling/state/data/auth/i18n/navigation kararlari degistirilemez |
+| 1 | ADR-001 → ADR-017 (canonical stack) | Zorunlu miras | Override yasak, sadece ADR revision ile | Teknoloji secimi, mimari omurga, testing/styling/state/data/auth/i18n/navigation kararlari degistirilemez |
 | 2 | `37-dependency-policy.md` | Zorunlu miras | Ek kural eklenebilir, base kaldirilamaz | Proje-ozel dependency kural ekleyebilir (ornegin "X kategorisinde sadece Y kullanilir") ama base policy gevsetilemez |
 | 3 | `38-version-compatibility-matrix.md` | Zorunlu miras | Extend edilebilir, base kaldirilamaz | Proje ek satir ekleyebilir (proje-ozel dependency icin), ama boilerplate'in base satir ve bantlari degistirilemez |
 | 4 | `22-design-tokens-spec.md` (token hiyerarsisi) | Yapisal miras | Token degerleri proje-ozel, hiyerarsi sabit | raw -> semantic -> component katman yapisi degistirilemez. Naming convention degistirilemez. Degerler (renkler, spacing, radius vb.) proje-ozel |

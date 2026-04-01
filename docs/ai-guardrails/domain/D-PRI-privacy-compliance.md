@@ -77,6 +77,6 @@ son-güncelleme: 2026-04-01
 - Şifrelenmemiş PII gönderimi → şifreleme ekle veya gönderimi kaldır
 
 ## Kaynak
-- Privacy kararı → docs/adr/ADR-017-privacy-compliance-strategy.md
+- Privacy kararı → docs/adr/ADR-017-privacy-and-data-protection-framework.md
 - Security baseline → docs/quality/27-security-and-secrets-baseline.md
 - Observability → docs/quality/28-observability-and-debugging.md

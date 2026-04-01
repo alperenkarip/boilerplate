@@ -140,7 +140,7 @@ Bir çelişki olduğunda belgeler aşağıdaki sırayla yorumlanmalıdır:
 6. `18-adr-template.md`
 
 ## 5.4. Dördüncü katman — Canonical karar otoritesi
-7. `ADR-001` → `ADR-012`
+7. `ADR-001` → `ADR-017`
 8. `36-canonical-stack-decision.md` *(canonical stack index / bridge belgesi)*
 9. `37-dependency-policy.md`
 10. `38-version-compatibility-matrix.md`
@@ -170,7 +170,7 @@ Bu artık eksik yorum olur.
 
 Şu andan sonra:
 
-> **ADR-001 → ADR-012 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` canonical technical decision layer olarak yorumlanmalıdır.**
+> **ADR-001 → ADR-017 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` canonical technical decision layer olarak yorumlanmalıdır.**
 
 Bu ne demektir?
 

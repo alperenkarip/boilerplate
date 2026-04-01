@@ -2,27 +2,43 @@
 # Referans: 31-audit-checklist.md, 37-dependency-policy.md, 38-version-compatibility-matrix.md
 #
 # Bu workflow haftalık çalışır ve baseline drift'i tespit eder.
+# Docs-only repoda belge/audit kontrolleri çalışır; bootstrap-ready repoda dependency ve compatibility kontrolleri de etkinleşir.
 # Derived project'te .github/workflows/scheduled-audit.yml olarak kopyalanır.
 
 name: Scheduled Audit
 
 on:
   schedule:
-    # Her Pazartesi 09:00 UTC
     - cron: '0 9 * * 1'
   workflow_dispatch:
-    # Manuel tetikleme
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '10'
 
 jobs:
-  # ────────────────────────────────────────────
-  # 1. Dependency sağlık kontrolü
-  # ────────────────────────────────────────────
+  repo-mode:
+    name: Detect Repo Mode
+    runs-on: ubuntu-latest
+    outputs:
+      bootstrap_ready: ${{ steps.detect.outputs.bootstrap_ready }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        shell: bash
+        run: |
+          if [ -f package.json ] && [ -f pnpm-lock.yaml ] && [ -f pnpm-workspace.yaml ]; then
+            echo "bootstrap_ready=true" >> "$GITHUB_OUTPUT"
+            echo "Repo mode: bootstrap-ready"
+          else
+            echo "bootstrap_ready=false" >> "$GITHUB_OUTPUT"
+            echo "Repo mode: docs-only / pre-bootstrap"
+          fi
+
   dependency-audit:
     name: Dependency Audit
+    needs: repo-mode
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,26 +49,32 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: pnpm install --frozen-lockfile
-
       - name: Güvenlik açığı taraması
         run: pnpm audit --audit-level=moderate
         continue-on-error: true
-
       - name: Kullanılmayan dependency kontrolü
+        shell: bash
         run: |
           echo "Kullanılmayan dependency kontrolü"
-          # npx depcheck (proje bootstrap sonrası etkinleştirilir)
-
+          if pnpm exec depcheck --version >/dev/null 2>&1; then
+            pnpm exec depcheck
+          else
+            echo "ℹ️ depcheck kurulu değil; derived project bootstrap sonrası etkinleştirilmelidir"
+          fi
       - name: Lisans uyumluluk kontrolü
+        shell: bash
         run: |
           echo "Lisans kontrolü"
-          # npx license-checker --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC"
+          if pnpm exec license-checker --version >/dev/null 2>&1; then
+            pnpm exec license-checker --production --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC"
+          else
+            echo "ℹ️ license-checker kurulu değil; derived project bootstrap sonrası etkinleştirilmelidir"
+          fi
 
-  # ────────────────────────────────────────────
-  # 2. Version compatibility kontrolü
-  # ────────────────────────────────────────────
   compatibility-check:
     name: Compatibility Check
+    needs: repo-mode
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,21 +85,26 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: pnpm install --frozen-lockfile
-
       - name: Node versiyon kontrolü
+        shell: bash
         run: |
           EXPECTED_NODE=$(cat .nvmrc 2>/dev/null || echo "20")
           CURRENT_NODE=$(node --version | sed 's/v//')
           echo "Beklenen: $EXPECTED_NODE, Mevcut: $CURRENT_NODE"
-
       - name: Canonical stack versiyon kontrolü
+        shell: bash
         run: |
           echo "Canonical stack versiyon baseline kontrolü"
-          # scripts/check-compatibility.ts çalıştırılır (bootstrap sonrası)
+          if [ -f scripts/check-compatibility.ts ]; then
+            pnpm exec tsx scripts/check-compatibility.ts
+          elif [ -f scripts/check-compatibility.mjs ]; then
+            node scripts/check-compatibility.mjs
+          elif [ -f scripts/check-compatibility.js ]; then
+            node scripts/check-compatibility.js
+          else
+            echo "ℹ️ compatibility check script'i henüz yok; bootstrap tamamlandığında eklenmelidir"
+          fi
 
-  # ────────────────────────────────────────────
-  # 3. Doküman freshness kontrolü
-  # ────────────────────────────────────────────
   doc-freshness:
     name: Doc Freshness
     runs-on: ubuntu-latest
@@ -85,44 +112,92 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: 6 aydan eski belge kontrolü
+        shell: bash
         run: |
           echo "=== 6 aydan eski düzenlenen belgeler ==="
           SIX_MONTHS_AGO=$(date -d '6 months ago' +%Y-%m-%d 2>/dev/null || date -v-6m +%Y-%m-%d)
-          for f in docs/*.md *.md; do
-            if [ -f "$f" ]; then
-              LAST_MODIFIED=$(git log -1 --format="%ai" -- "$f" 2>/dev/null | cut -d' ' -f1)
-              if [ -n "$LAST_MODIFIED" ] && [ "$LAST_MODIFIED" \< "$SIX_MONTHS_AGO" ]; then
-                echo "⚠️  $f — son güncelleme: $LAST_MODIFIED"
-              fi
+          find . -type f -name '*.md' -not -path './node_modules/*' -not -path './.git/*' | while read -r f; do
+            LAST_MODIFIED=$(git log -1 --format="%ai" -- "$f" 2>/dev/null | cut -d' ' -f1)
+            if [ -n "$LAST_MODIFIED" ] && [ "$LAST_MODIFIED" \< "$SIX_MONTHS_AGO" ]; then
+              echo "⚠️  $f — son güncelleme: $LAST_MODIFIED"
             fi
           done
-
-      - name: Kırık referans kontrolü
+      - name: Recursive reference integrity check
+        shell: bash
         run: |
-          echo "=== Kırık belge referansları ==="
-          for f in *.md docs/*.md; do
-            if [ -f "$f" ]; then
-              # Markdown link'lerindeki .md referanslarını kontrol et
-              grep -oP '`\K[0-9]+-[^`]+\.md' "$f" 2>/dev/null | while read ref; do
-                if [ ! -f "$ref" ] && [ ! -f "docs/$ref" ]; then
-                  echo "⚠️  $f → $ref bulunamadı"
-                fi
-              done
-            fi
-          done
+          python <<'PY'
+          from pathlib import Path
+          import re, sys
 
-  # ────────────────────────────────────────────
-  # 4. Exception süre kontrolü
-  # ────────────────────────────────────────────
+          root = Path('.').resolve()
+          md_files = [p for p in root.rglob('*.md') if '.git' not in p.parts and 'node_modules' not in p.parts]
+          all_files = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          base_map = {}
+          for rel in all_files:
+              base_map.setdefault(Path(rel).name, []).append(rel)
+
+          link_re = re.compile(r'\[[^\]]+\]\(([^)]+)\)')
+          token_re = re.compile(r'(?<![\w/.-])([A-Za-z0-9._/-]+\.md)\b')
+          allow_missing = {
+              'BOUNDARY.md', 'DESIGN.md', 'project/project-charter.md',
+              'SPEC-001.md', 'SPEC-002.md', 'SPEC-015.md',
+              'TEAM_GUIDE.md', '.agents.md', 'tokens.radius.md', 'tokens.shadow.md',
+              'docs/ai-guardrails/domain/D-XXX-alan-adi.md',
+              'docs/ai-guardrails/activity/A-XXX-aktivite-adi.md',
+              'docs/ai-guardrails/project/GP-XXX-alan-adi.md',
+              'docs/ai-guardrails/activity/A-XXX.md',
+              'docs/ai-guardrails/domain/D-XXX.md',
+              'docs/ai-guardrails/project/GP-XXX.md',
+              '/SKILL.md', './DESIGN.md', 'Stitch/DESIGN.md',
+              'product.md', 'structure.md', 'tech.md',
+          }
+
+          errors = []
+          for path in md_files:
+              text = path.read_text(encoding='utf-8', errors='ignore')
+              for target in link_re.findall(text):
+                  if '://' in target or target.startswith('#') or target.startswith('mailto:'):
+                      continue
+                  target = target.split('#')[0]
+                  if not target:
+                      continue
+                  resolved = (path.parent / target).resolve()
+                  try:
+                      rel = str(resolved.relative_to(root))
+                  except Exception:
+                      errors.append(f'{path.relative_to(root)}: repo dışına çıkan link -> {target}')
+                      continue
+                  if rel not in all_files:
+                      errors.append(f'{path.relative_to(root)}: kırık markdown link -> {target}')
+              for tok in token_re.findall(text):
+                  if tok in allow_missing or tok.startswith('http'):
+                      continue
+                  name = Path(tok).name
+                  if name not in base_map:
+                      errors.append(f'{path.relative_to(root)}: bulunamayan dosya tokeni -> {tok}')
+
+          if errors:
+              print(*sorted(set(errors)), sep='\n')
+              sys.exit(1)
+          print('Recursive reference integrity check passed')
+          PY
+
+  bootstrap-not-ready:
+    name: Bootstrap Not Ready
+    needs: repo-mode
+    if: needs.repo-mode.outputs.bootstrap_ready != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Docs-only / pre-bootstrap repo detected. Dependency and compatibility jobs intentionally skipped."
+
   exception-audit:
     name: Exception Audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Süresi dolmuş exception kontrolü
+        shell: bash
         run: |
           echo "=== Exception Audit ==="
           TODAY=$(date +%Y-%m-%d)

@@ -1,7 +1,7 @@
 # CI Pipeline — Boilerplate Quality Gates
 # Referans: 15-quality-gates-and-ci-rules.md
 #
-# Bu workflow her PR'da ve main push'ta çalışır.
+# Bu workflow hem docs-only canonical repoda hem bootstrap edilmiş derived project'te güvenli çalışır.
 # Derived project'te .github/workflows/ci.yml olarak kopyalanır.
 
 name: CI
@@ -21,26 +21,113 @@ env:
   PNPM_VERSION: '10'
 
 jobs:
-  # ────────────────────────────────────────────
-  # 1. Setup ve bağımlılık kurulumu
-  # ────────────────────────────────────────────
-  setup:
-    name: Setup
+  repo-mode:
+    name: Detect Repo Mode
+    runs-on: ubuntu-latest
+    outputs:
+      bootstrap_ready: ${{ steps.detect.outputs.bootstrap_ready }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        shell: bash
+        run: |
+          if [ -f package.json ] && [ -f pnpm-lock.yaml ] && [ -f pnpm-workspace.yaml ]; then
+            echo "bootstrap_ready=true" >> "$GITHUB_OUTPUT"
+            echo "Repo mode: bootstrap-ready"
+          else
+            echo "bootstrap_ready=false" >> "$GITHUB_OUTPUT"
+            echo "Repo mode: docs-only / pre-bootstrap"
+          fi
+
+  docs-sanity:
+    name: Docs Sanity
+    needs: repo-mode
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Recursive markdown link and filename token check
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re, sys
 
+          root = Path('.').resolve()
+          md_files = [p for p in root.rglob('*.md') if '.git' not in p.parts and 'node_modules' not in p.parts]
+          all_files = {str(p.relative_to(root)) for p in root.rglob('*') if p.is_file()}
+          base_map = {}
+          for rel in all_files:
+              base_map.setdefault(Path(rel).name, []).append(rel)
+
+          link_re = re.compile(r'\[[^\]]+\]\(([^)]+)\)')
+          token_re = re.compile(r'(?<![\w/.-])([A-Za-z0-9._/-]+\.md)\b')
+          allow_missing = {
+              'BOUNDARY.md', 'DESIGN.md', 'project/project-charter.md',
+              'SPEC-001.md', 'SPEC-002.md', 'SPEC-015.md',
+              'TEAM_GUIDE.md', '.agents.md', 'tokens.radius.md', 'tokens.shadow.md',
+              'docs/ai-guardrails/domain/D-XXX-alan-adi.md',
+              'docs/ai-guardrails/activity/A-XXX-aktivite-adi.md',
+              'docs/ai-guardrails/project/GP-XXX-alan-adi.md',
+              'docs/ai-guardrails/activity/A-XXX.md',
+              'docs/ai-guardrails/domain/D-XXX.md',
+              'docs/ai-guardrails/project/GP-XXX.md',
+              '/SKILL.md', './DESIGN.md', 'Stitch/DESIGN.md',
+              'product.md', 'structure.md', 'tech.md',
+          }
+
+          errors = []
+          for path in md_files:
+              text = path.read_text(encoding='utf-8', errors='ignore')
+              for target in link_re.findall(text):
+                  if '://' in target or target.startswith('#') or target.startswith('mailto:'):
+                      continue
+                  target = target.split('#')[0]
+                  if not target:
+                      continue
+                  resolved = (path.parent / target).resolve()
+                  try:
+                      rel = str(resolved.relative_to(root))
+                  except Exception:
+                      errors.append(f'{path.relative_to(root)}: repo dışına çıkan link -> {target}')
+                      continue
+                  if rel not in all_files:
+                      errors.append(f'{path.relative_to(root)}: kırık markdown link -> {target}')
+              for tok in token_re.findall(text):
+                  if tok in allow_missing or tok.startswith('http'):
+                      continue
+                  name = Path(tok).name
+                  if name not in base_map:
+                      errors.append(f'{path.relative_to(root)}: bulunamayan dosya tokeni -> {tok}')
+
+          if errors:
+              print(*sorted(set(errors)), sep='\n')
+              sys.exit(1)
+          print('Docs sanity check passed')
+          PY
+
+  repo-not-bootstrapped:
+    name: Repo Not Bootstrapped
+    needs: repo-mode
+    if: needs.repo-mode.outputs.bootstrap_ready != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Docs-only / pre-bootstrap repo detected. Code quality jobs intentionally skipped."
+
+  setup:
+    name: Setup
+    needs: repo-mode
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-
       - run: pnpm install --frozen-lockfile
-
       - uses: actions/cache/save@v4
         with:
           path: |
@@ -48,12 +135,10 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-  # ────────────────────────────────────────────
-  # 2. TypeScript type check — BLOCKER
-  # ────────────────────────────────────────────
   typecheck:
     name: TypeCheck
-    needs: setup
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,14 +155,11 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm typecheck
-        # Severity: BLOCKER — typecheck hataları merge'i engeller
 
-  # ────────────────────────────────────────────
-  # 3. Lint — BLOCKER
-  # ────────────────────────────────────────────
   lint:
     name: Lint
-    needs: setup
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -94,14 +176,11 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm lint
-        # Token tüketim, boundary enforcement, a11y lint dahil
 
-  # ────────────────────────────────────────────
-  # 4. Unit ve integration testleri — BLOCKER
-  # ────────────────────────────────────────────
   test:
     name: Test
-    needs: setup
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -118,14 +197,11 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm test
-        # Vitest (web) + Jest (mobile) — affected packages only
 
-  # ────────────────────────────────────────────
-  # 5. Build sanity — BLOCKER
-  # ────────────────────────────────────────────
   build:
     name: Build
-    needs: [typecheck, lint, test]
+    needs: [repo-mode, typecheck, lint, test]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,14 +218,11 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm build
-        # Tüm workspace package'ları ve app'ler build edilir
 
-  # ────────────────────────────────────────────
-  # 6. Boundary check — MAJOR
-  # ────────────────────────────────────────────
   boundary:
     name: Boundary Check
-    needs: setup
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -166,10 +239,10 @@ jobs:
             **/node_modules
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Import direction validation
+        shell: bash
         run: |
-          # packages/ → apps/ yönünde import olmamalı
           echo "=== Boundary Check: packages/ → apps/ import taraması ==="
-          VIOLATIONS=$(grep -r "from ['\"].*apps/" packages/ --include="*.ts" --include="*.tsx" 2>/dev/null || true)
+          VIOLATIONS=$(grep -r "from ['"].*apps/" packages/ --include="*.ts" --include="*.tsx" 2>/dev/null || true)
           if [ -n "$VIOLATIONS" ]; then
             echo "❌ BOUNDARY İHLALİ: packages/ → apps/ yönünde import tespit edildi:"
             echo "$VIOLATIONS"
@@ -177,12 +250,10 @@ jobs:
           fi
           echo "✅ Boundary check geçti — ihlal yok"
 
-  # ────────────────────────────────────────────
-  # 7. Security scan — BLOCKER
-  # ────────────────────────────────────────────
   security:
     name: Security Scan
-    needs: setup
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -200,11 +271,11 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Dependency security audit
         run: pnpm audit --audit-level=high
-        continue-on-error: false
       - name: Secret leak detection
+        shell: bash
         run: |
           echo "=== Secret Leak Taraması ==="
-          LEAKS=$(grep -r -E "(api_key|apikey|secret_key|password|token)\s*[:=]\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.tsx" --include="*.js" apps/ packages/ 2>/dev/null || true)
+          LEAKS=$(grep -r -E "(api_key|apikey|secret_key|password|token)\s*[:=]\s*['"][^'"]{8,}" --include="*.ts" --include="*.tsx" --include="*.js" apps/ packages/ 2>/dev/null || true)
           if [ -n "$LEAKS" ]; then
             echo "❌ OLASI SECRET LEAK TESPİT EDİLDİ:"
             echo "$LEAKS"

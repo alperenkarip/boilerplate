@@ -73,5 +73,5 @@ son-güncelleme: 2026-04-01
 - PII ödeme loglarında → maskeleme/filtreleme ekle
 
 ## Kaynak
-- Payment kararı → docs/adr/ADR-016-payment-subscription-strategy.md
+- Payment kararı → docs/adr/ADR-016-in-app-purchase-and-subscription.md
 - Security baseline → docs/quality/27-security-and-secrets-baseline.md

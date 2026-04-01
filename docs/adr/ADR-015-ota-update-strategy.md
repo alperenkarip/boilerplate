@@ -12,7 +12,7 @@
   - `ADR-002-mobile-runtime-and-native-strategy.md`
   - `ADR-009-observability-stack.md`
   - `29-release-and-versioning-rules.md`
-  - `15-quality-gates.md`
+  - `15-quality-gates-and-ci-rules.md`
   - `36-canonical-stack-decision.md`
 - **Etkilediği belgeler:**
   - `20-initial-implementation-checklist.md`

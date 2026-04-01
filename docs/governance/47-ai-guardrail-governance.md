@@ -105,7 +105,7 @@ Her kod üretiminde, her iş türünde, her zaman aktif olan kurallar. Bu kurall
 - i18n: inline user-facing string yasak, i18n key kullan
 - Security baseline: secret, credential, hassas veri kuralları
 - Naming convention: PascalCase component, camelCase değişken, dosya adı eşleşmesi
-- Canonical stack kararlarına uyum: ADR-001 → ADR-012 tartışmaya kapalı
+- Canonical stack kararlarına uyum: ADR-001 → ADR-017 tartışmaya kapalı
 
 ## 4.2. Katman 2 — Domain Guardrail'ler
 

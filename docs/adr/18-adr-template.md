@@ -14,7 +14,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - mevcut ADR seti (`ADR-001` → `ADR-012`)
+  - mevcut ADR seti (`ADR-001` → `ADR-017`)
 
 ---
 

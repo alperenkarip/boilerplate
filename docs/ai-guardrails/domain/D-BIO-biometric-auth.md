@@ -69,5 +69,5 @@ son-güncelleme: 2026-04-01
 - Prompt lokalize değil → i18n key kullan
 
 ## Kaynak
-- Auth kararı → docs/adr/ADR-010-auth-session-and-secure-store-baseline.md
+- Auth kararı → docs/adr/ADR-010-auth-session-and-secure-storage-baseline.md
 - Security baseline → docs/quality/27-security-and-secrets-baseline.md

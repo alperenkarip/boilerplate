@@ -65,7 +65,7 @@ Otorite sırası yukarıdan aşağıya:
 
 ```
 Katman 1: Boilerplate doküman seti (00–39)
-Katman 2: ADR kararları (ADR-001 → ADR-012) + canonical governance karar belgeleri (`36-canonical-stack-decision.md`, `37-dependency-policy.md`, `38-version-compatibility-matrix.md`)
+Katman 2: ADR kararları (ADR-001 → ADR-017) + canonical governance karar belgeleri (`36-canonical-stack-decision.md`, `37-dependency-policy.md`, `38-version-compatibility-matrix.md`)
 Katman 3: Talimat dosyaları (CLAUDE.md, AGENTS.md, .moai/config/, DESIGN.md)
 Katman 4: AI aracının runtime davranışı
 ```
@@ -116,7 +116,7 @@ Bu projede dört AI aracı kullanılır. Her aracın net bir rolü, talimat sist
 **Bu boilerplate için rolü:** Ana geliştirme motoru. Tüm diğer araçların çıktısını koda dönüştüren merkezi ajan. Feature geliştirme, bug fix, refactoring, component üretimi, doküman güncelleme — tüm kodlama işleri Claude Code üzerinden yürür.
 
 **Sınırları:**
-- Canonical kararları (ADR-001 → ADR-012) sorgulamaz; yalnızca uygular.
+- Canonical kararları (ADR-001 → ADR-017) sorgulamaz; yalnızca uygular.
 - Çıktısı review ve test geçmeden merge edilmez.
 - `.env`, credential ve secret dosyalarını okumaz (`.claudeignore` ile zorunlu kılınır).
 
@@ -497,7 +497,7 @@ Her talimat dosyası yalnızca kendi aracını yönlendirir. Bir aracın talimat
 
 ## 8.2. Tutarlılık Kuralı
 
-Tüm talimat dosyaları canonical karar katmanını (ADR-001 → ADR-012 + 36/37/38 canonical governance belgeleri) aynı biçimde yansıtmak zorundadır.
+Tüm talimat dosyaları canonical karar katmanını (ADR-001 → ADR-017 + 36/37/38 canonical governance belgeleri) aynı biçimde yansıtmak zorundadır.
 
 Örnek: ADR-007 Tailwind CSS 4.x kararı varsa:
 - CLAUDE.md'de styling yönlendirmesi Tailwind CSS 4.x referansı içermelidir.
@@ -833,7 +833,7 @@ Aşağıdaki davranışlar bu projede zayıf kabul edilir ve düzeltilmesi bekle
 ## 16.5. AI Aracına Canonical Kararları Sorgulatmak
 
 **Yanlış:** "Bu projede Zustand yerine Redux kullanmalıyız, değiştirelim mi?" diye AI aracına sormak.
-**Doğrusu:** Canonical kararlar (ADR-001 → ADR-012) sabittir. Değiştirilecekse ADR süreci izlenir (`17-technology-decision-framework.md`). AI aracı bu kararları uygular, sorgulamaz.
+**Doğrusu:** Canonical kararlar (ADR-001 → ADR-017) sabittir. Değiştirilecekse ADR süreci izlenir (`17-technology-decision-framework.md`). AI aracı bu kararları uygular, sorgulamaz.
 
 ## 16.6. Talimat Dosyalarını Git Dışında Tutmak
 
@@ -895,7 +895,7 @@ Bu dokümanın kabul edilmiş sayılması için aşağıdaki koşullar sağlanma
 ## 18.1. Araç Envanteri Doğrulaması
 
 - [ ] Dört AI aracının (Claude Code, MoAI-ADK, Codex CLI, Google Stitch) rolleri, sınırları ve talimat dosyaları tanımlıdır.
-- [ ] Her aracın canonical stack (ADR-001 → ADR-012) ile uyumu doğrulanmıştır.
+- [ ] Her aracın canonical technical decision layer (ADR-001 → ADR-017) ile uyumu doğrulanmıştır.
 
 ## 18.2. Etkileşim Modeli Doğrulaması
 
