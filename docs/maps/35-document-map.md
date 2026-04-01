@@ -105,7 +105,7 @@ Bu belge haritası yalnızca boilerplate seviyesindeki dökümanları kapsar. Bo
 - **`docs/`** → boilerplate standartları, kuralları, ADR'leri, audit ve governance belgeleri. Otorite kaynağı boilerplate'tir.
 - **`project/`** → projeye özel kapsam, gereksinimler, spec'ler, kararlar. Otorite kaynağı proje ekibidir.
 
-`project/` dizininin iç yapısı, dosya isimlendirmesi ve organizasyonu tamamen projeye bırakılır. Boilerplate bu dizinin içeriğine kural koymaz. Proje dökümanları boilerplate kararlarını referans alabilir ama canonical karar katmanını (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
+`project/` dizini proje ekibinin otoritesindedir; ancak boilerplate burada **minimum birlikte çalışabilirlik sözleşmesi** tanımlar. Özellikle `project/adr/` altında proje ADR'leri için yer açılması, gerekirse `project/project-charter.md` kullanılması ve root seviyesinde `BOUNDARY.md` ile boilerplate sınır manifestinin görünür tutulması önerilen default sözleşmedir. Bu, proje alanının tamamını boilerplate'e bağlamak anlamına gelmez; yalnızca boilerplate–derived project etkileşim noktalarını standartlaştırır. Proje dökümanları canonical karar katmanını (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
 
 ---
 
@@ -126,7 +126,7 @@ Bir çelişki olduğunda belgeler aşağıdaki sırayla yorumlanmalıdır:
 6. `18-adr-template.md`
 
 ## 5.4. Dördüncü katman — Canonical karar otoritesi
-7. `ADR-001` → `ADR-011`
+7. `ADR-001` → `ADR-012`
 8. `36-canonical-stack-decision.md` *(canonical stack index / bridge belgesi)*
 9. `37-dependency-policy.md`
 10. `38-version-compatibility-matrix.md`
@@ -228,15 +228,16 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 28. `ADR-009`
 29. `ADR-010`
 30. `ADR-011`
-31. `36-canonical-stack-decision.md`
-32. `37-dependency-policy.md`
-33. `38-version-compatibility-matrix.md`
+31. `ADR-012`
+32. `36-canonical-stack-decision.md`
+33. `37-dependency-policy.md`
+34. `38-version-compatibility-matrix.md`
 
 ## 8.6. Uygulama geçiş belgeleri
-34. `19-roadmap-to-implementation.md`
-35. `20-initial-implementation-checklist.md`
-36. `21-repo-structure-spec.md`
-37. `39-default-screens-and-components-spec.md`
+35. `19-roadmap-to-implementation.md`
+36. `20-initial-implementation-checklist.md`
+37. `21-repo-structure-spec.md`
+38. `39-default-screens-and-components-spec.md`
 
 ## 8.7. Derin uygulama standartları
 37. `22-design-tokens-spec.md`
@@ -289,7 +290,7 @@ Aşağıdaki belgeler repo bootstrap öncesi bloklayıcı kabul edilmelidir:
 - `16-tooling-and-governance.md`
 - `17-technology-decision-framework.md`
 - `18-adr-template.md`
-- `ADR-001` → `ADR-011`
+- `ADR-001` → `ADR-012`
 - `36-canonical-stack-decision.md` *(canonical stack index / bridge)*
 - `37-dependency-policy.md`
 - `38-version-compatibility-matrix.md`
@@ -369,6 +370,7 @@ Oku:
 ## 10.6. i18n / copy / locale işi yapacağım
 Oku:
 - `ADR-011`
+- `ADR-012` (navigation title, tab label, locale-aware route metadata etkisi varsa)
 - `11-forms-inputs-and-validation.md` (form copy etkisi varsa)
 - `12-accessibility-standard.md`
 - `23-component-governance-rules.md`
@@ -444,7 +446,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `18`
 
 ## 11.5. Canonical technical decision layer
-- `ADR-001` → `ADR-011`
+- `ADR-001` → `ADR-012`
 - `36`
 - `37`
 - `38`
@@ -475,7 +477,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `42`
 
 Bu zincir operasyonel kalite zinciriyle (11.7) aynı katmandadır.
-Talimat dosyaları (CLAUDE.md, AGENTS.md, DESIGN.md, `.moai/config/`) bu dokümanların çıktılarıdır ve hiçbir boilerplate dokümanını geçersiz kılamaz.
+Talimat dosyaları (CLAUDE.md, AGENTS.md, DESIGN.md, `.moai/config/`) bu dokümanların çıktılarıdır ve hiçbir boilerplate dokümanını geçersiz kılamaz. Bu adların bir kısmı bu arşivde fiziksel dosya olarak yer almayabilir; generated veya derived-project artifact olarak beklenir.
 
 ---
 
@@ -602,4 +604,4 @@ Bu düzeltmeler sonrası belge seti, bootstrap-ready olarak kabul edilebilir.
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate’te dokümantasyon seti artık yalnızca standart ve checklist yığını değildir. `ADR-001` → `ADR-011` ile `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` birlikte canonical technical decision layer’ı oluşturur; roadmap, checklist ve repo structure bu katmanı uygular; audit ve DoD belgeleri ise bu uygulamanın gerçekten doğru yapıldığını denetler. Document map, bu katmanlar arasındaki otorite ve okuma sırasını görünür kılan resmi navigasyon belgesidir.
+> Bu boilerplate’te dokümantasyon seti artık yalnızca standart ve checklist yığını değildir. `ADR-001` → `ADR-012` ile `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` birlikte canonical technical decision layer’ı oluşturur; roadmap, checklist ve repo structure bu katmanı uygular; audit ve DoD belgeleri ise bu uygulamanın gerçekten doğru yapıldığını denetler. Document map, bu katmanlar arasındaki otorite ve okuma sırasını görünür kılan resmi navigasyon belgesidir.

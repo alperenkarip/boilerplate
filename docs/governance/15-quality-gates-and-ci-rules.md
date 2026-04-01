@@ -176,6 +176,8 @@ Tüm CI workflow dosyaları `.github/workflows/` dizini altında yaşar. Her wor
 
 Her workflow tek bir YAML dosyasında, sorumluluğu net şekilde tanımlanmış olarak yaşar. Monolitik tek workflow dosyası kullanılmaz.
 
+> **Not:** Bu bölüm target workflow topology'sini tanımlar. Bu doküman arşivinde yalnızca örnek/başlangıç workflow'larının bir kısmı bulunabilir; `deploy-web.yml` ve `deploy-mobile.yml` gibi dosyalar derived project bootstrap veya sonraki operasyonel fazda eklenir.
+
 ## 6.1.4. Runner Stratejisi
 
 - **Varsayılan runner:** GitHub-hosted Linux runner (`ubuntu-latest`). Tüm lint, typecheck, test, web build ve genel CI job'ları Linux runner üzerinde çalışır. Linux runner en ucuz ve en hızlı seçenektir.

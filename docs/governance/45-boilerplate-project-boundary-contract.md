@@ -145,20 +145,21 @@ Derived project ADR'leri su dizin yapisinda tutulur:
 ```
 project-root/
   docs/
-    adr/
+    adr/                # boilerplate ADR'leri (read-only reference set)
+      ADR-001-*.md
+      ADR-002-*.md
+      ...
+  project/
+    adr/                # proje-özel ADR'ler
       PROJECT-ADR-001-*.md
       PROJECT-ADR-002-*.md
       ...
-  boilerplate/         # boilerplate referans ADR'leri (read-only)
-    ADR-001-*.md
-    ADR-002-*.md
-    ...
 ```
 
 **Kurallar:**
 
 - Proje ADR'leri `PROJECT-ADR-` on ekiyle baslar. Boilerplate ADR'leri ile numara catismasi onlenir.
-- Boilerplate ADR dosyalari derived project icerisinde read-only olarak tutulur. Degisiklik yapilmaz.
+- Boilerplate ADR dosyalari `docs/adr/` altinda read-only olarak tutulur. Degisiklik yapilmaz.
 - Her proje ADR'si, boilerplate ADR'leri ile catismazlik beyanini icerir.
 
 ## 5.3. Catismazlik Kurali
@@ -318,7 +319,7 @@ Derived project icerisinde boundary contract'in gorunur olmasi icin su yapisal g
 
 ## 9.1. Boundary Manifest Dosyasi
 
-Her derived project root dizininde bir `BOUNDARY.md` dosyasi bulundurur:
+Her derived project root dizininde bir `BOUNDARY.md` dosyasi bulundurur. Bu dosya boilerplate doküman arşivinin parçası değil, türetilen projenin bootstrap çıktısıdır:
 
 ```markdown
 # Boundary Contract Manifest

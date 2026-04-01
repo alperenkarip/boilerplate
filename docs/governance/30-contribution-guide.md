@@ -21,7 +21,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-011`
+  - `ADR-001` → `ADR-012`
 - **Doğrudan etkileyeceği belgeler:**
   - `31-audit-checklist.md`
   - `32-definition-of-done.md`

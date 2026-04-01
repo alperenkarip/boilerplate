@@ -87,7 +87,7 @@ Hiçbir AI aracının runtime kararı talimat dosyasını geçersiz kılamaz.
 
 ## 3.3. DESIGN.md Statüsü
 
-DESIGN.md, `22-design-tokens-spec.md`'nin türevidir, alternatifi değildir. Stitch'in ürettiği DESIGN.md dosyası yalnızca 22'deki token tanımlarını yansıtmalıdır. İki dosya arasında uyumsuzluk tespit edilirse 22 kazanır ve DESIGN.md Stitch'te yeniden export edilir.
+DESIGN.md, `22-design-tokens-spec.md`'nin türevidir, alternatifi değildir. Stitch'in ürettiği DESIGN.md dosyası yalnızca 22'deki token tanımlarını yansıtmalıdır. İki dosya arasında uyumsuzluk tespit edilirse 22 kazanır ve DESIGN.md Stitch'te yeniden export edilir. DESIGN.md bu arşivin zorunlu fiziksel parçası değildir; Stitch pipeline'ı kullanılan derived project'lerde oluşan veya güncellenen çıktı olarak değerlendirilir.
 
 ---
 

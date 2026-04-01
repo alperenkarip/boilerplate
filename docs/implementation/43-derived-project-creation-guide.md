@@ -164,7 +164,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 3. Override gereksinimlerin varsa Bolum 7'deki sureci baslat ve `44-exception-and-exemption-policy.md` ile uyumlu sekilde belgele.
 
-4. Root dizinde `BOUNDARY.md` dosyasini olustur. Bu dosya boilerplate surumunu, aktif override'lari, proje-ozel eklemeleri ve son audit tarihini icerir. Ornek format icin `45-boilerplate-project-boundary-contract.md` Bolum 9.1'e bak.
+4. Root dizinde `BOUNDARY.md` dosyasini olustur. Bu dosya boilerplate surumunu, aktif override'lari, proje-ozel eklemeleri ve son audit tarihini icerir. `BOUNDARY.md` bu rehberin hedef cikti dosyasidir; bu arşivde hazır gelmesi beklenmez. Ornek format icin `45-boilerplate-project-boundary-contract.md` Bolum 9.1'e bak.
 
 **Dogrulama:**
 - [ ] Boundary contract okundu ve zorunlu miras kurallari kabul edildi
@@ -245,7 +245,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 1. `project/` ve `project/adr/` dizinlerini olustur. ADR naming convention: `PROJECT-ADR-001-<karar-adi>.md`
 2. ADR sablonu olarak `18-adr-template.md` kullanilir. Ek alanlar: boilerplate ADR catisma kontrolu, miras tipi etkisi, override talebi gerekli mi.
 3. Proje charter'i yaz (opsiyonel): `project/project-charter.md` — amac, kapsam, hedef kitle, basari kriterleri.
-4. Docs dizinini organize et: `docs/adr/` (boilerplate ADR'leri, read-only), `docs/onboarding/` (yeni gelistirici rehberleri).
+4. Docs dizinini organize et: `docs/adr/` (boilerplate ADR'leri, read-only), `docs/onboarding/` (yeni gelistirici rehberleri). `project/` altindaki adlar bu türetilen proje icin olusturulur; boilerplate doküman arşivinde fiziksel olarak bulunmak zorunda degildir.
 
 **Dogrulama:**
 - [ ] `project/adr/` dizini mevcut ve naming convention belirli

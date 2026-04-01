@@ -14,7 +14,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - mevcut ADR seti (`ADR-001` → `ADR-011`)
+  - mevcut ADR seti (`ADR-001` → `ADR-012`)
 
 ---
 
@@ -292,6 +292,7 @@ Bu repo içinde şu belgeler referans örnek olarak okunabilir:
 - `ADR-009-observability-stack.md`
 - `ADR-010-auth-session-and-secure-storage-baseline.md`
 - `ADR-011-internationalization-baseline.md`
+- `ADR-012-navigation-baseline.md`
 
 ---
 

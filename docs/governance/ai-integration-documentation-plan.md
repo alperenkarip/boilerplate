@@ -412,6 +412,8 @@ Canonical root topology'ye (bölüm 4) eklenmesi gereken AI dizinleri:
 
 **Gerekçe:** `moai init` komutu `.moai/` ve `.claude/` dizinlerini otomatik oluşturur. Bu dizinlerin canonical root topology'de yer alması, repo bootstrap sırasında çakışma riskini önler. DESIGN.md ise Stitch pipeline'ının doğal çıktısıdır ve proje kökünde yaşar.
 
+**Not:** Bu bölüm target topology'yi tarif eder. `DESIGN.md`, `.moai/specs/*` ve benzeri dosyaların bu doküman arşivinde fiziksel olarak bulunması beklenmez; derived project bootstrap ve araç çalıştırma sürecinde üretilirler.
+
 **Placement kuralı eklemesi:**
 - `.moai/specs/` → SPEC dokümanları buraya yazılır, başka yere dağıtılmaz
 - `DESIGN.md` → Stitch'ten export edilir, elle düzenlenmez; değişiklik Stitch'te yapılır

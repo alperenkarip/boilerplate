@@ -140,6 +140,8 @@ Bu repo için canonical root topolojisi aşağıdaki ana ailelerden oluşur:
 
 Bu üst aileler başlangıç için default kabul edilir.
 
+> **Not:** Yukarıdaki ağaç, target repo topology'sini gösterir. `DESIGN.md`, `BOUNDARY.md`, `.moai/specs/*`, `deploy-web.yml`, `deploy-mobile.yml` ve benzeri adların tamamının bu doküman arşivinin içinde fiziksel olarak bulunması beklenmez; bir kısmı generated artifact, bir kısmı ise derived project bootstrap çıktısıdır.
+
 ### AI Dizin Placement Kuralları
 
 - `.moai/` → `moai init` tarafından üretilir. Bootstrap sırasında boilerplate konfigürasyonuyla merge edilmeli (40-ai-workflow-and-tooling.md bölüm 13).
@@ -166,7 +168,7 @@ Gerçek shared ve sınırı anlamlı package’ler.
 Yaşayan karar, standart ve audit sistemi. Yalnızca boilerplate seviyesindeki belgeleri barındırır.
 
 ## 5.4. `project/`
-Projeye ait dökümanlar. Bu dizin boilerplate'ten türetilen her projenin kendi kapsamına, gereksinimlerine ve kararlarına aittir. `docs/` ile `project/` arasındaki ayrım kesindir: `docs/` boilerplate standart ve kurallarını taşır, `project/` projenin kendine ait dökümanlarını taşır. İç yapısı, dosya isimlendirmesi ve organizasyonu tamamen projeye bırakılır — boilerplate bu dizinin içeriğine kural koymaz.
+Projeye ait dökümanlar. Bu dizin boilerplate'ten türetilen her projenin kendi kapsamına, gereksinimlerine ve kararlarına aittir. `docs/` ile `project/` arasındaki ayrım kesindir: `docs/` boilerplate standart ve kurallarını taşır, `project/` projenin kendine ait dökümanlarını taşır. İç yapının büyük bölümü proje ekibine bırakılır; ancak boilerplate minimum birlikte çalışabilirlik sözleşmesi koyar: proje ADR'leri için `project/adr/` yolu, gerekirse `project/project-charter.md` ve root seviyesinde `BOUNDARY.md` bu sözleşmenin parçasıdır.
 
 ## 5.5. `tooling/`
 Custom lint, HIG enforcement, codemod ve governance destek araçları.

@@ -15,7 +15,7 @@
   - `17-technology-decision-framework.md`
   - `21-repo-structure-spec.md`
   - `36-canonical-stack-decision.md`
-  - `ADR-001` → `ADR-011`
+  - `ADR-001` → `ADR-012`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `19-roadmap-to-implementation.md`
   - `20-initial-implementation-checklist.md`
