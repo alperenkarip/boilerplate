@@ -1068,8 +1068,82 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 41. Kısa Sonuç
+# 41. AI Guardrail CI Gate
+
+AI araçlarının ürettiği kodun guardrail uyumu, kalite kapısı sistemine entegre edilmiştir (`47-ai-guardrail-governance.md`).
+
+## 41.1. CI'da Denetlenecek Guardrail Alanları
+
+| Alan | Kontrol | Severity |
+|---|---|---|
+| Universal guardrail ihlalleri | Hardcoded değer, any type, import yönü | Blocker/Major |
+| Canonical stack uyumu | Stack dışı dependency | Blocker |
+| A11y minimum | WCAG AA uyumu | Blocker |
+| Security baseline | Secret exposure, güvensiz token saklama | Blocker |
+| Test coverage | Yeni modül için test varlığı | Major |
+| Boundary uyumu | Modül sınırı, dosya organizasyonu | Blocker |
+
+## 41.2. Kural
+
+Mevcut CI gate'lerine (typecheck, lint, test, build, security) ek olarak guardrail uyumu da merge öncesi kalite kapısıdır. Guardrail ihlali blocker seviyesinde ise PR merge edilmez.
+
+Guardrail CI kontrolü, Codex review ile tamamlanır (`40-ai-workflow-and-tooling.md` §6.2).
+
+---
+
+# 42. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate kapsamında quality gate sistemi, type safety, lint/static kalite, boundary disiplini, test güveni, build sanity, security hijyeni ve selected a11y/HIG kurallarını resmi merge ve release kapılarına bağlayan; baseline ve exception’ları görünür yöneten; hız ile kaliteyi katmanlı CI mantığıyla dengeleyen operasyonel kalite omurgasıdır.
+
+---
+
+# 43. Build Otomasyonu ve Store Deployment (2026-04-01 Eki)
+
+Bu bölüm, EAS Build konfigürasyonunu, Fastlane entegrasyonunu, code signing yönetimini, CI/CD workflow şablonlarını, preview deployment sürecini ve store metadata otomasyon kurallarını tanımlar.
+
+## 43.1. EAS Build Konfigürasyonu
+
+- Build profilleri üç katmanda tanımlanmalıdır:
+  - **Development:** Debug mode aktif, dev client kullanılır. Geliştirici cihazlarında hızlı iterasyon sağlar.
+  - **Preview:** Internal distribution için üretilir. QA ve test grubu tarafından kullanılır.
+  - **Production:** Store-ready build. Optimizasyon ve code signing uygulanmış haliyle üretilir.
+- `eas.json` konfigürasyon dosyası repo’da tutulmalıdır; her profil için platform-spesifik ayarlar açıkça tanımlanmalıdır.
+
+## 43.2. Fastlane Entegrasyonu
+
+- **iOS:**
+  - `match`: Code signing (provisioning profile ve certificate) merkezi yönetimi.
+  - `pilot`: TestFlight’a otomatik yükleme.
+  - `deliver`: App Store’a metadata ve build submission.
+- **Android:**
+  - `supply`: Google Play Store’a build ve metadata yükleme.
+  - `screengrab`: Screenshot otomasyonu.
+- Fastlane ve EAS birlikte kullanılabilir: EAS build üretimi, Fastlane delivery ve metadata yönetimi.
+
+## 43.3. Code Signing Yönetimi
+
+- **iOS:** Provisioning profiles ve certificates Fastlane match ile merkezi olarak yönetilmelidir. Tüm ekip aynı signing identity’yi kullanmalıdır.
+- **Android:** Keystore güvenli saklanmalıdır. CI ortamında secret olarak, EAS kullanılıyorsa EAS credential service üzerinden yönetilmelidir.
+- Signing key rotation planı tanımlanmalıdır; sertifika süreleri takip edilmelidir.
+- **YASAK:** Keystore, provisioning profile, `.p12`, `.mobileprovision` veya signing ile ilgili herhangi bir dosyanın repo’ya commit edilmesi yasaktır.
+
+## 43.4. CI/CD Workflow Şablonları
+
+- **PR açıldığında:** lint + typecheck + test + build check çalışmalıdır. Tümü geçmedikçe merge engellenir.
+- **Main merge:** Preview build üretilir ve internal test grubuna dağıtılır.
+- **Release tag:** Production build üretilir ve store submission başlatılır.
+- **OTA update:** EAS Update publish komutuyla yayınlanır (ADR-015 ile uyumlu).
+
+## 43.5. Preview Deployment
+
+- PR bazlı preview build üretilmelidir (EAS Update preview channel kullanılarak).
+- QA ekibi için internal distribution sağlanmalıdır.
+- Preview URL veya QR code otomatik olarak PR comment’e eklenmelidir; reviewer’ın build’i kolayca test edebilmesi sağlanmalıdır.
+
+## 43.6. Screenshot ve Metadata Otomasyonu
+
+- Fastlane `screengrab` (Android) ve `snapshot` (iOS) ile otomatik screenshot üretilmelidir.
+- Store metadata (başlık, açıklama, anahtar kelimeler, screenshot’lar) versiyon kontrolünde tutulmalıdır.
+- Çoklu dil desteği: i18n altyapısı ile uyumlu store listing sağlanmalıdır (ADR-011 referansı). Her desteklenen dil için ayrı metadata dosyası bulunmalıdır.

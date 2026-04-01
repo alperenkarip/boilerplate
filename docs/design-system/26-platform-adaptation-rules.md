@@ -1591,3 +1591,192 @@ Bu doküman yeterli kabul edilir eğer:
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate kapsamında platform adaptation, web ve mobile iki ayrı ürün gibi davranmak da değildir, her şeyi kör kopya yapmak da değildir; ürünün temel görev mantığını, kalite standardını ve tasarım dilini korurken platform ergonomisine saygılı, sınırlı ve gerekçeli farklılaşmalar yapma disiplinidir. Implementation parity bu sürece hizmet eder; onu yönetmez.
+
+---
+
+# 32. Background Tasks ve Platform Kısıtları (2026-04-01 Eki)
+
+## 32.1. Background task platformları
+
+### 32.1.1. iOS
+
+iOS'ta background task'lar `BGTaskScheduler` API'si üzerinden yönetilir. OS, task'ları kendi programına göre çalıştırır; minimum ~15 dakika aralıkla tetikleme mümkündür ancak garanti edilmez. Background execution time varsayılan olarak ~30 saniye ile sınırlıdır. OS, kaynak durumuna ve kullanıcı davranış pattern'ine göre task'ları geciktirebilir veya atlayabilir.
+
+### 32.1.2. Android
+
+Android'de `WorkManager` background task yönetimi için tercih edilen API'dir. iOS'a kıyasla daha esnek constraint'ler sunar (ağ durumu, şarj durumu, idle durumu). Ancak battery optimization (Doze mode, App Standby) task zamanlama ve çalışma süresini doğrudan etkiler. OEM'lere göre (Samsung, Xiaomi vb.) agresif battery optimization farkları olabilir.
+
+### 32.1.3. Web
+
+Web platformunda background task'lar `Service Worker` üzerinden yönetilir. Background Sync API ile offline durumda biriken işlemler bağlantı geldiğinde senkronize edilebilir. Push API ile sunucu tetiklemeli background çalışma mümkündür.
+
+## 32.2. Background fetch stratejisi
+
+### 32.2.1. Canonical araç
+
+Bu projede background task yönetimi için **expo-task-manager** canonical araçtır. expo-task-manager, iOS BGTaskScheduler ve Android WorkManager üzerinde platform-agnostic bir abstraction sağlar.
+
+### 32.2.2. Zamanlama belirsizliği
+
+OS tarafından delay riski mevcuttur. Planlanan bir background fetch, gerçek koşullara göre 45 dakika ile 2 saat arası gecikebilir. Bu nedenle:
+- Zaman-kritik işlemler background fetch'e bırakılmamalıdır.
+- Background fetch, önbellek güncelleme ve veri ön yükleme gibi "nice-to-have" işlemler için kullanılmalıdır.
+- Kullanıcıya "veriler en son X tarihinde güncellendi" bilgisi gösterilmelidir.
+
+### 32.2.3. Battery optimization'a saygı
+
+Battery optimization ayarlarına müdahale edilmemeli, kullanıcı bu ayarları kontrol etmelidir. Uygulama, battery optimization aktifken graceful degradation yapmalıdır.
+
+## 32.3. Background geolocation
+
+### 32.3.1. Kullanım ilkesi
+
+Background geolocation yalnızca ürün açısından gerçekten gerektiğinde kullanılmalıdır. Battery etkisi büyüktür ve kullanıcı güvenini zedeleyebilir. Ürün, konum verisini neden background'da topladığını kullanıcıya net ve anlaşılır biçimde açıklamalıdır.
+
+### 32.3.2. Motion detection ile akıllı GPS kullanımı
+
+Sürekli GPS sorgusu yerine motion detection (accelerometer) ile kullanıcının hareket edip etmediği tespit edilmeli, GPS yalnızca hareket algılandığında aktive edilmelidir. Bu yaklaşım batarya tüketimini önemli ölçüde azaltır.
+
+### 32.3.3. Geofencing
+
+Polygon-based geofencing, belirli coğrafi alanlarla ilgili tetiklemeler için kullanılabilir. Geofencing batarya bilinçli olmalıdır; çok sayıda geofence tanımlamak batarya tüketimini artırır.
+
+### 32.3.4. Always-on location izni
+
+Always-on (her zaman) konum izni kullanılacaksa, kullanıcıya net açıklama zorunludur:
+- Neden sürekli konum gerektiği
+- Batarya etkisi
+- Veri gizliliği politikası
+
+iOS ve Android app store review süreçleri always-on location kullanımını detaylı gerekçe ile sorgular.
+
+## 32.4. Platform-specific kısıtlamalar
+
+### 32.4.1. iOS kısıtlamaları
+
+- Background execution time limiti varsayılan olarak **30 saniye**dir.
+- `beginBackgroundTask` ile ek süre istenebilir ancak garanti değildir.
+- OS, kullanıcı tarafından sık kullanılmayan uygulamaların background task'larını deprioritize eder.
+- Background fetch aralığı OS kontrolündedir; minimum aralık belirlenebilir ancak OS buna uymak zorunda değildir.
+
+### 32.4.2. Android kısıtlamaları
+
+- **Doze mode:** Cihaz hareketsiz ve şarjda değilse, background task'lar maintenance window'lara kadar ertelenir.
+- **App Standby:** Kullanıcının sık kullanmadığı uygulamalar standby bucket'larına alınır ve background erişimleri kısıtlanır.
+- OEM-specific kısıtlamalar (battery saver, memory cleaner) uygulamayı tamamen background'dan kill edebilir.
+
+### 32.4.3. Ortak kısıtlama
+
+Her iki platformda da OS, düşük kaynak durumlarında uygulamayı kill edebilir ve state kaybolabilir. Bu nedenle:
+- Kritik state'ler kalıcı depolamaya yazılmalıdır (AsyncStorage, SQLite, SecureStore).
+- Background task'lar idempotent olmalıdır (tekrar çalıştırılabilir, yan etkisiz).
+- Task başarısız olursa retry mekanizması düşünülmelidir.
+
+---
+
+# 33. Share Extension ve Platform Paylaşım (2026-04-01 Eki)
+
+## 33.1. Cross-platform share sheet
+
+### 33.1.1. Canonical araç
+
+Bu projede paylaşım için **expo-sharing** canonical araçtır. expo-sharing, platform-native share sheet'i tetikleyerek dosya, metin ve URL paylaşımını destekler.
+
+### 33.1.2. Paylaşım kuralları
+
+- Dosya, metin ve URL paylaşımı desteklenmelidir.
+- Platform-native share sheet kullanılmalıdır; custom UI ile share modal oluşturulmamalıdır.
+- Paylaşılan içeriğin formatı paylaşım hedefine uygun olmalıdır (ör. URL paylaşılırken Open Graph meta verileri düşünülmeli).
+- Paylaşım işlemi tamamlandığında veya iptal edildiğinde kullanıcıya feedback verilmelidir.
+
+## 33.2. Share extension (gelen paylaşımlar)
+
+### 33.2.1. iOS share extension
+
+iOS'ta uygulamaya dışarıdan içerik paylaşılması (share extension) native modül gerektirir. Expo managed workflow'da share extension sınırlıdır; config plugin veya custom dev client gerektirebilir.
+
+### 33.2.2. Android share target
+
+Android'de uygulama share target olarak intent-filter tanımıyla yapılandırılır. AndroidManifest.xml'de uygun intent-filter tanımlanarak diğer uygulamalardan içerik alınabilir.
+
+### 33.2.3. Expo workflow sınırları
+
+Share extension (gelen paylaşımlar) Expo managed workflow'da tam desteklenmez. Bu özellik gerektiğinde:
+- Custom dev client kullanılmalıdır.
+- EAS Build ile native modül entegrasyonu yapılmalıdır.
+- Bu sınırlama ADR-002 (Expo SDK) kararının beklenen bir sonucudur.
+
+## 33.3. Clipboard yönetimi
+
+### 33.3.1. Canonical araç
+
+Bu projede clipboard işlemleri için **expo-clipboard** canonical araçtır.
+
+### 33.3.2. Güvenlik kuralları
+
+- Hassas veri (şifre, token, kredi kartı numarası) clipboard'a kopyalanırsa kullanıcıya uyarı gösterilmelidir.
+- Clipboard'a yazılan hassas verinin belirli süre sonra temizlenmesi düşünülmelidir.
+- Clipboard içeriği log'lara yazılmamalıdır.
+
+### 33.3.3. iOS 16+ clipboard erişim bildirimi
+
+iOS 16 ve sonrası sürümlerde uygulama clipboard'a eriştiğinde kullanıcıya sistem düzeyinde bildirim gösterilir. Bu nedenle:
+- Gereksiz clipboard okuma işlemlerinden kaçınılmalıdır.
+- Clipboard okuma yalnızca kullanıcı aksiyonu tetiklediğinde yapılmalıdır (ör. "Yapıştır" butonuna basma).
+- Otomatik clipboard okuma (ör. OTP algılama) kullanıcı farkındalığı ile yapılmalıdır.
+
+---
+
+# 34. App Clips ve Instant Apps (2026-04-01 Eki)
+
+## 34.1. iOS App Clips
+
+### 34.1.1. Temel özellikler
+
+App Clip, tam uygulamanın küçük bir bölümünü indirmeden deneyimleme imkanı sunar:
+- Bundle boyutu **15 MB** altında olmalıdır.
+- NFC tag, QR kod, Safari Smart Banner veya iMessage üzerinden tetiklenebilir.
+- App Clip, kullanıcıyı tam uygulamaya yönlendiren bir dönüşüm hunisi olarak tasarlanmalıdır.
+
+### 34.1.2. Expo workflow sınırları
+
+App Clips, Expo managed workflow'da doğrudan desteklenmez. Gerektiğinde:
+- EAS Build ile custom native configuration yapılmalıdır.
+- App Clip target'ı Xcode üzerinden yapılandırılmalıdır.
+- Bu alan ileri düzey bir gereksinim olup, ürün kararına bağlıdır.
+
+### 34.1.3. Dönüşüm hunisi
+
+App Clip → tam uygulama dönüşüm hunisi şu adımları içerir:
+- App Clip deneyimi sırasında tam uygulamanın değer önerisi gösterilmeli
+- Kolay geçiş: App Store yönlendirmesi tek dokunuşla erişilebilir olmalı
+- State transferi: App Clip'te oluşturulan veri tam uygulamaya aktarılabilmeli
+
+## 34.2. Android Instant Apps
+
+### 34.2.1. Temel özellikler
+
+Android Instant Apps, feature module bazlı delivery ile kullanıcının uygulamayı yüklemeden belirli özelliklerini kullanmasını sağlar. Google Play Instant entegrasyonu ile çalışır.
+
+### 34.2.2. Feature module yapısı
+
+Instant App desteği için uygulama feature module'lere ayrılmalıdır. Her module bağımsız olarak yüklenebilir ve çalıştırılabilir olmalıdır.
+
+## 34.3. Karar kriteri
+
+### 34.3.1. Opsiyonellik
+
+App Clips ve Instant Apps, boilerplate seviyesinde **opsiyoneldir**. Bu özellikler ürün kararına bağlıdır ve her uygulama için gerekli değildir.
+
+### 34.3.2. ADR genişletmesi
+
+Bu özellik gerektiğinde ADR-002 (React Native + Expo SDK) genişletmesi olarak ele alınmalıdır. Ayrı bir ADR oluşturularak:
+- Teknik gereksinimler
+- Bundle boyutu kısıtlamaları
+- Expo workflow etkileri
+- Test stratejisi
+belgelenmelidir.
+
+## 34.4. Hazırlık rehberi niteliği
+
+Bu bölüm, boilerplate için **hazırlık rehberi** niteliğindedir. Zorunlu implementasyon değildir. Amacı, ürün geliştirme sürecinde App Clips veya Instant Apps ihtiyacı doğduğunda ekibin doğru kararları hızlıca alabilmesi için temel bilgi sağlamaktır.

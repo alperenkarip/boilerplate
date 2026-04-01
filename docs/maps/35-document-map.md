@@ -98,6 +98,20 @@ Bu aile, boilerplate ile türetilen projeler arasındaki sınırları, dallanma 
 | `43-derived-project-creation-guide.md` | Türetilen proje oluşturma rehberi | Guide |
 | `44-exception-and-exemption-policy.md` | İstisna ve muafiyet politikası | Governance
 
+### AI Guardrail Ailesi
+
+Bu aile, AI araçlarının kod üretirken boilerplate standartlarına uyumunu garanti eden guardrail çerçevesini tanımlar.
+
+| Dosya | Açıklama | Tür |
+|---|---|---|
+| `47-ai-guardrail-governance.md` | AI guardrail çerçevesi ana dokümanı | Governance |
+| `docs/ai-guardrails/domain/D-XXX-*.md` | Domain guardrail'ler (25 adet) | Guardrail |
+| `docs/ai-guardrails/activity/A-XXX-*.md` | Aktivite guardrail'ler (28 adet) | Guardrail |
+| `.claude/skills/*/SKILL.md` | Claude Code guardrail skill'leri (7 adet) | Skill |
+| `.claude/settings.json` | Claude Code hook tanımları | Config |
+
+Bu aile `40-ai-workflow-and-tooling.md` ve `41-ai-instruction-standards.md` ile doğrudan bağlıdır. Guardrail dokümanları mevcut boilerplate dokümanlarının AI-native özetidir, alternatifi değildir. Çelişki durumunda kaynak doküman kazanır.
+
 ### Önemli Ayrım: Boilerplate Dökümanları vs Proje Dökümanları
 
 Bu belge haritası yalnızca boilerplate seviyesindeki dökümanları kapsar. Boilerplate'ten türetilen her projenin kendine ait dökümanları `project/` dizininde yaşar. İki alan arasındaki ayrım kesindir:
@@ -105,7 +119,7 @@ Bu belge haritası yalnızca boilerplate seviyesindeki dökümanları kapsar. Bo
 - **`docs/`** → boilerplate standartları, kuralları, ADR'leri, audit ve governance belgeleri. Otorite kaynağı boilerplate'tir.
 - **`project/`** → projeye özel kapsam, gereksinimler, spec'ler, kararlar. Otorite kaynağı proje ekibidir.
 
-`project/` dizini proje ekibinin otoritesindedir; ancak boilerplate burada **minimum birlikte çalışabilirlik sözleşmesi** tanımlar. Özellikle `project/adr/` altında proje ADR'leri için yer açılması, gerekirse `project/project-charter.md` kullanılması ve root seviyesinde `BOUNDARY.md` ile boilerplate sınır manifestinin görünür tutulması önerilen default sözleşmedir. Bu, proje alanının tamamını boilerplate'e bağlamak anlamına gelmez; yalnızca boilerplate–derived project etkileşim noktalarını standartlaştırır. Proje dökümanları canonical karar katmanını (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
+`project/` dizini proje ekibinin otoritesindedir; ancak boilerplate burada **minimum birlikte çalışabilirlik sözleşmesi** tanımlar. Özellikle `project/adr/` altında proje ADR'leri için yer açılması, gerekirse `project/project-charter.md` kullanılması ve root seviyesinde `BOUNDARY.md` ile boilerplate sınır manifestinin görünür tutulması önerilen default sözleşmedir. Bu, proje alanının tamamını boilerplate'e bağlamak anlamına gelmez; yalnızca boilerplate–derived project etkileşim noktalarını standartlaştırır. Proje dökümanları canonical karar katmanını (ADR-001→ADR-017 + 36/37/38 canonical governance belgeleri) açamaz veya çelişemez — yalnızca daraltabilir veya somutlaştırabilir.
 
 ---
 
@@ -229,38 +243,43 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 29. `ADR-010`
 30. `ADR-011`
 31. `ADR-012`
-32. `36-canonical-stack-decision.md`
-33. `37-dependency-policy.md`
-34. `38-version-compatibility-matrix.md`
+32. `ADR-013` *(Push Notification Strategy)*
+33. `ADR-014` *(Deep Linking and Universal Links)*
+34. `ADR-015` *(OTA Update Strategy)*
+35. `ADR-016` *(In-App Purchase and Subscription)*
+36. `ADR-017` *(Privacy and Data Protection Framework)*
+37. `36-canonical-stack-decision.md`
+38. `37-dependency-policy.md`
+39. `38-version-compatibility-matrix.md`
 
 ## 8.6. Uygulama geçiş belgeleri
-35. `19-roadmap-to-implementation.md`
-36. `20-initial-implementation-checklist.md`
-37. `21-repo-structure-spec.md`
-38. `39-default-screens-and-components-spec.md`
+40. `19-roadmap-to-implementation.md`
+41. `20-initial-implementation-checklist.md`
+42. `21-repo-structure-spec.md`
+43. `39-default-screens-and-components-spec.md`
 
 ## 8.7. Derin uygulama standartları
-37. `22-design-tokens-spec.md`
-38. `23-component-governance-rules.md`
-39. `24-motion-and-interaction-standard.md`
-40. `25-error-empty-loading-states.md`
-41. `26-platform-adaptation-rules.md`
-42. `27-security-and-secrets-baseline.md`
-43. `28-observability-and-debugging.md`
-44. `29-release-and-versioning-rules.md`
+44. `22-design-tokens-spec.md`
+45. `23-component-governance-rules.md`
+46. `24-motion-and-interaction-standard.md`
+47. `25-error-empty-loading-states.md`
+48. `26-platform-adaptation-rules.md`
+49. `27-security-and-secrets-baseline.md`
+50. `28-observability-and-debugging.md`
+51. `29-release-and-versioning-rules.md`
 
 ## 8.8. AI workflow ve talimat standartları
-45. `40-ai-workflow-and-tooling.md`
-46. `41-ai-instruction-standards.md`
-47. `46-stitch-pipeline-spec.md`
+52. `40-ai-workflow-and-tooling.md`
+53. `41-ai-instruction-standards.md`
+54. `46-stitch-pipeline-spec.md`
 
 ## 8.9. Operasyon ve denetim
-48. `30-contribution-guide.md`
-49. `31-audit-checklist.md`
-50. `32-definition-of-done.md`
-51. `33-visual-implementation-contract.md`
-52. `34-hig-enforcement-strategy.md`
-53. `35-document-map.md`
+55. `30-contribution-guide.md`
+56. `31-audit-checklist.md`
+57. `32-definition-of-done.md`
+58. `33-visual-implementation-contract.md`
+59. `34-hig-enforcement-strategy.md`
+60. `35-document-map.md`
 
 ---
 
@@ -290,7 +309,7 @@ Aşağıdaki belgeler repo bootstrap öncesi bloklayıcı kabul edilmelidir:
 - `16-tooling-and-governance.md`
 - `17-technology-decision-framework.md`
 - `18-adr-template.md`
-- `ADR-001` → `ADR-012`
+- `ADR-001` → `ADR-017`
 - `36-canonical-stack-decision.md` *(canonical stack index / bridge)*
 - `37-dependency-policy.md`
 - `38-version-compatibility-matrix.md`
@@ -409,6 +428,56 @@ Oku:
 
 ---
 
+## 10.10. Push notification geliştireceğim
+Oku:
+- `ADR-013-push-notification-strategy.md`
+- `ADR-014-deep-linking-and-universal-links.md` (notification → deep link entegrasyonu)
+- `27-security-and-secrets-baseline.md`
+- `28-observability-and-debugging.md`
+- `32-definition-of-done.md`
+
+---
+
+## 10.11. Deep linking implementasyonu yapacağım
+Oku:
+- `ADR-014-deep-linking-and-universal-links.md`
+- `ADR-012-navigation-baseline.md`
+- `08-navigation-and-flow-rules.md`
+- `26-platform-adaptation-rules.md`
+- `32-definition-of-done.md`
+
+---
+
+## 10.12. In-app purchase / ödeme entegrasyonu yapacağım
+Oku:
+- `ADR-016-in-app-purchase-and-subscription.md`
+- `ADR-010-auth-session-and-secure-storage-baseline.md`
+- `ADR-017-privacy-and-data-protection-framework.md`
+- `27-security-and-secrets-baseline.md`
+- `32-definition-of-done.md`
+
+---
+
+## 10.13. OTA güncelleme yapacağım
+Oku:
+- `ADR-015-ota-update-strategy.md`
+- `29-release-and-versioning-rules.md`
+- `28-observability-and-debugging.md`
+- `15-quality-gates-and-ci-rules.md`
+- `32-definition-of-done.md`
+
+---
+
+## 10.14. Privacy / GDPR / KVKK uyum çalışması yapacağım
+Oku:
+- `ADR-017-privacy-and-data-protection-framework.md`
+- `27-security-and-secrets-baseline.md`
+- `28-observability-and-debugging.md`
+- `ADR-009-observability-stack.md`
+- `32-definition-of-done.md`
+
+---
+
 # 11. Belge Bağımlılık Haritasının Yeni Özeti
 
 ## 11.1. Foundation zinciri
@@ -446,7 +515,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `18`
 
 ## 11.5. Canonical technical decision layer
-- `ADR-001` → `ADR-012`
+- `ADR-001` → `ADR-017`
 - `36`
 - `37`
 - `38`
@@ -598,10 +667,31 @@ Bu harita, kapsamlı belge denetimi sonrası aşağıdaki düzeltmelerle güncel
 
 Bu düzeltmeler sonrası belge seti, bootstrap-ready olarak kabul edilebilir.
 
+## 18.1. Revizyon Notu (2026-04-01)
+
+Kapsamlı gap analizi sonrası aşağıdaki genişletmeler yapılmıştır:
+
+1. **5 yeni ADR eklendi:** ADR-013 (Push Notification), ADR-014 (Deep Linking), ADR-015 (OTA Update), ADR-016 (In-App Purchase), ADR-017 (Privacy/Data Protection)
+2. **ADR-010 genişletildi:** Biometric Authentication bölümü eklendi
+3. **5 yeni domain guardrail eklendi:** D-NTF, D-DPL, D-PAY, D-PRI, D-BIO
+4. **5 yeni activity guardrail eklendi:** A-NOTIFICATION, A-DEEPLINK, A-PAYMENT, A-OTA, A-PRIVACY
+5. **8 mevcut doküman genişletildi:**
+   - 24: Haptic feedback standardı
+   - 05: Dark mode ve sistem tercihi senkronizasyonu
+   - 39: Onboarding deneyimi ve kullanıcı tutma stratejisi
+   - 26: Background tasks, share extension, app clips
+   - 27: Web güvenlik başlıkları (CSP), API güvenliği, certificate pinning, jailbreak detection
+   - 28: OpenTelemetry, structured logging, RUM, Core Web Vitals
+   - 15: Build otomasyonu, Fastlane, EAS Build, code signing, CI/CD workflow
+   - 29: OTA güncelleme disiplini, ASO, store listing
+6. **Canonical technical decision layer** ADR-001→ADR-017 olarak güncellendi
+7. **47-ai-guardrail-governance.md** domain ve aktivite tabloları güncellendi
+8. **CLAUDE.md** yeni ADR referansları ve aktivasyon tablosu güncellendi
+
 ---
 
 # 19. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate’te dokümantasyon seti artık yalnızca standart ve checklist yığını değildir. `ADR-001` → `ADR-012` ile `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` birlikte canonical technical decision layer’ı oluşturur; roadmap, checklist ve repo structure bu katmanı uygular; audit ve DoD belgeleri ise bu uygulamanın gerçekten doğru yapıldığını denetler. Document map, bu katmanlar arasındaki otorite ve okuma sırasını görünür kılan resmi navigasyon belgesidir.
+> Bu boilerplate’te dokümantasyon seti artık yalnızca standart ve checklist yığını değildir. `ADR-001` → `ADR-017` ile `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` birlikte canonical technical decision layer’ı oluşturur; roadmap, checklist ve repo structure bu katmanı uygular; audit ve DoD belgeleri ise bu uygulamanın gerçekten doğru yapıldığını denetler. Document map, bu katmanlar arasındaki otorite ve okuma sırasını görünür kılan resmi navigasyon belgesidir.

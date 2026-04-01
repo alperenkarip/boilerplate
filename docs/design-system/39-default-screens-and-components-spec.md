@@ -4955,3 +4955,122 @@ Bu doküman, boilerplate projesinin ilk çalışan ürüne ulaşması için gere
 **Bu doküman tek başına mimari karar üretmez.** Canonical stack kararları (ADR-001→ADR-012 + 36/37/38 canonical governance belgeleri) ve governance kuralları (23-component-governance, 25-error-empty-loading, 32-definition-of-done) bu dokümanın üst katman referanslarıdır. Bu doküman, o kararları somut ve uygulanabilir bir plana dönüştürür.
 
 **Bir sonraki adım:** Faz 0 — token dosyalarının oluşturulması (`packages/design-tokens`). Token dosyaları hazır olduğunda Faz 1 primitive'lerine geçilir.
+
+---
+
+# 23. Onboarding Deneyimi ve Kullanıcı Tutma Stratejisi (2026-04-01 Eki)
+
+## 23.1. Onboarding tasarım ilkeleri
+
+### 23.1.1. "Aha moment" optimizasyonu
+
+Kullanıcı ilk oturumda ürünün temel değer önerisini deneyimlemelidir. Onboarding akışı, kullanıcıyı mümkün olan en kısa sürede ürünün çekirdek özelliğiyle buluşturmalıdır. Uzun form doldurma, gereksiz bilgi toplama veya aşırı açıklama ekranları bu hedefe zarar verir.
+
+### 23.1.2. Progressive disclosure
+
+Bilgi yüklemesi kademeli yapılmalıdır. Kullanıcıya tüm özellikleri ilk anda göstermek yerine, bağlama uygun zamanlarda ilgili bilgi sunulmalıdır. Onboarding ekranları en fazla 3-5 adımdan oluşmalıdır; her adım tek bir kavramı iletmelidir.
+
+### 23.1.3. Personalized onboarding
+
+Kullanıcı rolü veya amacına göre farklı onboarding akışları sunulabilir. Örneğin:
+- Farklı kullanıcı tipleri (bireysel/kurumsal) için farklı ilk deneyim
+- Kullanıcının belirttiği amaca göre öne çıkarılan özellikler
+- Deneyim seviyesine göre detay düzeyi ayarı
+
+Bu kişiselleştirme opsiyoneldir ancak desteklenebilir mimari ile tasarlanmalıdır.
+
+## 23.2. Gamification elementleri
+
+### 23.2.1. Progress bar
+
+Onboarding tamamlanma yüzdesi kullanıcıya görsel olarak gösterilmelidir. Bu, kullanıcıya "ne kadar kaldı?" sorusunu cevaplar ve tamamlama motivasyonu sağlar.
+
+### 23.2.2. Streak
+
+Ardışık kullanım günleri takip edilebilir. Streak mekanizması, kullanıcının düzenli kullanım alışkanlığı geliştirmesini teşvik eder. Streak kırıldığında cezalandırıcı olmayan, teşvik edici bir yaklaşım benimsenmelidir.
+
+### 23.2.3. Badge/achievement
+
+Belirli aksiyonları tamamlama (profil doldurma, ilk görev tamamlama, ayarları yapılandırma) badge ile ödüllendirilebilir. Badge sistemi aşırıya kaçmamalı ve ürünün ana değerine hizmet etmelidir.
+
+### 23.2.4. Gated content
+
+İlerlemeye bağlı içerik açılması, kullanıcıyı keşfe teşvik eder. Ancak kritik özellikler gate'lenmemeli; yalnızca ek değer katan içerikler kademeli açılmalıdır.
+
+## 23.3. Retention hedefleri ve metrikleri
+
+Aşağıdaki hedefler sektör standartlarına dayalı referans değerlerdir; ürüne göre özelleştirilebilir:
+
+| Metrik | Hedef |
+|--------|-------|
+| Day 1 retention | > %40 |
+| Day 7 retention | > %20 |
+| Day 30 retention | > %10 |
+| Sign-up completion rate | > %70 |
+
+Bu hedefler ölçülebilir olmalı ve analitik altyapısı ile takip edilmelidir (ADR-009 observability kararı ile uyumlu).
+
+## 23.4. Tooltip ve coach mark stratejisi
+
+### 23.4.1. First-time user vs returning user
+
+Tooltip ve coach mark'lar yalnızca first-time user'lara gösterilmelidir. Returning user'lar için bu elementler gösterilmez; ancak kullanıcı talep ederse (ör. "ipuçlarını tekrar göster" seçeneği) yeniden erişilebilir olmalıdır.
+
+### 23.4.2. Contextual tooltip
+
+Tooltip'ler ilgili özellik ilk kez kullanıldığında bağlamsal olarak gösterilmelidir. Tüm tooltip'leri onboarding sırasında sıralı göstermek yerine, kullanıcı ilgili alana ulaştığında tetiklenmesi tercih edilir.
+
+### 23.4.3. Tooltip davranış kuralları
+
+- Her tooltip **dismissible** (kapatılabilir) olmalıdır.
+- Tooltip'ler **non-blocking** olmalıdır; kullanıcının akışını kesmemelidir.
+- Tek bir akışta maksimum **3-5 adım** tooltip gösterilmelidir.
+- Tooltip konumu, gösterdiği öğeyi kapatmamalıdır.
+- Dark/light tema ile uyumlu tooltip tasarımı zorunludur.
+
+## 23.5. Re-engagement mekanizmaları
+
+### 23.5.1. Push notification
+
+İnaktif kullanıcılar için push notification stratejisi belirlenmelidir. Bu alan ADR-013 (varsa) ile entegre çalışır. Notification içeriği kullanıcıyı ürüne geri çekecek değer önerisi taşımalıdır; spam niteliğinde bildirimler yasaktır.
+
+### 23.5.2. Email re-engagement
+
+Backend altyapısı mevcutsa, belirli inaktiflik süresinin ardından re-engagement e-posta'ları gönderilebilir. Bu alan opsiyoneldir ve backend bağımlıdır.
+
+### 23.5.3. In-app "welcome back" deneyimi
+
+Uzun süredir uygulama kullanmayan kullanıcılara geri döndüklerinde:
+- "Tekrar hoş geldiniz" ekranı gösterilebilir
+- Son kullanımdan bu yana eklenen yeni özellikler özetlenebilir
+- Kullanıcının kaldığı yerden devam etmesi sağlanabilir
+
+## 23.6. Onboarding ekran sırası
+
+39-default-screens-and-components-spec'teki mevcut ekran seti ile uyumlu onboarding akışı:
+
+1. **Splash** → Uygulama yükleniyor, branding görünür
+2. **Permission (kademeli)** → Notification, location gibi izinler önceden açıklanır (pre-prompt). İzin neden gerektiği kullanıcıya açık ve anlaşılır biçimde iletilmelidir. Tüm izinler tek seferde istenmemeli; ilgili özellik kullanılacağı anda istenmelidir.
+3. **Value proposition** → Ürünün temel değeri 2-3 ekranda anlatılır (karousel veya sayfalı yapı)
+4. **Signup/Login** → Auth akışı (ADR-010 ile uyumlu)
+5. **Home** → Kullanıcı ürünün ana ekranına ulaşır
+
+Bu sıra ürüne göre özelleştirilebilir; ancak permission pre-prompt ve value proposition adımlarının login'den önce gelmesi önerilir.
+
+## 23.7. Ölçüm ve analitik
+
+### 23.7.1. Onboarding funnel
+
+Onboarding akışının her adımında event kaydı yapılmalıdır:
+- Adım görüntüleme
+- Adım tamamlama
+- Adımdan çıkma (drop-off)
+- Toplam tamamlama süresi
+
+### 23.7.2. Drop-off analizi
+
+Drop-off noktaları düzenli olarak analiz edilmeli ve optimizasyon yapılmalıdır. En yüksek drop-off oranına sahip adımlar öncelikli iyileştirme hedefi olmalıdır.
+
+### 23.7.3. A/B test desteği
+
+Onboarding akışı A/B test altyapısına uygun olmalıdır. Farklı onboarding varyantları (adım sayısı, içerik sırası, görsel yaklaşım) test edilebilir şekilde tasarlanmalıdır. Analitik altyapı ADR-009 observability kararı ile uyumlu olmalıdır.

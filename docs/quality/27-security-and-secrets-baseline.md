@@ -1908,3 +1908,48 @@ Bu proje için güvenlik baseline’ı şudur:
 - cookie consent yönetimi GDPR ve ePrivacy Directive gerekliliklerine uygun şekilde implemente edilir
 - data retention politikası her veri türü için tanımlanır ve otomatik olarak uygulanır
 - rate limiting ve abuse prevention mekanizmaları backend’de enforce edilir, frontend’de doğru handle edilir
+
+---
+
+# 35. Web Güvenlik Başlıkları ve API Güvenliği (2026-04-01 Eki)
+
+Bu bölüm, web uygulaması ve API katmanında uygulanması gereken güvenlik başlıklarını, rate limiting stratejisini, OWASP API güvenlik standartlarını ve mobil platforma özgü güvenlik kontrollerini tanımlar.
+
+## 35.1. Content Security Policy (CSP)
+
+- Strict CSP zorunludur: nonce-based veya hash-based script kontrolü uygulanmalıdır.
+- `unsafe-inline` ve `unsafe-eval` kullanımı yasaktır.
+- Restrictive `default-src: ‘self’` politikası uygulanmalıdır.
+- Üçüncü parti domain allowlist minimize edilmeli; yalnızca gerçekten ihtiyaç duyulan domain’ler eklenmelidir.
+- Yeni CSP politikası önce `Content-Security-Policy-Report-Only` başlığıyla test edilmeli, doğrulandıktan sonra enforce moduna geçilmelidir.
+- CSP violation report’ları izlenmeli ve anomaliler değerlendirilmelidir.
+
+## 35.2. Rate Limiting
+
+- **Login endpoint:** Brute-force koruması zorunludur. Başarısız giriş denemelerinde artan bekleme süresi (progressive delay) veya hesap kilitleme mekanizması uygulanmalıdır.
+- **API endpoint:** Request/dakika limiti tanımlanmalıdır. Her endpoint için uygun rate limit belirlenmelidir.
+- Rate limiting yalnızca altyapı seviyesinde değil, tasarım seviyesinde de düşünülmelidir.
+- Algoritma olarak floating time window veya token bucket tercih edilmelidir.
+
+## 35.3. OWASP API Security Top 10 (2026 Güncel)
+
+- **Broken Object Level Authorization (BOLA):** Her API çağrısında nesne düzeyinde yetkilendirme kontrolü yapılmalıdır. Kullanıcı yalnızca kendi kaynaklarına erişebilmelidir.
+- **Broken Authentication:** Kimlik doğrulama mekanizmaları güçlü olmalı; token süreleri, refresh mekanizmaları ve oturum yönetimi güvenli şekilde tasarlanmalıdır.
+- **Excessive Data Exposure:** API yanıtları yalnızca gerekli alanları içermelidir. Tüm nesneyi döndürmek yerine, istemci ihtiyacına göre filtrelenmiş yanıt verilmelidir.
+- **Resource ve Rate Limiting:** Kaynak tüketimi sınırlandırılmalı; pagination, max page size ve request rate limit uygulanmalıdır.
+- **Broken Function Level Authorization:** Fonksiyon düzeyinde yetkilendirme kontrolü yapılmalıdır. Admin endpoint’leri normal kullanıcıya açık olmamalıdır.
+- **Input Validation:** Her API endpoint’i için input validation zorunludur. Zod schema’ları ile hem istemci hem sunucu tarafında doğrulama yapılmalıdır (ADR-006 ile uyumlu).
+
+## 35.4. Certificate Pinning (Mobile)
+
+- Production build’lerde SSL pinning önerilir. MITM (Man-in-the-Middle) saldırılarına karşı ek koruma sağlar.
+- Pin rotation stratejisi tanımlanmalıdır; sertifika yenileme dönemlerinde uygulama kesintisi yaşanmaması için backup pin’ler dahil edilmelidir.
+- Debug build’lerde pinning devre dışı bırakılabilir — geliştirme ve test süreçlerini kolaylaştırmak için.
+- Expo managed workflow’da custom native modül gerektirebilir; implementasyon maliyeti değerlendirilmelidir.
+
+## 35.5. Jailbreak/Root Detection
+
+- Production build’lerde root/jailbreak kontrolü önerilir. Tespit durumunda kullanıcıya uyarı gösterilmeli veya hassas işlemler (ödeme, auth vb.) engellenmelidir.
+- Expo managed workflow’da sınırlı destek mevcuttur: `expo-device` paketi basic cihaz bilgisi sağlar.
+- Detaylı kontrol (runtime integrity check, tamper detection) için custom native modül gerekebilir.
+- Jailbreak/root detection’ın tek başına yeterli güvenlik sağlamadığı bilinmeli; defense-in-depth yaklaşımının bir katmanı olarak değerlendirilmelidir.

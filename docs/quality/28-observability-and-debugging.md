@@ -804,3 +804,57 @@ Bu proje için observability ve debugging standardı şudur:
 - release/build metadata observability’nin resmi parçasıdır
 - auth/query/forms/performance sinyalleri sınıflandırılmış biçimde ele alınır
 - noise, raw dump ve secret leakage kabul edilmez
+
+---
+
+# 29. OpenTelemetry ve Real User Monitoring (2026-04-01 Eki)
+
+Bu bölüm, vendor-agnostic observability standardı olarak OpenTelemetry entegrasyonunu, structured logging formatını, Real User Monitoring (RUM) metriklerini, frontend telemetry kapsamını, alerting/dashboard stratejisini ve privacy-safe telemetry kurallarını tanımlar.
+
+## 29.1. OpenTelemetry Entegrasyonu
+
+- 2026 itibarıyla OpenTelemetry, vendor-agnostic observability standardıdır.
+- ADR-009 ile uyumlu çalışır: Sentry birincil araç olarak kalır, OpenTelemetry tamamlayıcı katman olarak kullanılır.
+- OpenTelemetry Collector pipeline'ı: receive → process → export mimarisi uygulanmalıdır.
+- Structured logging: OpenTelemetry log data model kullanılmalı; her log kaydında trace/span ID korelasyonu sağlanmalıdır.
+- Mevcut Sentry SDK OpenTelemetry protocol'ünü destekler; ek entegrasyon maliyeti minimumdur.
+- Log-trace korelasyonu: her log kaydına otomatik olarak `trace_id` ve `span_id` eklenmeli; bu sayede log ile trace arasında doğrudan navigasyon mümkün olmalıdır.
+
+## 29.2. Structured Logging Formatı
+
+- Her log kaydı şu alanları içermelidir: `timestamp`, `level`, `message`, `trace_id`, `span_id`, `service_name`, `environment`.
+- JSON structured format kullanılmalıdır. `console.log` yerine structured logger tercih edilmelidir.
+- Log seviyeleri: `debug` (yalnızca dev ortamda aktif), `info`, `warn`, `error`, `fatal`.
+- PII filtreleme: structured log pipeline'da redaction zorunludur. Kullanıcı kişisel verileri log'lara yazılmamalıdır (ADR-017 ile uyumlu).
+
+## 29.3. Real User Monitoring (RUM)
+
+- **Web — Core Web Vitals izleme:**
+  - LCP (Largest Contentful Paint): hedef < 2.5s
+  - INP (Interaction to Next Paint): hedef < 200ms
+  - CLS (Cumulative Layout Shift): hedef < 0.1
+- Field data (gerçek kullanıcı metrikleri) ile lab data (synthetic test metrikleri) ayrımı yapılmalı; production kararları field data'ya dayanmalıdır.
+- **Mobile:**
+  - Crash-free session rate hedefi: > %99.5
+  - App start time, screen load time ve API response time izlenmelidir.
+
+## 29.4. Frontend Telemetry
+
+- **JS Error Boundary telemetry:** Component bazında hata izleme yapılmalı; hangi component'te ne sıklıkta hata oluştuğu görünür olmalıdır.
+- **Navigation timing:** Route geçiş süreleri izlenmeli; yavaş geçişler tespit edilmelidir.
+- **Resource timing:** Asset yükleme süreleri (JS bundle, CSS, font, resim) izlenmelidir.
+- **Long task detection:** 50ms'yi aşan task'lar izlenmeli ve raporlanmalıdır. Ana thread'i uzun süre bloke eden işlemler performans sorunu olarak değerlendirilmelidir.
+
+## 29.5. Alerting ve Dashboard
+
+- **Crash-free session rate düşüşü:** P0 alert — anında müdahale gerektirir.
+- **LCP/INP regression:** P1 alert — bir sonraki sprint içinde çözülmelidir.
+- **Error rate spike:** P1 alert — kök neden analizi yapılmalıdır.
+- **Dashboard:** Platform bazlı (web vs iOS vs Android) ayrı metrikler gösterilmelidir. Tek dashboard'da tüm platformlar karıştırılmamalıdır.
+
+## 29.6. Privacy-Safe Telemetry
+
+- Telemetry verisi GDPR/KVKK uyumlu olmalıdır (ADR-017 referansı).
+- IP anonimleştirme uygulanmalıdır.
+- User ID yerine anonymous session ID kullanılabilir; kullanıcı izleme telemetry'nin amacı değildir.
+- Consent durumuna göre telemetry seviyesi ayarlanmalıdır: consent verilmemişse yalnızca crash reporting aktif olabilir, detaylı telemetry devre dışı bırakılmalıdır.

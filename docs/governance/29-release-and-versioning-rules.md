@@ -974,3 +974,87 @@ Bu proje için release ve versioning standardı şudur:
 - changelog ve release notes anlamlı olmalıdır
 - breaking change sessiz yapılamaz
 - hotfix istisnadır, normal süreç yerine geçmez
+
+---
+
+# 33. OTA Güncelleme Disiplini (2026-04-01 Eki)
+
+Bu bölüm, OTA (Over-the-Air) güncelleme sürecini, OTA ile store build ayrımını, release disiplinini, versiyon ilişkisini ve monitoring gereksinimlerini tanımlar. ADR-015 referansı bu bölümün tamamı için geçerlidir.
+
+## 33.1. OTA vs Store Build Ayrımı
+
+- **JS-only değişiklik:** OTA update yeterlidir. JavaScript bundle'ı güncellenerek store review süreci atlanabilir.
+- **Native code değişikliği:** Yeni native modül eklenmesi, SDK versiyon güncellemesi veya native konfigürasyon değişikliği durumunda store build zorunludur.
+- **Temel kural:** Emin değilsen store build tercih et. Yanlış OTA update, runtime crash'lere yol açabilir.
+
+## 33.2. OTA Release Süreci
+
+- Code review tamamlanmış olmalıdır; OTA update de normal code review sürecinden geçmelidir.
+- Staging channel'da test edilmiş olmalıdır; OTA update doğrudan production'a yayınlanmamalıdır.
+- **Staged rollout:** Önce %10 kullanıcıya yayınla, crash rate ve hata oranını monitör et. Sorun yoksa %50'ye, ardından %100'e çıkar.
+- **Rollback:** Önceki bundle'a hızlı dönüş planı her zaman hazır olmalıdır. OTA update geri alınabilir olmalıdır.
+
+## 33.3. OTA ve Versiyon İlişkisi
+
+- OTA update, runtime version ile eşleşmelidir. Runtime version mismatch durumunda OTA uygulanmaz ve kullanıcı eski bundle ile kalmaya devam eder.
+- Semver ile OTA uyumu tanımlanmalıdır: patch ve minor güncellemeler OTA ile yapılabilir; major güncelleme genellikle store build gerektirir.
+- EAS Update channel ve runtime version mapping dokümante edilmelidir.
+
+## 33.4. OTA Monitoring
+
+- Update adoption rate izlenmelidir; kaç kullanıcının yeni bundle'ı aldığı görünür olmalıdır.
+- Post-update crash rate karşılaştırması zorunludur: güncelleme öncesi ve sonrası crash rate'leri karşılaştırılmalıdır.
+- Başarısız update durumunda otomatik rollback mekanizması düşünülmelidir.
+- OTA update başarı/başarısızlık oranları dashboard'da izlenmelidir.
+
+---
+
+# 34. App Store Optimization ve Store Listing (2026-04-01 Eki)
+
+Bu bölüm, App Store ve Google Play Store listing gereksinimlerini, ASO (App Store Optimization) ilkelerini, store metadata versiyon kontrolünü, rating/review yönetimini ve store review guideline uyumunu tanımlar.
+
+## 34.1. Store Listing Gereksinimleri
+
+- **App Store:**
+  - Başlık: maksimum 30 karakter
+  - Altyazı: maksimum 30 karakter
+  - Açıklama: maksimum 4000 karakter
+  - Anahtar kelimeler: maksimum 100 karakter
+- **Google Play:**
+  - Başlık: maksimum 30 karakter
+  - Kısa açıklama: maksimum 80 karakter
+  - Tam açıklama: maksimum 4000 karakter
+- **Screenshot:** Her platform için önerilen boyutlarda, tüm desteklenen cihaz kategorileri için screenshot hazırlanmalıdır.
+- **Preview video:** Opsiyoneldir ancak dönüşüm oranını artırdığı için önerilir.
+
+## 34.2. ASO Temel İlkeleri
+
+- Long-tail keyword stratejisi uygulanmalıdır. 2026'da AI-generated tag'lerin store arama algoritmalarına etkisi değerlendirilmelidir.
+- Keyword ve başlık optimizasyonu: en yüksek arama hacimli anahtar kelimeler başlık ve altyazıda kullanılmalıdır.
+- Screenshot'larda özellik vurgulama (feature callout) yapılmalıdır; yalnızca ekran görüntüsü değil, değer önerisi iletilmelidir.
+- Lokalize store listing: i18n altyapısı ile uyumlu şekilde her desteklenen dil için ayrı store listing hazırlanmalıdır (ADR-011 referansı).
+
+## 34.3. Store Metadata Versiyon Kontrolü
+
+- Store listing metni ve screenshot'lar repo'da tutulmalıdır.
+- Fastlane `deliver` (iOS) ve `supply` (Android) ile otomatik yükleme yapılmalıdır.
+- Her release ile birlikte metadata gözden geçirilmeli ve gerektiğinde güncellenmelidir.
+
+## 34.4. Rating ve Review Yönetimi
+
+- **In-app review prompt:** `StoreReview` API kullanılmalıdır (`expo-store-review` paketi).
+- **Prompt timing:** Olumlu deneyim sonrası gösterilmelidir (örneğin: başarılı işlem tamamlama, hedefe ulaşma gibi pozitif anlar).
+- **Rate limiting:** Aynı kullanıcıya tekrar tekrar review prompt gösterilmemelidir. Platform API'leri bu sınırlamayı kısmen yönetir, ancak uygulama tarafında da kontrol sağlanmalıdır.
+- **Kötü deneyim sonrası:** Hata, crash veya başarısız işlem sonrasında review prompt göstermek yasaktır.
+
+## 34.5. Store Review Guideline Uyumu
+
+- **Apple App Review Guidelines:**
+  - IAP (In-App Purchase) zorunluluğu: dijital içerik satışı için Apple IAP kullanılmalıdır.
+  - Privacy label: App Store Connect'te doğru ve güncel privacy label tanımlanmalıdır.
+  - Data use: kullanıcı verisi toplama ve paylaşma beyanları gerçek durumla uyumlu olmalıdır.
+- **Google Play Policy:**
+  - Billing policy: dijital içerik satışı için Google Play Billing kullanılmalıdır.
+  - User data policy: veri toplama, paylaşma ve data safety beyanı uyumlu olmalıdır.
+  - Deceptive behavior: yanıltıcı davranış, gizli izleme veya kullanıcıyı aldatan pratikler yasaktır.
+- **Pre-submission checklist:** Her release öncesi platform guideline'ları kontrol edilmelidir. Yeni guideline değişiklikleri takip edilmeli ve uyum sağlanmalıdır.

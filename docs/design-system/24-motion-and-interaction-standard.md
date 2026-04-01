@@ -1354,13 +1354,13 @@ Gesture’lar:
 - gesture başladığında hiçbir görsel/state feedback olmaması
 - dismiss gesture ile destructive kayıp riski doğması
 
-## 28.5. Haptic Feedback Standardı
+## 28.4. Haptic Feedback Standardı
 
 Haptic feedback, kullanıcının parmağına iletilen fiziksel titreşim geri bildirimidir. Dokunmatik ekranlı mobil cihazlarda, kullanıcıya "etkileşimin karşılığı var" hissini dokunma duyusuyla veren güçlü bir UX aracıdır. Ancak doğru kullanılmazsa gürültüye dönüşür ve kullanıcıyı rahatsız eder.
 
 **Kapsam notu:** Haptic feedback yalnızca mobil platformlarda geçerlidir. Web'de haptic feedback'in karşılığı yoktur (Vibration API sınırlı desteğe sahiptir ve kaliteli haptic üretemez). Web uygulamalarında haptic bölümleri görmezden gelinir.
 
-### 28.5.1. Üç ana haptic türü
+### 28.4.1. Üç ana haptic türü
 
 Haptic feedback üç temel şiddet seviyesinde kategorize edilir. Her seviyenin kullanım alanı farklıdır:
 
@@ -1397,7 +1397,7 @@ Haptic feedback üç temel şiddet seviyesinde kategorize edilir. Her seviyenin 
 - **Sıklık:** **Çok nadir kullanılmalıdır.** Bir oturumda 1-2 kereden fazla tetiklenmemelidir. Sık kullanım haptic'in etkisini azaltır ve kullanıcıyı rahatsız eder.
 - **Şiddet:** Yüksek. Kullanıcıya "dur ve dikkat et" sinyali verir.
 
-### 28.5.2. Ek haptic türleri
+### 28.4.2. Ek haptic türleri
 
 Temel üç darbe türüne ek olarak, özel amaçlı haptic pattern'ler de mevcuttur:
 
@@ -1416,7 +1416,7 @@ Temel üç darbe türüne ek olarak, özel amaçlı haptic pattern'ler de mevcut
 - **Kullanım:** Hata durumunda. Ör: form validation hatası, network error.
 - **Görsel eşlik:** Error shake animasyonu ile birlikte tetiklenir.
 
-### 28.5.3. Haptic ne zaman KULLANILMAMALI?
+### 28.4.3. Haptic ne zaman KULLANILMAMALI?
 
 Haptic feedback "özel anlar" için tasarlanmıştır, sürekli gürültü için değil. Aşağıdaki durumlarda haptic **kesinlikle kullanılmamalıdır:**
 
@@ -1426,7 +1426,7 @@ Haptic feedback "özel anlar" için tasarlanmıştır, sürekli gürültü için
 - **Keyboard typing sırasında:** Klavye tuşlarına her basışta haptic verilmez (bu, cihazın kendi keyboard haptic ayarıdır, uygulama bunu kontrol etmemelidir).
 - **Pasif content görüntülemede:** Sayfa yüklendiğinde, data geldiğinde, content refresh edildiğinde haptic tetiklenmez.
 
-### 28.5.4. Erişilebilirlik kuralları
+### 28.4.4. Erişilebilirlik kuralları
 
 Haptic feedback, erişilebilirlik açısından şu kurallara tabidir:
 
@@ -1434,7 +1434,7 @@ Haptic feedback, erişilebilirlik açısından şu kurallara tabidir:
 - **Cihaz haptic ayarına saygı:** Kullanıcı cihaz ayarlarından haptic/titreşimi kapatmışsa, sistem bu haptic çağrılarını otomatik olarak engeller. Uygulama bu ayarı **override etmemelidir.** `UIImpactFeedbackGenerator` (iOS) ve `VibrationEffect` (Android) zaten bu kontrolü sistem seviyesinde yapar.
 - **Haptic intensity konfigüre edilemez:** Uygulama içinde "haptic şiddetini ayarla" gibi bir ayar sunulmaz. Bu, cihaz seviyesinde bir tercihtir.
 
-### 28.5.5. Platform implementasyonu
+### 28.4.5. Platform implementasyonu
 
 **iOS:**
 - `UIImpactFeedbackGenerator` sınıfı kullanılır. Üç şiddet seviyesi: `.light`, `.medium`, `.heavy`.
@@ -1451,7 +1451,7 @@ Haptic feedback, erişilebilirlik açısından şu kurallara tabidir:
 - Alternatif: `react-native-haptic-feedback` kütüphanesi: `trigger('impactLight')`, `trigger('notificationSuccess')`.
 - Her iki kütüphane de iOS ve Android'de native haptic API'lerini çağırır.
 
-### 28.5.6. Reduced motion ve haptic ilişkisi
+### 28.4.6. Reduced motion ve haptic ilişkisi
 
 Reduced motion ayarı haptic feedback'i **etkilemez.** Bunun nedeni: haptic fiziksel titreşimdir, görsel hareket değildir. `prefers-reduced-motion` tercihi yalnızca ekrandaki görsel hareketleri hedefler. Bir kullanıcı görsel hareketten rahatsız olabilir ama haptic'ten olmayabilir — bunlar farklı duyusal kanallardır.
 
@@ -1543,3 +1543,100 @@ Bu nedenle bundan sonraki hiçbir implementasyon:
 - reduced motion’ı opsiyonel detay gibi göremez,
 - press/focus/selection state’lerini sistem dışı doğaçlama çözemez,
 - motion token ve contract disiplini olmadan premium hissiyat iddiasında bulunamaz.
+
+---
+
+# 34. Haptic Feedback Standardı (2026-04-01 Eki)
+
+## 34.1. Haptic feedback’in rolü
+
+Haptic feedback, kullanıcıya fiziksel geri bildirim vererek motion ile sinerji oluşturan bir etkileşim katmanıdır. Amacı kullanıcı aksiyonlarını somut şekilde teyit etmek, ekrandaki görsel değişimleri dokunsal olarak desteklemek ve etkileşim güvenini artırmaktır.
+
+Haptic feedback:
+- görsel motion’ın fiziksel tamamlayıcısıdır,
+- kullanıcıya "sistem aksiyonu aldı" mesajını iletir,
+- snap, toggle, confirm gibi kısa süreli kararlarda belirginlik sağlar,
+- doğru kullanıldığında premium hissiyatı güçlendirir.
+
+## 34.2. Canonical araç
+
+Bu projede haptic feedback için **expo-haptics** canonical araçtır. Bu seçim Expo SDK (ADR-002) entegrasyonu nedeniyledir. expo-haptics, iOS Taptic Engine ve Android Vibration API üzerinden platform-native haptic tetikleme sağlar.
+
+## 34.3. Haptic tipleri ve kullanım senaryoları
+
+### 34.3.1. Impact
+
+Impact haptic, kullanıcının bir aksiyonu fiziksel olarak hissetmesi gereken kısa, kesin geri bildirimlerdir.
+
+Kullanım senaryoları:
+- **Tap confirmation:** Bir butonun veya interaktif öğenin başarıyla tıklanması
+- **Snap-to-place:** Drag & drop sonrası öğenin yerine oturması
+- **Toggle switch:** Açma/kapama anahtarının durum değiştirmesi
+
+### 34.3.2. Notification
+
+Notification haptic, sistem sonuçlarını dokunsal olarak bildirmek için kullanılır. Üç alt tipi vardır:
+
+- **Success:** Ödeme onayı, form başarıyla gönderilmesi, işlem tamamlanması
+- **Warning:** Düşük bakiye, yaklaşan limit, dikkat gerektiren durum
+- **Error:** Form doğrulama hatası, başarısız işlem, bağlantı kopması
+
+### 34.3.3. Selection
+
+Selection haptic, değer değişimlerinde hafif dokunsal geri bildirim sağlar.
+
+Kullanım senaryoları:
+- **Picker/slider değer değişimi:** Her değer adımında hafif titreşim
+- **Liste item seçimi:** Seçim yapıldığında kısa dokunsal onay
+- **Segmented control:** Segment değişikliğinde hafif feedback
+
+## 34.4. Platform farkları
+
+### 34.4.1. iOS
+
+iOS, Taptic Engine ile zengin bir haptic palette sunar. UIImpactFeedbackGenerator üzerinden light, medium, heavy seviyeleri desteklenir. UINotificationFeedbackGenerator ile success, warning, error ayrımı donanım düzeyinde yapılır. UISelectionFeedbackGenerator ise picker ve selection feedback’leri için optimize edilmiştir.
+
+### 34.4.2. Android
+
+Android, Vibration API üzerinden çalışır ve iOS’a kıyasla daha kısıtlı bir haptic deneyimi sunar. HapticFeedbackConstants ile belirli sayıda preset desteklenir. Cihazlar arası haptic kalitesi değişkendir; bazı cihazlarda motor kalitesi düşük olabilir. Bu nedenle Android’de haptic feedback, best-effort yaklaşımıyla ele alınmalıdır.
+
+### 34.4.3. Web
+
+Web platformunda `navigator.vibrate()` API’si sınırlı destek sunar. Tüm tarayıcılarda desteklenmez ve haptic deneyimi mobil cihazlara kıyasla oldukça kısıtlıdır. Web’de haptic feedback best-effort olarak ele alınmalı ve asla tek geri bildirim kanalı olarak kullanılmamalıdır.
+
+## 34.5. Reanimated 4 worklet entegrasyonu
+
+### 34.5.1. Gesture Handler v3 ile koordineli haptic tetikleme
+
+Gesture Handler v3 gesture event’leri ile haptic feedback koordineli çalışmalıdır. Gesture’ın belirli eşiklerine ulaşıldığında (örneğin snap noktası, drag sınırı) haptic tetiklenmelidir.
+
+### 34.5.2. UI thread’de haptic çağrısı
+
+react-native-nitro-haptics worklet desteği ile haptic çağrıları doğrudan UI thread üzerinde yapılabilir. Bu, JS bridge gecikmesini ortadan kaldırarak anında feedback sağlar.
+
+### 34.5.3. 120fps gesture + haptic senkronizasyonu
+
+Yüksek kare hızındaki gesture animasyonları ile haptic feedback senkronize olmalıdır. Haptic tetikleme, gesture’ın doğru anında (frame-accurate) gerçekleşmelidir. Geciken veya yanlış zamanlama haptic deneyimini bozar.
+
+## 34.6. Performans kuralları
+
+1. **Aşırı haptic kullanma:** Her dokunuşa haptic eklemek kullanıcı yorgunluğuna yol açar. Haptic yalnızca anlamlı state değişimlerinde tetiklenmelidir.
+2. **Haptic süresini kısa tut:** Tek bir haptic feedback süresi 100ms’yi aşmamalıdır. Uzun süren vibrasyon kullanıcı rahatsızlığı yaratır.
+3. **Reduced motion tercihi:** Kullanıcı reduced motion tercihini aktifleştirmişse haptic feedback de azaltılmalıdır. Kritik bildirimler (error, success) korunabilir, ancak selection ve impact feedback’leri devre dışı bırakılmalı veya hafifletilmelidir.
+4. **Battery etkisi:** Aşırı haptic kullanımı batarya tüketimini artırır. Özellikle yoğun liste kaydırma gibi senaryolarda haptic tetikleme sıklığı throttle edilmelidir.
+
+## 34.7. Accessibility
+
+1. **Haptic tek başına bilgi taşımamalı:** Haptic feedback her zaman görsel ve/veya sesli feedback ile birlikte kullanılmalıdır. Yalnızca haptic ile iletilen bilgi, haptic’i hissedemeyen kullanıcılar için kaybolur.
+2. **prefers-reduced-motion saygısı:** Kullanıcının sistem düzeyindeki reduced motion tercihi haptic davranışını da etkilemelidir. Bu tercih aktifse haptic feedback azaltılmalı veya sadece kritik bildirimlerle sınırlandırılmalıdır.
+3. **VoiceOver/TalkBack uyumu:** Haptic feedback, screen reader kullanıcıları için ek bilgi sağlayabilir ancak asla screen reader announcement’ının yerini almamalıdır.
+
+## 34.8. Anti-pattern’ler
+
+Aşağıdaki haptic kullanımları bu projede zayıf kabul edilir:
+
+1. **Her dokunuşta haptic:** Tüm tap event’lerine haptic eklemek, kullanıcıda duyarsızlaşma yaratır ve premium his yerine ucuz cihaz hissi verir.
+2. **Uzun süren vibrasyon:** 100ms’yi aşan sürekli vibrasyon, kullanıcıda fiziksel rahatsızlık yaratır. Özellikle notification tipleri kısa ve kesin olmalıdır.
+3. **Haptic’i tek geri bildirim kanalı olarak kullanma:** Haptic olmadan bilgi iletilemeyen durumlar accessibility ihlalidir. Haptic her zaman görsel feedback’in tamamlayıcısı olmalıdır.
+4. **Platform farkını görmezden gelme:** iOS ve Android’de aynı haptic kodunu çalıştırıp sonucu test etmemek, platformların birinde kötü deneyime yol açar.
+5. **Gesture ile senkronize olmayan haptic:** Gesture animasyonundan bağımsız, gecikmeli veya yanlış zamanlı haptic tetikleme, kullanıcıda kopukluk hissi yaratır.

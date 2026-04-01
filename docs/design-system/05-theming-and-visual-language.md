@@ -876,3 +876,129 @@ Bu nedenle bundan sonraki hiçbir doküman:
 - surface ve state görünürlüğünü rastgele yönetemez,
 - premium hissi dekoratif efektlere indirgemez,
 - platform farkı bahanesiyle ürünün görsel tonunu parçalayamaz.
+
+---
+
+# 29. Dark Mode ve Sistem Tercihi Senkronizasyonu (2026-04-01 Eki)
+
+## 29.1. Sistem tercihi algılama
+
+### 29.1.1. Web
+
+Web platformunda kullanıcının tema tercihi `prefers-color-scheme` media query ile algılanır. `matchMedia('(prefers-color-scheme: dark)')` listener'ı ile sistem tercihi değişiklikleri anlık olarak dinlenir. Sayfa yüklendiğinde ilk tema belirleme bu sorguya dayanmalıdır.
+
+### 29.1.2. Mobile
+
+React Native'de `Appearance` API ile sistem teması algılanır. `Appearance.getColorScheme()` ile anlık tema sorgulanır, `Appearance.addChangeListener()` ile değişiklikler dinlenir. Expo ortamında bu API doğrudan kullanılabilir.
+
+### 29.1.3. Override sırası
+
+Tema belirlemede override sırası şu şekildedir:
+
+1. **Kullanıcı tercihi** (uygulama içi ayarlardan seçilen tema) — en yüksek öncelik
+2. **Sistem tercihi** (OS düzeyinde ayarlanan tema)
+3. **Varsayılan tema** (light) — fallback
+
+Kullanıcı uygulamada "her zaman koyu" seçtiyse, sistem tercihi ne olursa olsun koyu tema uygulanır. Kullanıcı "sistemi takip et" seçtiyse sistem tercihi geçerli olur.
+
+## 29.2. Tema geçiş mekanizması
+
+### 29.2.1. Flickering önleme
+
+Tema geçişlerinde flickering (beyaz flaş / siyah flaş) kabul edilemez. Çözüm yaklaşımları:
+- CSS custom properties (variables) ile anında geçiş yapılmalı; DOM manipulation minimize edilmelidir.
+- İlk yükleme anında tema, tarayıcıya CSS paint'ten önce iletilmelidir (blocking script veya cookie-based tema algılama).
+- `requestAnimationFrame` ile geçiş zamanlama senkronize edilmelidir.
+
+### 29.2.2. SSR/hydration mismatch önleme
+
+Eğer SSR kullanılıyorsa, sunucu tarafında tema bilgisi yoksa hydration mismatch oluşur. Bu durumda:
+- İlk render'da tema bilgisi cookie veya inline script üzerinden aktarılmalıdır.
+- Hydration sırasında tema değişikliği yapılmamalıdır.
+
+### 29.2.3. Transition animasyonu
+
+- Renk ve opacity geçişleri smooth olmalıdır (CSS transition: ~200ms).
+- Layout shift kesinlikle yasaktır; tema değişimi yalnızca renk/ton değişimini kapsamalıdır.
+- Büyük ekranlarda tüm yüzeylerin aynı anda geçiş yapması tercih edilir (cascading effect istenmeyen bir durumdur).
+
+## 29.3. CSS light-dark() fonksiyonu
+
+### 29.3.1. Token tanımlama
+
+Her design token'da hem light hem dark değeri tanımlanmalıdır. CSS `light-dark()` fonksiyonu ile tek bir token tanımında her iki tema değeri birlikte verilebilir:
+
+```css
+--color-surface-default: light-dark(#ffffff, #1c1c1e);
+```
+
+Bu yaklaşım token yönetimini sadeleştirir ve tema geçişinin CSS seviyesinde ele alınmasını sağlar.
+
+### 29.3.2. Dynamic token'lar
+
+İleri seviye senaryolarda aşağıdaki dinamik koşullar düşünülebilir:
+- **Ambient light:** Ortam ışığına göre kontrast ayarı (opsiyonel, sensör bağımlı)
+- **Battery saver:** Düşük pil modunda OLED ekranlarda koyu tema zorunlu kılınabilir (opsiyonel)
+
+Bu dynamic token'lar boilerplate seviyesinde opsiyoneldir; ürün ihtiyacına göre aktive edilir.
+
+## 29.4. Contrast enforcement
+
+### 29.4.1. Normal metin
+
+Normal boyutlu metin (18px altı) için arka plan ile metin arasında minimum **4.5:1** contrast ratio sağlanmalıdır (WCAG 2.1 AA).
+
+### 29.4.2. Büyük metin
+
+Büyük metin (18px ve üstü, veya 14px ve üstü bold) için minimum **3:1** contrast ratio yeterlidir.
+
+### 29.4.3. Non-text UI
+
+İkon, border, form control outline gibi non-text UI elementleri için minimum **3:1** contrast ratio sağlanmalıdır.
+
+### 29.4.4. Dark mode özel dikkat
+
+Dark mode'da sık yapılan hatalar:
+- Beyaz metin çok parlak arka plan üzerinde kullanılmamalı (glare etkisi).
+- Saf siyah (`#000000`) arka plan üzerinde saf beyaz (`#ffffff`) metin göz yorgunluğuna yol açar; hafif ton farkı tercih edilmelidir.
+- Renkli vurgular dark mode'da parlak kalmaya meyillidir; tone-down edilmeleri gerekebilir.
+- Contrast ratio'ları her iki temada ayrı ayrı doğrulanmalıdır.
+
+## 29.5. Font smoothing ve platform farkları
+
+### 29.5.1. iOS
+
+iOS'ta `-webkit-font-smoothing: antialiased` tercih edilir. Bu, subpixel antialiasing yerine grayscale antialiasing uygulayarak özellikle ince fontlarda daha temiz render sağlar.
+
+### 29.5.2. Android
+
+Android farklı font rendering engine'i kullanır. Subpixel rendering davranışı cihaza göre değişebilir. Dark mode'da font smoothing farkları daha belirgin hale gelebilir.
+
+### 29.5.3. Web
+
+Web'de subpixel antialiasing (varsayılan) ile grayscale antialiasing arasında bilinçli seçim yapılmalıdır. Dark background üzerinde açık metin kullanıldığında grayscale antialiasing genellikle daha iyi sonuç verir.
+
+## 29.6. Cross-platform tema senkronizasyonu
+
+### 29.6.1. Tema tercihi persist edilmesi
+
+Kullanıcının tema tercihi kalıcı olarak saklanmalıdır:
+- **Web:** Cookie veya localStorage üzerinden saklanır. Cookie tercih edilir çünkü SSR sırasında erişilebilir.
+- **Mobile:** AsyncStorage veya Expo SecureStore üzerinden saklanır.
+
+### 29.6.2. Cihazlar arası tema sync
+
+Kullanıcı farklı cihazlarda aynı tema tercihini görmek isteyebilir. Bu durumda:
+- Backend preference API üzerinden tema tercihi sync edilebilir (opsiyonel).
+- Auth flow sırasında kullanıcı profili ile birlikte tema tercihi alınabilir.
+- Bu alan boilerplate seviyesinde opsiyoneldir; ürün kararına bağlıdır.
+
+## 29.7. Design token katmanı ile ilişki
+
+### 29.7.1. Semantic token'lar ve tema switching
+
+`22-design-tokens-spec.md`'de tanımlanan semantic token'lar tema switching'in temelini oluşturur. Tema değişimi, semantic token'ların farklı raw palette değerlerine eşlenmesiyle gerçekleşir. Semantic roller (ör. `surface-default`, `content-primary`) tema bağımsızdır; yalnızca arkalarındaki ham renk değerleri temaya göre değişir.
+
+### 29.7.2. Yeni renk ekleme kuralı
+
+Sisteme yeni bir renk eklenirken her iki tema (light ve dark) için değer tanımlanması zorunludur. Tek tema için tanımlanan renk, diğer temada beklenmeyen görsel sonuçlar doğurur. Bu kural CI lint kuralı olarak da enforce edilmelidir.

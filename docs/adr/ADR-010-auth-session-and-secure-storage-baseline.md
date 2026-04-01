@@ -815,6 +815,7 @@ Bu ADR şu topolojik sonuçları doğurur:
 - session summary UI store’dan ayrı conceptual boundary’de tutulur
 - auth provider specifics app-shell ve adapter seviyesinde kalır
 - logout cleanup orchestration merkezi ve açıklanabilir olmalıdır
+- biometric authentication modülü auth boundary içinde yaşamalıdır
 
 Bu nedenle `21-repo-structure-spec.md` bu ADR ile hizalanmalıdır.
 
@@ -989,3 +990,170 @@ Bu ADR yeterli kabul edilir eğer:
 Bu ADR’nin ana çıktısı şudur:
 
 > Bu boilerplate’te auth ve session, convenience-first frontend state problemi olarak ele alınmayacaktır. Auth artefact’ları kontrollü boundary içinde kalacak; UI yalnızca sanitize edilmiş auth/session summary tüketecektir. Web tarafında mümkün olan yerde secure cookie session tercih edilecek, mobile tarafında ise secure storage adapter kullanılacaktır. Logout, restore, expiry ve user switch davranışları deterministik ve security-first tasarlanacaktır.
+
+---
+
+# 44. Biometric Authentication Genisletmesi (2026-04-01 Eki)
+
+Bu bolum ADR-010’un mevcut kararlarini degistirmez; biometric authentication katmanini tamamlayici olarak tanimlar. Mevcut auth boundary, secure storage ve session lifecycle kararlari aynen gecerlidir.
+
+## 44.1. Canonical SDK
+
+`expo-local-authentication` bu boilerplate’in biometric authentication SDK’sidir. Expo SDK 55.x managed workflow ile dogal uyum saglar ve ADR-002 Expo-first ilkesiyle hizalidir.
+
+## 44.2. Desteklenen Biometric Yontemler
+
+### 44.2.1. iOS
+
+- **Face ID:** TrueDepth kamera tabanli yuz tanima
+- **Touch ID:** Parmak izi tanima (eski cihazlar)
+- **Optic ID:** Vision Pro cihazlarda iris tanima
+- `NSFaceIDUsageDescription` plist key’i zorunludur; kullaniciya neden Face ID istendigini aciklar
+
+### 44.2.2. Android
+
+- **Fingerprint:** Parmak izi tanima
+- **Face Unlock:** Yuz tanima (cihaz destegine bagli)
+- **Iris:** Iris tanima (cihaz destegine bagli)
+- BiometricPrompt API kullanilir; cihaz seviyesinde dogrulama yapilir
+
+## 44.3. Security Level Ayrimi
+
+### 44.3.1. biometricStrong (Class 3)
+
+- Donanim tabanli biometric dogrulama
+- Face ID, Touch ID ve Android BiometricPrompt BIOMETRIC_STRONG
+- Guvenlik acisidan tercih edilen seviye
+- Auth token unlock ve hassas islemler icin bu seviye zorunludur
+
+### 44.3.2. biometricWeak (Class 2)
+
+- Yazilim tabanli veya dusuk guvenlikli biometric dogrulama
+- Bazi Android cihazlardaki yuz tanima
+- Hassas islemler icin tek basina yeterli degildir
+- Convenience unlock icin kabul edilebilir ama guvenlik-kritik islemlerde biometricStrong ile desteklenmelidir
+
+### 44.3.3. Kural
+
+Uygulama hangi security level’in mevcut oldugunu kontrol eder ve buna gore davranis belirler. biometricStrong yoksa hassas islemler icin PIN/sifre fallback zorunludur.
+
+## 44.4. Fallback Mekanizmasi Zorunlulugu
+
+- **Biometric her zaman opsiyoneldir; zorunlu degildir.** Kullanici biometric kullanmayi reddedebilir veya cihaz desteklemeyebilir.
+- **Fallback yontemleri:** PIN, sifre veya pattern unlock her zaman alternatif olarak sunulur
+- **Biometric basarisiz oldugunda** (taninmayan yuz/parmak, sensor hatasi) fallback otomatik sunulur
+- **Accessibility:** Biometric kullanamayan kullanicilar (fiziksel engel, cihaz desteksizligi) icin alternatif yol her zaman mevcuttur. Biometric olmadan uygulamanin tum ozellikleri erisilebilir olmalidir.
+- **Kilit sonrasi:** Birden fazla basarisiz biometric deneme sonrasi cihaz guvenlik kilidi devreye girer; uygulama bunu yonetmez, platform mekanizmasina birakir.
+
+## 44.5. Biometric Veri Guvenligi
+
+### 44.5.1. Veri cihazda kalir
+
+- Biometric veri (parmak izi, yuz haritasi) cihazin Secure Enclave (iOS) veya TEE/StrongBox (Android) alaninda saklanir
+- Bu veri uygulama tarafindan okunamaz, kopyalanamaz veya backend’e gonderilemez
+- Uygulama yalnizca dogrulama sonucunu (basarili/basarisiz) alir
+
+### 44.5.2. Backend’e gonderilmez
+
+- Biometric veri, hash’i, template’i veya herhangi bir turetilmis verisi backend’e gonderilmez
+- Backend biometric dogrulama sonucunu dogrudan guvenilir kaynak olarak kabul etmez; biometric yalnizca yerel cihaz unlock mekanizmasidir
+
+### 44.5.3. Observability ve privacy
+
+- Biometric event’leri (basari/basarisizlik) analytics’e yalnizca anonimlestirilmis ve aggreate olarak raporlanir
+- Biometric hata detaylari (hangi parmak, hangi yuz acisi) loglanmaz
+- Sentry veya diger crash reporting araclarinda biometric context bulunmaz
+
+## 44.6. Biometric + Secure Storage Birlestirmesi (Token Unlock)
+
+### 44.6.1. Senaryo
+
+Kullanici uygulamayi actigi zaman biometric dogrulama ile secure storage’daki auth token’ina erisim saglanir. Bu, session restore isleminin kullanici dostu versiyonudur.
+
+### 44.6.2. Akis
+
+1. Uygulama aciliginda biometric enrollment durumu kontrol edilir
+2. Biometric aktifse ve kullanici onayliysa biometric prompt gosterilir
+3. Biometric dogrulama basariliysa secure storage’dan token okunur
+4. Token gecerliligi kontrol edilir (expired ise refresh veya re-auth)
+5. Basarisizsa veya kullanici iptal ederse PIN/sifre fallback sunulur
+
+### 44.6.3. Kural
+
+Biometric dogrulama basarisi otomatik olarak backend session gecerliligi anlamina gelmez. Biometric yalnizca yerel secure storage erisim kapisi olarak kullanilir; backend session validity ayrica dogrulanir.
+
+## 44.7. Biometric Enrollment Durumu Kontrolu
+
+- Uygulama baslarken `expo-local-authentication` ile cihazin biometric destegi kontrol edilir
+- Kontrol edilen durumlar:
+  - **Donanim destegi var mi?** (hasHardwareAsync)
+  - **Biometric kayitli mi?** (isEnrolledAsync)
+  - **Hangi biometric turleri mevcut?** (supportedAuthenticationTypesAsync)
+  - **Security level nedir?** (biometricStrong vs biometricWeak)
+- Biometric donanim yoksa veya kayit yapilmamissa biometric secenegi gosterilmez; fallback dogrudan sunulur
+- Kullanici cihaz ayarlarindan biometric ekler/kaldirir; uygulama bir sonraki acilista durumu yeniden kontrol eder
+
+## 44.8. Platform-Specific Davranis Farklari
+
+### 44.8.1. iOS
+
+- Face ID ilk kullanildiginda sistem izin dialog’u gosterir; kullanici reddederse ayarlardan acmasi gerekir
+- Touch ID icin ayrica izin gerekmez; enrollment yeterlıdir
+- Keychain entegrasyonu ile biometric-protected item’lar tanimlanabilir
+- `LAPolicy.deviceOwnerAuthenticationWithBiometrics` vs `LAPolicy.deviceOwnerAuthentication` ayrimi yapilir
+
+### 44.8.2. Android
+
+- BiometricPrompt sistem dialog’u gosterir; custom UI yasaktir (platform kuralı)
+- `setNegativeButtonText` ile iptal butonu yonetilir
+- `setAllowedAuthenticators` ile BIOMETRIC_STRONG, BIOMETRIC_WEAK ve DEVICE_CREDENTIAL kombinasyonlari belirlenir
+- Android 10+ cihazlarda biometric API tutarlıdır; eski cihazlarda FingerprintManager fallback expo-local-authentication tarafindan yonetilir
+
+### 44.8.3. Ortak davranis
+
+- Biometric prompt UI platform-native olur; custom biometric UI olusturulmaz
+- Dogrulama sonucu (basari/basarisizlik/iptal) her iki platformda ayni sekilde ele alinir
+- Biometric tercih durumu kullanici bazinda secure storage’da tutulur
+
+## 44.9. Passkey Destegi Hazirligi (WebAuthn / FIDO2)
+
+### 44.9.1. Gelecek yonelim
+
+Passkey (WebAuthn / FIDO2) password-less authentication standardidir. Apple, Google ve Microsoft tarafindan desteklenmektedir.
+
+### 44.9.2. Hazirlik ilkeleri
+
+- Auth boundary mimarisi passkey entegrasyonuna izin verecek sekilde tasarlanir
+- Auth adapter contract’i passkey credential turunu destekleyecek genislikte tutulur
+- Passkey implementation detaylari bu ADR kapsaminda degildir; ayri ADR gerektirir
+- Mevcut biometric authentication passkey’in yerini almaz; passkey hazir olana kadar biometric + token modeli gecerlidir
+
+### 44.9.3. Kural
+
+Passkey destegi eklendiginde mevcut biometric flow graceful degradation ile korunur. Passkey desteklemeyen cihazlarda biometric + fallback modeli devam eder.
+
+## 44.10. Biometric Authentication Non-Goals
+
+Bu genisletme asagidakileri cozmez:
+
+- Passkey / WebAuthn / FIDO2 tam implementation
+- Multi-factor authentication (MFA) tam stratejisi
+- Biometric-only auth (biometric tek basina backend session olusturmaz)
+- Continuous authentication (surekli biometric dogrulama)
+- Biometric veri yedekleme ve cihazlar arasi transfer
+- Kurumsal (enterprise) biometric policy yonetimi
+
+## 44.11. Biometric Onay Kriterleri
+
+Bu genisletme yeterli kabul edilir eger:
+
+1. Canonical SDK secimi (`expo-local-authentication`) ve gerekcesi acikca yazilmissa
+2. Fallback mekanizmasi zorunlulugu net tanimlanmissa
+3. Biometric veri guvenlik ilkeleri (cihazda kalir, backend’e gonderilmez) belirtilmisse
+4. Security level ayrimi (biometricStrong/biometricWeak) aciklanmissa
+5. Biometric + secure storage birlestirmesi (token unlock) tanımlanmissa
+6. Enrollment durumu kontrolu detaylandirilmissa
+7. Platform-specific davranis farklari (iOS/Android) gorunur kilinmissa
+8. Passkey hazirligi ilkeleri yazilmissa
+9. Accessibility gereksinimi (biometric kullanamayan kullanicilar icin alternatif) acikca belirtilmisse
+10. Mevcut ADR-010 kararlariyla celismedigi dogrulanmissa

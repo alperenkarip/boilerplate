@@ -68,3 +68,49 @@
 - `main` branch'e direct push YASAK
 - Feature branch max 2-3 gün ömürlü
 - Squash merge varsayılan
+
+## Guardrail Compliance Review
+AI araçlarının ürettiği kodun `docs/ai-guardrails/` altındaki guardrail kurallarına uyumunu denetle.
+Guardrail çerçevesi: `docs/governance/47-ai-guardrail-governance.md`
+
+### Universal Guardrail İhlalleri → P0
+- Hardcoded renk/spacing/font değeri (D-DSY ihlali)
+- `any` type kullanımı
+- Import yönü ihlali (shared → feature, packages → apps)
+- Inline user-facing string (D-I18 ihlali)
+- Secret/credential kodda açık metin
+
+### Domain Guardrail İhlalleri → P0/P1
+- Component'te a11y role/label eksikliği (D-A11) → P0
+- Touch target minimum ihlali (D-UIX) → P0
+- Safe area ihlali (D-UIX) → P0
+- Semantic token yerine raw color kullanımı (D-DSY) → P0
+- Form'da schema-first validation eksikliği (D-FRM) → P1
+- Firebase güvenlik kuralı eksikliği (D-FIR) → P1
+- Reduced motion guard eksikliği (D-MOT) → P1
+- Error/empty/loading state eksikliği (D-ERR) → P1
+- Navigation back davranışı belirsizliği (D-NAV) → P1
+
+### Aktivite Guardrail Uyumsuzluğu → P1
+- Yeni component + component governance (23) uyumsuzluğu
+- Yeni ekran + SPEC eksikliği (karmaşıklık >= 5)
+- Yeni ekran + error/empty/loading state eksikliği
+- Dependency ekleme + dependency policy (37) onaysız
+- Refactoring + mevcut test coverage azalması
+- Config değişikliği + pipeline kırılma riski değerlendirmesi eksik
+- Auth değişikliği + security baseline (27) uyumsuzluğu
+
+### Yaşam Döngüsü Uyumsuzluğu → P1/P2
+- PR'da DoD (32) kontrol listesi eksik → P1
+- Exception süresi dolmuş (44) → P1
+- Boundary contract manifest (BOUNDARY.md) güncel değil → P1
+- Guardrail dokümanı ile kaynak doküman arasında sapma → P2
+
+### Rapor Formatı
+Her bulgu şu yapıda raporlanmalı:
+1. **Severity**: P0 / P1 / P2
+2. **Guardrail Referansı**: Domain ID + kural (örn: D-DSY §2.3)
+3. **Kaynak Doküman**: İlgili boilerplate dokümanı (örn: 22-design-tokens-spec.md)
+4. **Dosya ve Satır**: Etkilenen konum
+5. **İhlal Açıklaması**: Ne yanlış
+6. **Düzeltme Önerisi**: Ne yapılmalı
