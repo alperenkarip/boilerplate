@@ -132,6 +132,9 @@ Ama her bağlantı context ve performans maliyeti üretir.
 | DESIGN.md | Aktif alan subset'i | Oturum başlangıcı |
 | SPEC | Aynı anda tek aktif | SPEC durumu kontrolü |
 | MCP | İhtiyaç duyulduğunda aktif | Oturum başlangıcı |
+| Domain guardrail | Maks 150 satır / doküman | PR review |
+| Aktivite guardrail | Maks 100 satır / doküman | PR review |
+| Aynı anda aktif guardrail | Maks 1 aktivite + 4 domain | Oturum başlangıcı |
 
 ---
 
@@ -261,6 +264,54 @@ Eşleşme tablosu:
 
 Eşleşmezlik durumunda `22-design-tokens-spec.md` kazanır.
 DESIGN.md Stitch'te yeniden üretilir.
+
+---
+
+## 4.5. Guardrail Dokümanı Anatomisi
+
+Guardrail dokümanları, mevcut boilerplate dokümanlarının AI-native özetidir. Detay `47-ai-guardrail-governance.md`'de tanımlanmıştır.
+
+**İki tür guardrail dokümanı vardır:**
+
+### Domain Guardrail (docs/ai-guardrails/domain/D-XXX-*.md)
+
+Zorunlu bölümler:
+- YAML frontmatter: id, type, name, kaynak-dokümanlar, miras-tipi, son-güncelleme
+- Tetikleme koşulu
+- Zorunlu kurallar (YAPILMALI/YAPILMAMALI/ZORUNLU/YASAK formatı)
+- Kalite eşikleri (MİNİMUM/ÖNERİLEN)
+- Anti-pattern'ler
+- Kontrol listesi
+- İhlal durumunda talimat
+- Kaynak doküman referansları
+
+Kısıtlama: Maks 150 satır. Narratif açıklama yasak.
+
+### Aktivite Guardrail (docs/ai-guardrails/activity/A-XXX-*.md)
+
+Zorunlu bölümler:
+- YAML frontmatter: id, type, name, tetiklenen-domain-guardrails, araç-zorunlulukları, son-güncelleme
+- Ön koşullar
+- Aktif domain guardrail'ler listesi
+- Aktiviteye özel kurallar
+- Araç kullanım tablosu
+- DoD ek maddeleri
+
+Kısıtlama: Maks 100 satır. Domain guardrail içeriğini tekrar etmez.
+
+## 4.6. Skill Dosyası (SKILL.md) Anatomisi
+
+Claude Code skill'leri `.claude/skills/{skill-adi}/SKILL.md` formatında tanımlanır.
+
+Zorunlu bölümler:
+- YAML frontmatter: name, description
+- Opsiyonel frontmatter: allowed-tools, context (fork), disable-model-invocation
+- Markdown content: skill'in yaptığı işin adım adım talimatları
+
+Kısıtlamalar:
+- name: maks 64 karakter, lowercase, hyphens
+- description: maks 1024 karakter
+- Skill dosyaları git'te tutulur ve PR review kapsamındadır
 
 ---
 

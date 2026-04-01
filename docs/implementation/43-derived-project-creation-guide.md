@@ -378,7 +378,44 @@ Asagidaki anti-pattern'ler turetme surecinde en sik karsilasilan hatalardir. Bu 
 
 ---
 
-# 8. Onay Kriterleri
+# 8. AI Guardrail Kurulumu (Türetilen Proje)
+
+Türetilen proje oluşturulurken AI guardrail çerçevesi de kurulmalıdır (`47-ai-guardrail-governance.md`).
+
+## 8.1. Guardrail Dosyalarını Kopyala
+
+```
+# Boilerplate'den türetilen projeye kopyalanacak dosyalar:
+docs/ai-guardrails/domain/          → read-only olarak kopyala
+docs/ai-guardrails/activity/         → read-only olarak kopyala
+.claude/skills/                      → kopyala (yapısal miras)
+.claude/settings.json                → kopyala (yapısal miras)
+```
+
+## 8.2. CLAUDE.md'ye Guardrail Protokolünü Aktar
+
+Boilerplate CLAUDE.md'deki "AI Guardrail Protokolü" bölümünü türetilen proje CLAUDE.md'sine zorunlu olarak aktar. Bu protokol kaldırılamaz.
+
+## 8.3. AGENTS.md Guardrail Bölümlerini Aktar
+
+Boilerplate AGENTS.md'deki "Guardrail Compliance Review" bölümünü türetilen proje AGENTS.md'sine aktar.
+
+## 8.4. Proje-Spesifik Guardrail Ekleme (Opsiyonel)
+
+Proje ihtiyacına göre `docs/ai-guardrails/project/GP-XXX-*.md` formatında ek guardrail'ler oluşturulabilir. Bu guardrail'ler base guardrail'lerle çelişemez.
+
+## 8.5. Doğrulama
+
+- [ ] `docs/ai-guardrails/domain/` dizini mevcut ve base dokümanlarla güncel
+- [ ] `docs/ai-guardrails/activity/` dizini mevcut ve base dokümanlarla güncel
+- [ ] `.claude/skills/` dizini mevcut, skill'ler çalışır durumda
+- [ ] `.claude/settings.json` mevcut, hook'lar tanımlı
+- [ ] CLAUDE.md'de guardrail protokolü var
+- [ ] AGENTS.md'de guardrail review kuralları var
+
+---
+
+# 9. Onay Kriterleri
 
 Bu belge asagidaki kosullar saglandiginda uygulamaya hazir kabul edilir:
 

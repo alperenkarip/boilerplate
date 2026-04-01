@@ -359,6 +359,11 @@ Bu proje kapsamında enforcement için düşünülmesi gereken HIG ilişkili ana
 10. Input/field usability
 11. Platform-consistent affordances
 12. Visual clarity and premium tone
+13. AI/Intelligence content transparency and user control
+14. Dynamic Type and font scaling
+15. Dark mode compliance
+16. Haptic feedback integration
+17. SF Symbols and iconography consistency
 
 Her biri için aşağıda enforcement yaklaşımı verilmiştir.
 
@@ -382,6 +387,11 @@ Aşağıdaki tablo, her HIG alanı için hangi enforcement katmanının birincil
 | Input/field | **P** | S | — | — | S |
 | Premium tone | — | — | — | — | **P** |
 | Visual clarity | S | — | — | — | **P** |
+| AI content/transparency | — | **P** | S | S | S |
+| Dynamic Type | **P** | S | S | — | S |
+| Dark mode | **P** | S | S | S | S |
+| Haptic feedback | **P** | — | S | — | S |
+| Iconography | **P** | S | — | — | S |
 
 **P** = Primary (birincil enforcement katmanı), **S** = Secondary (destekleyici katman), **—** = bu katman doğrudan uygulanabilir değil.
 
@@ -656,6 +666,147 @@ Ama tamamen öznel de bırakılamaz.
 
 ---
 
+# 23.A. AI/Intelligence Content Enforcement
+
+## 23.A.1. Hedef
+
+AI tarafından üretilen, değiştirilen veya önerilen içeriğin Apple HIG — Design for Intelligence prensiplerine uygun sunulmasını sağlamak. Şeffaflık, kullanıcı kontrolü ve gizlilik temel gereksinimleridir.
+
+## 23.A.2. Neden gerekir?
+
+Apple Intelligence ile birlikte (2024+) AI özellikleri sistem genelinde yaygınlaşmıştır. Uygulamalar:
+- Writing Tools, App Intents, bildirim özetleme ile entegre olmalıdır
+- AI içeriğini şeffaf şekilde etiketlemelidir
+- Kullanıcının AI önerilerini reddetme, düzenleme ve geri alma hakkını korumalıdır
+- Gizlilik kurallarına (on-device vs cloud, üçüncü parti onayı) uymalıdır
+
+Bu alanın ihmal edilmesi güven kaybına, gizlilik ihlallerine ve Apple App Review redlerine yol açabilir.
+
+## 23.A.3. Enforce mekanizmaları
+
+- lint ile AI içerik etiketleme kontrolü (AI badge/label eksikliği)
+- lint ile gizlilik onay akışı doğrulama (veri gönderimi öncesi consent kontrolü)
+- runtime checks: Writing Tools aktiflik kontrolü, AI fallback doğrulama
+- CI gate: AI etiketleme eksikliği raporu, gizlilik onay eksikliği
+- manual audit: AI içerik sunumunun doğallığı, güven düzeyi iletişimi, ton uygunluğu
+
+## 23.A.4. Blocker örnekleri
+
+- AI içeriğin etiketlenmeden sunulması
+- Kullanıcı verisinin onaysız AI servisine gönderilmesi
+- AI eylemlerinin geri alınamaz olması
+- AI başarısızlığında graceful fallback olmaması
+
+## 23.A.5. Major örnekleri
+
+- Writing Tools desteğinin gereksiz yere devre dışı bırakılması
+- Güven düzeyi iletişimi eksikliği
+- AI önerilerinin aşırı agresif sunulması
+- App Intents tanımlarının eksik veya yanlış olması
+
+## 23.A.6. Zayıf davranışlar
+
+- AI özelliklerini gizlilik düşünmeden entegre etmek
+- AI içeriğini ayırt edilemez şekilde sunmak
+- Kullanıcıyı AI kullanmaya zorlamak
+- AI hata payını göz ardı etmek
+- Üçüncü parti AI sağlayıcısını gizlemek
+
+---
+
+# 23.B. Dynamic Type & Font Scaling Enforcement
+
+## 23.B.1. Hedef
+
+Tüm metin içeriklerinin kullanıcının tercih ettiği font boyutuna uyum sağlamasını garanti altına almak.
+
+## 23.B.2. Enforce mekanizmaları
+
+- DS: semantic text style token'ları (fontSize kullanımında hardcoded değer yasağı)
+- lint: hardcoded font-size/px/pt değerleri tespit
+- runtime checks: Dynamic Type desteksiz metin alanı uyarısı
+- manual audit: tüm boyut kategorilerinde (xSmall–AX5) görsel kontrol
+
+## 23.B.3. Blocker örnekleri
+
+- Hardcoded font boyutları ile Dynamic Type desteği sıfır
+- Metin kesilmesi (truncation) ile bilgi kaybı
+
+## 23.B.4. Zayıf davranışlar
+
+- Sadece varsayılan boyutta test etme
+- Layout'ların büyük font boyutlarında bozulması
+- Semantic token yerine rastgele boyut kullanma
+
+---
+
+# 23.C. Dark Mode Compliance Enforcement
+
+## 23.C.1. Hedef
+
+Tüm yüzeylerin Dark ve Light modda doğru görünmesini sağlamak.
+
+## 23.C.2. Enforce mekanizmaları
+
+- DS: semantic color token'ları (raw/hex renk yasağı)
+- lint: hardcoded renk değerleri tespit
+- runtime checks: dark mode'da contrast ihlali uyarısı
+- CI: dark mode screenshot regression testi
+- manual audit: tüm ekranların dark/light mode görsel kontrolü
+
+## 23.C.3. Blocker örnekleri
+
+- Dark mode'da okunamayan metin (beyaz üzerine açık gri)
+- Semantic token kullanılmayan geniş yüzey alanları
+
+## 23.C.4. Zayıf davranışlar
+
+- Dark mode'u göz ardı etme
+- Sadece light mode test etme
+- Increase Contrast ayarını düşünmeme
+
+---
+
+# 23.D. Haptic Feedback Enforcement
+
+## 23.D.1. Hedef
+
+Dokunma geri bildiriminin tutarlı, anlamlı ve erişilebilir olmasını sağlamak.
+
+## 23.D.2. Enforce mekanizmaları
+
+- DS: haptic feedback token'ları (success, warning, error, selection)
+- component contracts: interactive component'lerde haptic beklentisi
+- manual audit: haptic-görsel geri bildirim eşlemesi kontrolü
+
+## 23.D.3. Zayıf davranışlar
+
+- Haptic'i gereksiz yere aşırı kullanma (her dokunuşta titreşim)
+- Haptic olmadan görsel geri bildirim veya tersine
+- Haptic intensity'yi bağlamsız kullanma
+
+---
+
+# 23.E. Iconography & SF Symbols Enforcement
+
+## 23.E.1. Hedef
+
+İkon kullanımının tutarlı, ölçeklenebilir ve platform diline uygun olmasını sağlamak.
+
+## 23.E.2. Enforce mekanizmaları
+
+- DS: onaylı ikon seti ve kullanım rehberi
+- lint: DS dışı ikon import'u uyarısı
+- manual audit: ikon stil tutarlılığı, boyut/ağırlık uyumu
+
+## 23.E.3. Zayıf davranışlar
+
+- Karışık ikon stilleri (filled + outlined aynı ekranda)
+- Küçük boyutlarda aşırı detaylı ikonlar
+- Platform ikon diline aykırı tercihler
+
+---
+
 # 24. Severity Modeli
 
 HIG ihlalleri şu şekilde ele alınmalıdır:
@@ -667,6 +818,11 @@ HIG ihlalleri şu şekilde ele alınmalıdır:
 - kritik action clarity hataları
 - severe navigation/presentation misuse
 - belirgin contrast failure
+- **AI içerik etiketlemesi eksikliği (şeffaflık ihlali)**
+- **Kullanıcı verisinin onaysız AI servisine gönderilmesi (gizlilik ihlali)**
+- **AI eylemlerinin geri alınamaz olması (kullanıcı kontrol ihlali)**
+- **Dynamic Type desteği sıfır olan ekranlar**
+- **Dark mode’da okunamayan/görünmeyen içerik**
 
 ## 24.2. Major
 - DS bypass pattern’leri
@@ -674,16 +830,27 @@ HIG ihlalleri şu şekilde ele alınmalıdır:
 - reduced-motion uyum eksikleri
 - button hierarchy bozulmaları
 - typography/readability sorunları
+- **AI graceful fallback eksikliği**
+- **Writing Tools desteğinin gereksiz yere devre dışı bırakılması**
+- **Güven düzeyi iletişimi eksikliği (AI tahminler)**
+- **Haptic-görsel geri bildirim uyumsuzluğu**
+- **İkon stil tutarsızlıkları**
+- **Increase Contrast ayarına uyumsuzluk**
 
 ## 24.3. Minor
 - hafif spacing/hierarchy sapmaları
 - küçük visual inconsistency
 - cleanup gerektiren ama kullanıcıyı hemen kırmayan HIG sapmaları
+- **App Intents tanım eksiklikleri**
+- **Haptic feedback eksikliği (var olması gereken yerlerde)**
+- **AI öneri agresifliği (kesintici ama fonksiyonel)**
 
 ## 24.4. Informational
 - trend notları
 - kural sertleştirme adayları
 - audit reminder niteliğindeki sinyaller
+- **Yeni Apple Intelligence API’ları entegrasyon fırsatları**
+- **Bildirim özetleme optimizasyon notları**
 
 ---
 

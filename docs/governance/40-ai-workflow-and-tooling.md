@@ -957,3 +957,44 @@ Temel ilkeler:
 Detay kuralları bu dokümanın alt dokümanlarında tanımlanır:
 - Talimat dosyası formatları ve standartları → `41-ai-instruction-standards.md`
 - Stitch pipeline ve token eşleme → `46-stitch-pipeline-spec.md`
+- AI guardrail çerçevesi ve yönetişimi → `47-ai-guardrail-governance.md`
+
+---
+
+# 20. AI Guardrail Entegrasyonu
+
+AI araçlarının kod üretirken boilerplate standartlarına uyumunu yapısal olarak garanti altına alan guardrail çerçevesi, `47-ai-guardrail-governance.md`'de tanımlanmıştır.
+
+## 20.1. Guardrail Workflow
+
+Her kod üretiminde Claude Code şu süreci izler:
+
+```
+İş türünü belirle → Aktivite guardrail'ini oku → Domain guardrail'leri oku → Kurallara uygun üret → Kontrol listesi doğrula
+```
+
+## 20.2. Guardrail Skill Envanteri
+
+| Skill | Platform | İşlev |
+|-------|----------|-------|
+| `/guardrail-check` | Claude Code | İş türüne göre ilgili guardrail'leri oku ve özetle |
+| `/guardrail-audit` | Claude Code | Üretilen kodu guardrail'lere karşı denetle (subagent) |
+| `/domain-guide D-XXX` | Claude Code | Belirtilen domain guardrail'ini oku |
+| `/dep-check` | Claude Code | Dependency policy kontrolü |
+| `/pre-pr` | Claude Code | PR öncesi kapsamlı kalite kontrolü (subagent) |
+| `/boundary-check` | Claude Code | Boundary contract uyum kontrolü (subagent) |
+| `/exception-create` | Claude Code | Exception/exemption kaydı oluştur |
+| `$guardrail-audit` | Codex CLI | Guardrail uyum denetim raporu |
+| `$full-audit` | Codex CLI | Tüm denetim katmanlarını birleştiren rapor |
+
+## 20.3. Hook Entegrasyonu
+
+`.claude/settings.json`'da tanımlanan PreToolUse ve PostToolUse hook'ları, dosya düzenleme sırasında otomatik olarak ilgili guardrail'leri hatırlatır ve universal kural ihlallerini tarar.
+
+## 20.4. Guardrail Doküman Konumları
+
+- Domain guardrail'ler: `docs/ai-guardrails/domain/D-XXX-*.md`
+- Aktivite guardrail'ler: `docs/ai-guardrails/activity/A-XXX-*.md`
+- Guardrail governance: `docs/governance/47-ai-guardrail-governance.md`
+- Skill dosyaları: `.claude/skills/{skill-adi}/SKILL.md`
+- Hook konfigürasyonu: `.claude/settings.json`

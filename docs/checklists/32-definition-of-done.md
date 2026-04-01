@@ -495,7 +495,35 @@ Bu belge yeterli kabul edilir eğer:
 
 ---
 
-# 28. Kısa Sonuç
+# 28. AI Guardrail DoD Maddeleri
+
+AI araçlarıyla geliştirilen her iş için `47-ai-guardrail-governance.md` çerçevesine uyum, Definition of Done'un parçasıdır.
+
+## 28.1. Tüm İş Türleri İçin (Universal)
+
+- [ ] İlgili aktivite guardrail dokümanı okundu ve uygulandı
+- [ ] İlgili domain guardrail kontrol listesi karşılandı
+- [ ] Universal guardrail kuralları sağlandı (hardcoded değer yok, any yok, import yönü doğru, i18n key kullanıldı)
+- [ ] Guardrail ihlali varsa düzeltildi veya exception kaydı açıldı (44)
+
+## 28.2. İş Türüne Özel Ek Maddeler
+
+Aşağıdaki maddeler ilgili aktivite guardrail dokümanında tanımlanan DoD ekleridir:
+
+- Yeni component (A-NEW-COMP): Component governance (23) uyumu, a11y prop'lar, render testi
+- Yeni ekran (A-NEW-SCRN): SPEC yazılmış, 4 durum (loading/error/empty/success), route tanımlı
+- Yeni feature (A-NEW-FEAT): SPEC yazılmış, modül izolasyonu, i18n namespace, test coverage
+- Bug fix (A-FIX): Root cause belirlenmiş, regression test yazılmış
+- Dependency değişikliği (A-DEP): Policy (37) kontrol edilmiş, compatibility matrix (38) güncel
+- Form (A-FORM): Zod schema, React Hook Form, label, submit lifecycle
+- Firebase (A-FIREBASE): Security rules (default deny), doküman yapısı tanımlı
+- Auth (A-AUTH): ADR-010 uyumu, güvenli token saklama
+
+Tam DoD ek maddeleri için ilgili aktivite guardrail dokümanına bakılmalıdır.
+
+---
+
+# 29. Kısa Sonuç
 
 Bu repo’da done demek şunların birlikte sağlanması demektir:
 

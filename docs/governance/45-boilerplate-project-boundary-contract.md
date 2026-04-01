@@ -129,6 +129,12 @@ Asagidaki tablo, her kural kaynaginin miras tipini ve override iznini tek yerde 
 | 12 | `21-repo-structure-spec.md` | Yapisal miras | Proje ek dizin ekleyebilir, base yapi kaldirilamaz | Monorepo root yapisi, packages/ hiyerarsisi, apps/ yapisi sabittir. Proje-ozel dizinler eklenebilir |
 | 13 | `29-release-and-versioning-rules.md` | Yapisal miras | Proje ek release kanali ekleyebilir, base kurallar gecerli | Versioning semantigi, changelog disiplini, release pipeline base kurallari sabittir |
 | 14 | `30-contribution-guide.md` | Yapisal miras | Proje ek akis ekleyebilir, base akis kaldirilamaz | PR sureci, review kurallari, commit convention base olarak gecerli |
+| 15 | `docs/ai-guardrails/domain/` (AI domain guardrail ailesi) | Zorunlu miras | Ek guardrail eklenebilir, base kaldirilmaz/gevsetilemez | Domain guardrail dokümanlari derived project'e aktarilir. Proje ek domain guardrail yazabilir (GP-XXX formati) ama base guardrail'leri gevsetemez |
+| 16 | `docs/ai-guardrails/activity/` (AI aktivite guardrail ailesi) | Yapisal miras | Proje ek aktivite ekleyebilir, base kaldirilamaz | Aktivite guardrail'leri base olarak gecerli. Proje-ozel aktiviteler eklenebilir |
+| 17 | CLAUDE.md guardrail protokolü | Zorunlu miras | Protokol kaldirilamaz, genisletilebilir | Guardrail aktivasyon tablosu ve protokol derived project CLAUDE.md'sine zorunlu olarak aktarilir |
+| 18 | `.claude/skills/` (guardrail skill'leri) | Yapisal miras | Proje ek skill ekleyebilir, base skill kaldirilamaz | Guardrail skill dosyalari derived project'e aktarilir |
+| 19 | `.claude/settings.json` (hook tanimlari) | Yapisal miras | Proje ek hook ekleyebilir, base hook devre disi birakilamaz | PreToolUse/PostToolUse guardrail hook'lari korunur |
+| 20 | AGENTS.md guardrail bolumleri | Zorunlu miras | Ek kural eklenebilir, base kaldirilamaz | Guardrail compliance review kurallari derived project'te gecerli |
 
 ---
 

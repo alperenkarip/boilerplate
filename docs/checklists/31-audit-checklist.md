@@ -459,7 +459,42 @@ Bu belge yeterli kabul edilir eğer:
 
 ---
 
-# 25. Kısa Sonuç
+# 25. AI Guardrail Uyum Denetimi
+
+Bu bölüm, AI araçlarının ürettiği kodun guardrail çerçevesine uyumunu denetler (`47-ai-guardrail-governance.md`).
+
+## 25.1. Universal Guardrail Uyumu
+
+- [ ] AI tarafından üretilen kodda hardcoded renk/spacing/font değeri var mı? → Major
+- [ ] `any` type kullanımı var mı? → Major
+- [ ] Import yönü ihlali var mı (packages→apps, shared→feature)? → Blocker
+- [ ] Inline user-facing string var mı (i18n key yerine)? → Major
+- [ ] Canonical stack dışı kütüphane kullanımı var mı? → Blocker
+
+## 25.2. Domain Guardrail Uyumu
+
+- [ ] UI component'lerde a11y prop eksikliği var mı (D-A11)? → Major
+- [ ] Touch target / safe area ihlali var mı (D-UIX)? → Blocker
+- [ ] Form'da schema-first validation uygulanmış mı (D-FRM)? → Major
+- [ ] Firebase security rules default deny mi (D-FIR)? → Blocker
+- [ ] Auth token güvenli saklanıyor mu (D-SEC)? → Blocker
+- [ ] Error/loading/empty state'ler handle ediliyor mu (D-ERR)? → Major
+
+## 25.3. Guardrail Doküman Güncelliği
+
+- [ ] Guardrail dokümanları kaynak dokümanlarla uyumlu mu (sapma var mı)? → Major
+- [ ] Yeni eklenen alan için guardrail dokümanı eksik mi? → Minor
+- [ ] Guardrail dokümanları 150/100 satır sınırına uyuyor mu? → Minor
+
+## 25.4. Skill ve Hook Durumu
+
+- [ ] Claude Code skill dosyaları mevcut ve çalışır durumda mı? → Minor
+- [ ] Hook tanımları (settings.json) doğru mu? → Minor
+- [ ] AGENTS.md guardrail bölümleri güncel mi? → Major
+
+---
+
+# 26. Kısa Sonuç
 
 Bu proje için audit standardı şudur:
 

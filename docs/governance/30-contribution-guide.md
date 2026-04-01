@@ -961,7 +961,37 @@ Talimat dosyası güncellemesi yapılmadan PR merge edilmez.
 
 ---
 
-# 22. Onay Kriterleri
+# 22. AI Guardrail-Aware Contribution Akışı
+
+AI araçları ile yapılan katkılarda guardrail çerçevesine uyum zorunludur (`47-ai-guardrail-governance.md`).
+
+## 22.1. Katkı Öncesi
+
+1. İş türünü belirle → ilgili aktivite guardrail'ini oku
+2. Tetiklenen domain guardrail'leri oku
+3. CLAUDE.md'deki guardrail protokolünü uygula
+
+## 22.2. Katkı Sırasında
+
+- Universal guardrail kurallarına uy (hardcoded değer yasak, any yasak, import yönü, i18n)
+- Domain guardrail kontrol listesini takip et
+- İhlal varsa düzelt veya exception kaydı aç (44)
+
+## 22.3. PR Öncesi
+
+- `/pre-pr` skill'i ile kalite kontrolü yap (önerilen)
+- Guardrail kontrol listesini doğrula
+- Visual proof ekle (UI değişikliği varsa)
+
+## 22.4. Review Sırasında
+
+- Codex review guardrail compliance bölümünü kontrol et
+- Guardrail ihlali P0/P1 ise merge edilmez
+- Exception gerekiyorsa review'da belirle, kaydını aç
+
+---
+
+# 23. Onay Kriterleri
 
 Bu belge yeterli kabul edilir eğer:
 
