@@ -1,0 +1,51 @@
+# Claude Code tarafından okunmaması gereken dosyalar
+# Güvenlik ve performans amacıyla exclude edilir
+
+# Environment ve secret dosyaları
+.env
+.env.local
+.env.production
+.env.staging
+.env.*.local
+
+# Credential ve key dosyaları
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+
+# Build çıktıları
+dist/
+build/
+.next/
+.expo/
+android/app/build/
+ios/build/
+
+# Node modülleri
+node_modules/
+
+# Büyük binary dosyalar
+*.zip
+*.tar.gz
+*.ipa
+*.apk
+*.aab
+
+# Lock dosyaları (büyük, context tüketir)
+pnpm-lock.yaml
+
+# IDE ve sistem dosyaları
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
+
+# Test çıktıları ve coverage
+coverage/
+__snapshots__/
+*.snap

@@ -1,0 +1,37 @@
+# Boilerplate CODEOWNERS
+# Bu dosya PR review sorumluluklarını tanımlar.
+# Derived project'te ekip yapısına göre güncellenmelidir.
+
+# Genel — tüm değişiklikler
+* @project-lead
+
+# Boilerplate belgeleri
+/docs/ @project-lead
+*.md @project-lead
+
+# Design system ve token'lar
+/packages/ui/ @ds-lead
+/packages/design-tokens/ @ds-lead
+
+# Shared core logic
+/packages/core/ @tech-lead
+
+# Web uygulaması
+/apps/web/ @web-lead
+
+# Mobile uygulama
+/apps/mobile/ @mobile-lead
+
+# CI/CD ve tooling
+/.github/ @tech-lead
+/tooling/ @tech-lead
+
+# Config dosyaları
+turbo.json @tech-lead
+pnpm-workspace.yaml @tech-lead
+tsconfig.base.json @tech-lead
+eslint.config.js @tech-lead
+
+# Güvenlik ile ilgili dosyalar
+.env* @tech-lead @project-lead
+/packages/auth/ @tech-lead @project-lead

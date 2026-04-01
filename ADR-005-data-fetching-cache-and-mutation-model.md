@@ -1,0 +1,1029 @@
+# ADR-005 — Data Fetching, Cache and Mutation Model
+
+## Doküman Kimliği
+
+- **ADR ID:** ADR-005
+- **Başlık:** Data Fetching, Cache and Mutation Model
+- **Durum:** Accepted
+- **Tarih:** 2026-03-31
+- **Karar türü:** Foundational data access, async state, cache ownership and mutation strategy decision
+- **Karar alanı:** Server state yönetimi, query/cache tool seçimi, data access modeli, mutation lifecycle, invalidation, optimistic update, retry, error mapping, stale data ownership
+- **İlgili üst belgeler:**
+  - `10-data-fetching-cache-sync.md`
+  - `06-application-architecture.md`
+  - `09-state-management-strategy.md`
+  - `11-forms-inputs-and-validation.md`
+  - `15-quality-gates-and-ci-rules.md`
+  - `25-error-empty-loading-states.md`
+  - `36-canonical-stack-decision.md`
+  - `ADR-004-state-management.md`
+- **Etkilediği belgeler:**
+  - `20-initial-implementation-checklist.md`
+  - `21-repo-structure-spec.md`
+  - `28-observability-and-debugging.md`
+  - `30-contribution-guide.md`
+  - `31-audit-checklist.md`
+  - `32-definition-of-done.md`
+  - `ADR-006-forms-and-validation.md`
+  - `ADR-009-observability-stack.md`
+
+---
+
+# 1. Karar Özeti
+
+Bu boilerplate kapsamında data fetching, cache ve mutation modeli için aşağıdaki karar kabul edilmiştir:
+
+- **Server state / query-cache aracı:** TanStack Query
+- **Canonical veri modeli:** Client-driven query/cache lifecycle, route ve feature orchestration ile hizalı
+- **Source of truth ilkesi:** Server-owned data mümkün olduğunca query/cache katmanında yaşar; generic client store’a kopyalanmaz
+- **Mutation modeli:** Explicit mutation lifecycle + invalidate/revalidate merkezli; gerektiğinde kontrollü optimistic update
+- **Data access yaklaşımı:** Raw fetch çağrıları screen/component içine dağılmaz; feature veya data access contract katmanı üzerinden kurulur
+- **Error yaklaşımı:** Teknik hata, domain/feature anlamı ve user-facing feedback ayrılır
+- **Retry yaklaşımı:** Kör global retry değil; query ve mutation bağlamına göre kontrollü policy
+- **Cache ownership:** Query key, stale time, invalidation ve background refresh kararları belgeli ve tutarlı olmalıdır
+- **Canonical ilke:** Async veri davranışı “ad-hoc fetch + local state” ile değil; query lifecycle, cache ownership, mapping ve feedback state disiplini ile yönetilir
+
+Bu ADR’nin ana hükmü şudur:
+
+> Server state bu boilerplate’te generic client store konusu değildir. TanStack Query, server-owned async verinin resmi evi olarak kabul edilir; mutation, retry, stale data, invalidation ve optimistic update davranışları bu katmanda yönetilir. UI ve feature orchestration, bu katmanın ürettiği güvenilir lifecycle sinyallerini tüketir; onun yerini almaz.
+
+---
+
+# 2. Problem Tanımı
+
+Modern cross-platform uygulamalarda en pahalı bug ailelerinden biri data behavior kaynaklıdır.  
+Yani problem çoğu zaman “buton görünmedi” değil, şunlardan biridir:
+
+- veri stale kaldı
+- mutation sonrası yanlış liste gösterildi
+- aynı veri farklı yerlerde farklı göründü
+- retry mantığı kullanıcıyı kilitledi
+- loading state tüm ekranı gereksiz blokladı
+- background refresh ile UI flicker yaptı
+- optimistic update yanlış rollback oldu
+- raw backend error doğrudan kullanıcıya aktı
+- query data store’a kopyalandığı için source of truth çoğaldı
+- logout / workspace switch sonrası eski data ekranda kaldı
+
+Bu yüzden data fetching kararı yalnızca “hangi HTTP client?” kararı değildir.  
+Asıl karar şudur:
+
+> Server-owned veri nerede yaşayacak, ne zaman stale sayılacak, nasıl invalidation alacak, mutation sonrası nasıl senkron kalacak ve bu davranış UI’ya nasıl yansıtılacak?
+
+Bu ADR tam olarak bu soruyu kapatır.
+
+---
+
+# 3. Bağlam
+
+Bu boilerplate’in data tarafında taşıdığı zorunluluklar şunlardır:
+
+1. Web ve mobile arasında behavior parity
+2. Server state ile client state’in kesin ayrımı
+3. Async lifecycle’ın UI ve feature akışlarında görünür olması
+4. Loading / empty / error / success / retry davranışlarının tutarlılığı
+5. Type-safe ve test edilebilir data contracts
+6. Design system ve feedback state standardı ile uyum
+7. Controlled invalidation ve mutation sonrasında güvenilir sonuç
+8. Security ve logging hijyeninin korunması
+9. Documentation-first ownership modeli
+10. Ad-hoc fetch ve local cache kaosunun engellenmesi
+
+Bu bağlamda seçilecek model şu iki uçtan da kaçınmalıdır:
+
+- her şeyi custom fetch/local state ile çözmek
+- query kütüphanesi var diye ownership düşünmeden her şeyi ona yıkmak
+
+---
+
+# 4. Karar Kriterleri
+
+Bu karar aşağıdaki kriterlerle değerlendirilmiştir:
+
+1. **Server state ownership’e uygunluk**
+2. **Cache, stale ve invalidation disiplinini güçlü destekleme**
+3. **Mutation lifecycle yönetimi**
+4. **Retry ve error handling esnekliği**
+5. **TypeScript ve testing uyumu**
+6. **Cross-platform React ekosistemiyle doğal çalışma**
+7. **UI lifecycle’ı ile entegrasyon**
+8. **Low-level boilerplate azaltma**
+9. **Custom policy yazmaya izin verme**
+10. **Tooling ve community olgunluğu**
+11. **Store duplication riskini azaltma**
+12. **Documentation-first data contracts ile uyum**
+
+---
+
+# 5. Değerlendirilen Alternatifler
+
+Bu karar öncesi ana alternatifler şunlardır:
+
+1. TanStack Query
+2. SWR
+3. Custom fetch client + manual local cache/state
+4. Redux Toolkit Query
+5. Server state’i Zustand içinde yönetme
+6. “Her feature kendi fetch mantığını yazar” yaklaşımı
+
+Bu alternatiflerin neden seçilmediği veya seçildiği aşağıda açıklanmıştır.
+
+---
+
+# 6. Seçilen Karar: TanStack Query
+
+## 6.1. Neden TanStack Query?
+
+TanStack Query bu boilerplate için şu nedenlerle canonical seçim olarak kabul edilmiştir:
+
+### 6.1.1. Server state için özel olarak tasarlanmış olması
+Bu çok kritik bir farktır.  
+TanStack Query generic app state aracı değildir.  
+Tam tersine, tam da şu problemleri çözmek için vardır:
+- fetch lifecycle
+- cache
+- staleness
+- refetch
+- invalidation
+- mutation coordination
+- background sync
+
+Bu, ADR-004 ile doğrudan uyumludur.
+
+### 6.1.2. Modern React async veri modeline güçlü uyum
+React tabanlı web ve React Native tabanlı mobile için doğal ve olgun bir async state modeli sunar.
+
+### 6.1.3. Query ve mutation ayrımını açık tutması
+Bu proje için çok önemli olan şu ayrımı teknik olarak destekler:
+- okuma davranışı
+- yazma davranışı
+- invalidation sonrası güncellenme
+- optimistic update ve rollback
+
+### 6.1.4. Retry, stale ve refetch davranışlarını policy ile yönetebilme
+“Tek fetch attık, oldu” yaklaşımından çok daha kontrollü veri davranışı sağlar.
+
+### 6.1.5. Ekosistem ve dokümantasyon olgunluğu
+TanStack Query olgun, yaygın ve production-grade kullanımı olan bir araçtır.
+
+### 6.1.6. Testing ve observability açısından güçlü kontrol
+Query behavior test edilebilir; async lifecycle görünür hale getirilebilir.
+
+---
+
+# 7. Bu Karar Ne Anlama Gelmez?
+
+Bu ADR yanlış yorumlanmaya çok açıktır.  
+Bu yüzden sınırlar açık yazılmalıdır.
+
+## 7.1. “Artık tüm data problemi TanStack Query çözer” demek değildir
+Hayır.  
+Tool yalnızca mekanizma sağlar; ownership ve policy yine belgelidir.
+
+## 7.2. “Fetch client artık önemsiz” demek değildir
+Hayır.  
+HTTP client ve mapping policy hâlâ önemlidir.
+
+## 7.3. “Store’a hiç veri koyulamaz” demek değildir
+Yanlış.  
+Ama server-owned veri generic client store’a kopyalanmaz.
+
+## 7.4. “Her query global ve sınırsız cache’lensin” demek değildir
+Yanlış.  
+Cache ownership ve stale policy bağlama göre düşünülür.
+
+## 7.5. “Optimistic update her zaman yapılmalı” demek değildir
+Yanlış.  
+Optimistic update yalnızca gerçekten anlamlı ve güvenli olduğunda uygulanır.
+
+---
+
+# 8. En Kritik İlke: Server State’in Resmi Evi
+
+Bu ADR’nin kalbi şu cümledir:
+
+> **Server-owned async data’nın resmi evi query/cache katmanıdır.**
+
+Bu cümle pratikte şunu ifade eder:
+
+- API’den gelen listeler query/cache katmanında yaşar
+- detail response’ları query/cache katmanında yaşar
+- stale/refetch mantığı burada yönetilir
+- invalidation burada ele alınır
+- UI, query lifecycle’ı tüketir
+- generic global store bu veriyi duplicate etmez
+
+Bu ilke bozulursa tüm veri mimarisi bozulur.
+
+---
+
+# 9. Query Ownership Modeli
+
+## 9.1. Query neyi temsil eder?
+
+Query şunu temsil eder:
+- dış kaynaktan gelen
+- tekrar doğrulanması gerekebilen
+- lifecycle taşıyan
+- cache’lenebilir
+- stale olabilen
+veri kaynağını.
+
+## 9.2. Query owner kimdir?
+
+Tek bir dosya değil, bir ownership zinciri vardır:
+
+- **Data access contract**: veri shape ve fetch mantığı
+- **Query layer**: lifecycle ve cache
+- **Feature orchestration**: ekran/feature bağlamında tüketim
+- **Presentation**: lifecycle’a göre yüzey gösterimi
+
+## 9.3. Query kararları neleri içerir?
+
+- query key
+- fetch function
+- retry policy
+- stale time
+- refetch conditions
+- error mapping strategy
+- selection/transform policy
+- enabled/disabled conditions
+
+Bunlar rastgele component içinde dağılmamalıdır.
+
+---
+
+# 10. Query Key Politikası
+
+## 10.1. Neden kritik?
+
+Query key yanlış tasarlanırsa:
+- cache çakışır
+- yanlış veri gösterilir
+- invalidation yanlış çalışır
+- stale davranış anlaşılmaz olur
+
+## 10.2. Kural
+
+Query key’ler:
+- deterministic olmalı
+- data domain’ini açık ifade etmeli
+- params/context ayrımını düzgün taşımalı
+- gizli implicit state’e bağlı olmamalı
+
+## 10.3. Query key neyi yansıtmalı?
+
+- resource type
+- relevant id/params
+- scope/workspace/user bağlamı
+- feature query intent
+
+## 10.4. Zayıf davranışlar
+
+- key içinde anlamsız string yığınları
+- eksik param yüzünden çakışan cache
+- user/workspace context’i gerektiği halde key’e koymamak
+- query key’i screen-local rastgele üretmek
+
+---
+
+# 11. Fetch Function Politikası
+
+## 11.1. Kural
+
+Raw fetch çağrıları screen ve component içine dağılmayacaktır.
+
+## 11.2. Doğru model
+
+Fetch function:
+- data access contract katmanında
+- anlaşılır naming ile
+- mapping ve error davranışı kontrollü
+olarak yaşamalıdır.
+
+## 11.3. Ne yapmamalıdır?
+
+- UI feedback üretmek
+- route navigation kararı vermek
+- local component state değiştirmek
+- toast basmak
+- generic store mutate etmek
+
+## 11.4. Neden?
+
+Çünkü fetch function teknik veri erişimidir; feature UI orchestration değildir.
+
+---
+
+# 12. Data Mapping Politikası
+
+## 12.1. En kritik ayrım
+
+Backend response shape = domain-safe UI tüketim shape değildir.
+
+## 12.2. Kural
+
+Veri gerekiyorsa:
+- parse edilir
+- normalize edilir
+- map edilir
+- daha güvenli contract haline getirilir
+
+Bu mapping rastgele component’lere dağıtılmaz.
+
+## 12.3. Neden?
+
+Aksi halde:
+- her ekran payload’ı farklı yorumlar
+- backend değişiklikleri UI’yı kaotik kırar
+- aynı veri iki yerde iki şekilde görünür
+- testing zorlaşır
+
+## 12.4. Mapping nerede yaşamalı?
+
+Bağlama göre:
+- data access katmanı
+- domain-safe mapping katmanı
+- selected query adapter layer
+
+Ama presentation içinde gömülü olmamalıdır.
+
+---
+
+# 13. Query Data’yı Store’a Kopyalama Yasağı
+
+## 13.1. Kural
+
+Query sonucunu generic client store’a kopyalamak canonical olarak yasaktır; yalnızca çok istisnai ve belgeli gerekçeyle mümkün olabilir.
+
+## 13.2. Neden yasak?
+
+Çünkü bu:
+- duplicate truth üretir
+- stale veri riskini yükseltir
+- invalidation karmaşasını büyütür
+- logout/user switch cleanup’i zorlaştırır
+- feature debugging’i bozur
+
+## 13.3. “Ama kolay oluyor” gerekçesi neden geçersiz?
+
+Kolaylık burada gerçek çözüm değildir.  
+Bu, teknik borcu kullanıcıdan saklayan yanlış kısa yol olur.
+
+## 13.4. Meşru istisna örnekleri olabilir mi?
+
+Çok nadir:
+- user-driven local editing overlay
+- offline draft composition
+- optimistic local shadow state
+Ama bu durumlarda bile bu veri “server cache kopyası” gibi tasarlanmamalıdır.
+
+---
+
+# 14. Mutation Modeli
+
+## 14.1. Mutation nedir?
+
+Server state’i değiştiren işlemdir:
+- create
+- update
+- delete
+- toggle
+- submit
+- reorder
+- action/command benzeri side-effect’ler
+
+## 14.2. Kural
+
+Mutation, UI event handler içinde ad-hoc promise zinciri olarak değil; açık lifecycle mantığı ile düşünülmelidir.
+
+## 14.3. Mutation lifecycle neyi kapsar?
+
+- request start
+- pending state
+- success
+- failure
+- retry policy
+- invalidation
+- optimistic update (varsa)
+- rollback (varsa)
+- success feedback
+- post-mutation navigation (gerekirse)
+
+Bu lifecycle feature orchestration ile birlikte düşünülmelidir.
+
+---
+
+# 15. Mutation Sonrası Ne Yapılmalı?
+
+Mutation sonrası temel seçenekler:
+
+1. invalidate and refetch
+2. cache patch / setQueryData
+3. optimistic update + rollback
+4. local UI-only result handling
+5. hybrid yaklaşım
+
+Bu seçeneklerden biri bilinçli seçilmelidir.  
+“Bir şeyler olur” yaklaşımı kabul edilmez.
+
+---
+
+# 16. Invalidation Politikası
+
+## 16.1. Neden çok kritik?
+
+Birçok veri bug’ı doğrudan invalidation disiplininin eksikliğinden çıkar.
+
+## 16.2. Kural
+
+Her mutation için şu soru sorulmalıdır:
+
+> Bu işlemden sonra hangi query sonuçları artık potansiyel olarak eskimiş sayılır?
+
+Bu soru cevaplanmadan mutation tamamlanmış sayılmaz.
+
+## 16.3. Invalidation nerede düşünülmeli?
+
+- data access/query katmanında teknik bağ
+- feature orchestration’da kullanım bağlamı
+- UI’da sonucu gösteren feedback mantığı
+
+## 16.4. Zayıf davranışlar
+
+- mutation çalıştı, ama liste eski kaldı
+- detail güncellendi, summary eski kaldı
+- refetch gerektiği halde yapılmadı
+- her mutation sonrası tüm cache’i kör temizlemek
+
+---
+
+# 17. Refetch Politikası
+
+## 17.1. Kural
+
+Refetch varsayılan otomatik sihir gibi düşünülmemelidir.  
+Ne zaman ve neden tekrar veri alınacağı bağlamsal karardır.
+
+## 17.2. Sorulması gerekenler
+
+- ekran tekrar odaklanınca veri gerçekten stale olabilir mi?
+- network reconnect sonrası yenilemek mantıklı mı?
+- aynı session içinde veri sık değişiyor mu?
+- kullanıcı manual refresh beklemeli mi?
+- background refresh UX’i bozuyor mu?
+
+## 17.3. Amaç
+
+Hem aşırı veri çekmeyi hem de stale veriyle yaşamayı engellemek.
+
+---
+
+# 18. Retry Politikası
+
+## 18.1. Kural
+
+Retry kör biçimde global sabit sayı ile her işleme uygulanmamalıdır.
+
+## 18.2. Neden?
+
+Çünkü her failure aynı değildir:
+- geçici network sorunu
+- auth expired
+- validation error
+- permission error
+- not found
+- conflict
+- server bug
+
+Bunların hepsine aynı retry davranışı anlamsızdır.
+
+## 18.3. Doğru yaklaşım
+
+Retry policy:
+- query vs mutation ayrımını bilmeli
+- error class’ını dikkate almalı
+- kullanıcı deneyimini bozmayacak şekilde çalışmalı
+- sonsuz arka plan gürültüsü üretmemeli
+
+## 18.4. Zayıf davranışlar
+
+- validation error’a retry
+- auth problemine sessiz retry
+- destructive mutation’a otomatik retry
+- kullanıcıyı bilgilendirmeden görünmez tekrarlayan istekler
+
+---
+
+# 19. Error Yaklaşımı
+
+## 19.1. Teknik hata ≠ kullanıcı mesajı
+
+Bu ayrım korunmalıdır.
+
+### Teknik hata örnekleri
+- HTTP timeout
+- 401
+- 409 conflict
+- malformed payload
+- network offline
+- server internal error
+
+### Kullanıcı-facing sonuçlar
+- “oturum süren dolmuş olabilir”
+- “değişiklik kaydedilemedi”
+- “bu içerik artık güncel değil”
+- “bağlantı sorunu oluştu, tekrar dene”
+
+## 19.2. Kural
+
+Ham error nesnesi veya backend message doğrudan kullanıcıya gösterilmez.
+
+## 19.3. Error ownership zinciri
+
+- raw transport error
+- mapped application error
+- feature meaning
+- UI feedback surface
+
+Her katman kendi işini yapmalıdır.
+
+---
+
+# 20. Loading Politikası
+
+## 20.1. En büyük hata
+
+Tüm loading’i tek “isLoading” boolean’ına indirgemektir.
+
+## 20.2. Gerçekte hangi loading türleri vardır?
+
+- initial loading
+- background refresh
+- mutation pending
+- section-level loading
+- pagination/loading more
+- dependent query loading
+- silent refresh
+- optimistic local pending
+
+## 20.3. Kural
+
+Loading state’ler bağlama uygun ayrıştırılmalıdır.
+
+## 20.4. Neden?
+
+Çünkü:
+- ilk açılış ile background refresh aynı UX değildir
+- tek satır mutation pending ile tüm ekran bloklama aynı şey değildir
+- section load ile page load aynı şey değildir
+
+---
+
+# 21. Empty State Politikası
+
+## 21.1. Empty tek şey değildir
+
+Aşağıdaki empty türleri ayrılmalıdır:
+- first-use empty
+- true no-data empty
+- filtered empty
+- access-limited empty
+- post-delete empty
+
+## 21.2. Query katmanı ile ilişkisi
+
+Empty, teknik olarak “başarılı response ama içerik yok” olabilir.  
+Bu, error değildir.  
+UI’da doğru sınıflandırılmalıdır.
+
+## 21.3. Kural
+
+Query result boş diye rastgele generic “bir şey bulunamadı” metni kullanılmaz.  
+Feature semantiği korunmalıdır.
+
+---
+
+# 22. Optimistic Update Politikası
+
+## 22.1. Kural
+
+Optimistic update varsayılan değil; kontrollü taktiktir.
+
+## 22.2. Ne zaman güçlü adaydır?
+
+- hızlı geri bildirim kullanıcı için çok değerliyse
+- rollback mantığı nettirse
+- veri modeli basitse
+- çakışma riski düşükse
+- kullanıcı yanılgısı riski kabul edilebilirse
+
+## 22.3. Ne zaman zayıftır?
+
+- karmaşık ilişkili veri yapıları
+- yüksek conflict riski
+- geri alma mantığı belirsiz işlemler
+- finansal / kritik sonuç üreten aksiyonlar
+- kullanıcıyı yanlış başarı hissine sokabilecek senaryolar
+
+## 22.4. Kural
+
+Optimistic update yapılıyorsa rollback stratejisi açık olmalıdır.
+
+---
+
+# 23. Background Refresh Politikası
+
+## 23.1. Neden ayrı düşünülmeli?
+
+Background refresh çoğu zaman:
+- data’yı güncel tutar
+ama yanlış uygulanırsa:
+- flicker
+- scroll reset
+- context loss
+- kullanıcı şaşkınlığı
+üretir.
+
+## 23.2. Kural
+
+Background refresh UI’ı mümkün olduğunca gereksiz destabilize etmemelidir.
+
+## 23.3. Doğru yaklaşım
+
+- subtle refresh indicators
+- layout collapse olmaması
+- data replacement’in kontrollü yapılması
+- stale while revalidate mantığının anlaşılır uygulanması
+
+---
+
+# 24. Pagination / Infinite Data Politikası
+
+## 24.1. Kural
+
+Pagination veya infinite query davranışı ad-hoc local arrays ile değil, resmi query lifecycle üzerinden ele alınmalıdır.
+
+## 24.2. Düşünülmesi gerekenler
+
+- next page ownership
+- reset koşulları
+- filter değişince pagination reset
+- load more pending state
+- end-of-list behavior
+- cache lifetime
+
+## 24.3. Zayıf davranışlar
+
+- sayfa değişince eski pagination state’in yanlış kalması
+- filtre değişince liste reset olmaması
+- load more ile initial loading’i aynı göstermek
+
+---
+
+# 25. Enabled / Disabled Query Politikası
+
+## 25.1. Kural
+
+Her query her zaman otomatik çalışmamalıdır.
+
+## 25.2. Soru
+
+Bu query gerçekten şu anda gerekli mi?
+
+## 25.3. Enabled koşulu hangi durumlarda önemlidir?
+
+- eksik param varsa
+- auth henüz hazır değilse
+- feature capability yoksa
+- dependent query zinciri varsa
+- sheet/modal açılmadan veri gerekmiyorsa
+
+## 25.4. Zayıf davranışlar
+
+- param hazır değilken query çalıştırmak
+- auth context yokken veri istemek
+- görünmeyen yüzey için gereksiz background query yapmak
+
+---
+
+# 26. Query Selection / Transformation Politikası
+
+## 26.1. Kural
+
+Query sonucunun tüketiciye uygun shape’i hazırlanabilir.  
+Ama bu dönüşümler rastgele component içine dağılmamalıdır.
+
+## 26.2. Düşünülmesi gerekenler
+
+- raw payload mı, normalized shape mi?
+- domain-safe projection mı?
+- UI’ya özel projection mı?
+- aynı projection tekrar tekrar mı kullanılıyor?
+
+## 26.3. Uyarı
+
+Aşırı transformation katmanı da zararlıdır.  
+Ama hiçbir mapping olmadan raw transport shape’i UI’ya yaymak daha büyük zarardır.
+
+---
+
+# 27. Query Cache Persistence Politikası
+
+## 27.1. Kural
+
+Query cache persistence varsayılan değildir.
+
+## 27.2. Neden?
+
+Çünkü persisted query cache:
+- stale data
+- wrong-user leak
+- workspace confusion
+- security/logging risk
+üretebilir.
+
+## 27.3. Persist düşünülürse sorulacak sorular
+
+1. Offline requirement var mı?
+2. User switch nasıl temizlenecek?
+3. Hangi veri cache’lenebilir, hangisi edilemez?
+4. Stale timeout nasıl işleyecek?
+5. Sensitive content var mı?
+
+Bu sorular net değilse persisted query cache açılmaz.
+
+---
+
+# 28. Security ve Logging Etkisi
+
+## 28.1. Kural
+
+Query/mutation katmanı:
+- raw sensitive payload’ları log’a dökmemeli
+- error nesnelerini kontrolsüz ifşa etmemeli
+- auth/session taşıyan verileri yanlış katmana sızdırmamalı
+
+## 28.2. Mutation error handling’de dikkat
+
+Özellikle:
+- validation errors
+- auth/session errors
+- permission errors
+- server detail payload’ları
+UI’ya ve log’a kontrollü aktarılmalıdır.
+
+---
+
+# 29. Observability Etkisi
+
+## 29.1. Bu ADR neden observability ile ilgilidir?
+
+Çünkü veri katmanı bozulduğunda kullanıcı çoğu zaman:
+- loading sonsuz kaldı
+- kaydet butonu çalışmadı
+- veri eski görünüyor
+- liste güncellenmedi
+der.
+
+Arka planda ise sorun:
+- timeout
+- retry storm
+- invalidation eksikliği
+- conflict
+- parsing failure
+olabilir.
+
+## 29.2. Kural
+
+Önemli query/mutation failure türleri gözlemlenebilir olmalıdır.
+
+---
+
+# 30. Cross-Platform Etkisi
+
+## 30.1. Kural
+
+TanStack Query seçimi web ve mobile için ortak server-state lifecycle mantığı sağlar.  
+Bu, behavior parity için güçlü avantajdır.
+
+## 30.2. Ne ortak olabilir?
+
+- query ownership
+- key strategy
+- stale/invalidation prensipleri
+- mutation lifecycle
+- optimistic update policy
+- error mapping modelinin büyük kısmı
+
+## 30.3. Ne platforma göre farklılaşabilir?
+
+- refresh triggers
+- screen focus integration
+- connectivity handling nuances
+- UX presentation of loading/retry
+
+Ama bu farklar ürün mantığını bozmaz.
+
+---
+
+# 31. Testing Üzerindeki Etki
+
+Bu karar test stratejisinde şu sonuçları doğurur:
+
+1. Query behavior integration test konusu olur
+2. Mutation + invalidation + feedback akışı test konusu olur
+3. Raw fetch function’lar ayrı testlenebilir olmalıdır
+4. Error mapping ve retry davranışı testlenebilir olmalıdır
+5. Server-state duplication anti-pattern’i review ve audit konusu olur
+
+---
+
+# 32. Repo Yapısı Üzerindeki Etki
+
+Bu ADR şu topolojik sonuçları doğurur:
+
+- raw API clients ile feature UI aynı yerde yaşamaz
+- query contracts ve fetch logic kontrollü katmanda yaşar
+- feature orchestration query consumption katmanında durur
+- screen component’ler fetch owner olmaz
+- query key, mapping ve invalidation politikaları dağınık helper’larda yaşamaz
+
+Bu nedenle `21-repo-structure-spec.md` bu ADR ile hizalanmalıdır.
+
+---
+
+# 33. Contribution ve Review Üzerindeki Etki
+
+Bu ADR sonrası contributor ve reviewer şu soruları sormalıdır:
+
+1. Bu veri server-owned mu?
+2. Neden query layer yerine store/local state kullanıldı?
+3. Query key doğru scope’u taşıyor mu?
+4. Mutation sonrası hangi data stale oldu?
+5. Retry policy anlamlı mı?
+6. Error mapping ham teknik detay mı sızdırıyor?
+7. Loading türleri doğru ayrılmış mı?
+8. Bu query gerçekten enabled olmalı mı?
+9. Optimistic update gerekçeli mi?
+10. Wrong-user / stale cache riski var mı?
+
+---
+
+# 34. Neden SWR Seçilmedi?
+
+## 34.1. SWR kötü olduğu için değil
+
+SWR güçlü olabilir.  
+Ama bu boilerplate’in hedefleri için TanStack Query daha kapsayıcı ve güçlü seçimdir.
+
+## 34.2. Nedenleri
+
+- mutation lifecycle desteği
+- invalidation esnekliği
+- daha gelişmiş cache kontrolü
+- geniş uygulama ölçeğinde daha güçlü policy alanı
+- async veri davranışını daha kapsamlı ele alabilme
+
+## 34.3. Sonuç
+
+SWR reddedildi çünkü canonical ihtiyaç için TanStack Query daha tam karşılık veriyor.
+
+---
+
+# 35. Neden RTK Query Seçilmedi?
+
+## 35.1. Gerekçe
+
+RTK Query güçlü olabilir.  
+Ama canonical state kararı Redux Toolkit yönüne gitmediği için RTK Query de doğal seçim değildir.
+
+## 35.2. İkincil neden
+
+Bu boilerplate store ve server-state ayrımını daha net tutmak istiyor.  
+TanStack Query bu ayrımı daha doğal taşır.
+
+---
+
+# 36. Neden Custom Fetch + Manual Cache Seçilmedi?
+
+Bu karar özellikle açık yazılmalıdır.
+
+## 36.1. Neden reddedildi?
+
+Çünkü bu yaklaşım şunları üretir:
+- herkesin kendi retry mantığı
+- herkesin kendi loading state modeli
+- herkesin kendi invalidation kuralı
+- herkesin kendi error parse davranışı
+- cache ve stale kaosu
+
+## 36.2. Sonuç
+
+Bu yaklaşım canonical olarak reddedilmiştir.
+
+---
+
+# 37. Riskler
+
+Bu kararın da riskleri vardır.
+
+## 37.1. TanStack Query yanlış kullanılırsa query sprawl oluşabilir
+Yani çok fazla dağınık query contract üretilebilir.
+
+## 37.2. Invalidation policy iyi yazılmazsa stale bug’ları devam eder
+Tool bunu sihirli çözmez.
+
+## 37.3. Optimistic update yanlış kullanılırsa kullanıcı yanıltılabilir
+Bu özellikle tehlikelidir.
+
+## 37.4. Enabled/refetch policy düşünülmezse gereksiz ağ gürültüsü oluşabilir
+Bu da hem UX hem performance sorunudur.
+
+## 37.5. Query cache ownership belirsiz bırakılırsa team-level confusion oluşur
+Bu yüzden dokümantasyon kritik kalır.
+
+---
+
+# 38. Risk Azaltma Önlemleri
+
+Bu ADR’nin risklerini azaltmak için şu önlemler gerekir:
+
+1. Query key conventions yazılmalı
+2. Mutation/invalidation checklist oluşturulmalı
+3. Server-state duplication review maddesi zorunlu olmalı
+4. Data access contracts screen dışına çıkarılmalı
+5. Error/loading taxonomy docs ile hizalanmalı
+6. Observability stack async failures’ı görünür kılmalı
+7. DoD mutation sonrası correctness kanıtı istemeli
+
+---
+
+# 39. Non-Goals
+
+Bu ADR aşağıdakileri çözmez:
+
+- exact HTTP client seçimi
+- authentication transport specifics
+- OpenAPI/codegen strategy
+- offline queue detayları
+- websocket/subscription strategy
+- persisted query cache implementation
+- every query key naming detail
+
+Bu alanlar gerektiğinde ayrı ADR veya policy belgesi ister.
+
+---
+
+# 40. Uygulanma Sonuçları
+
+Bu ADR kabul edildiğinde aşağıdaki sonuçlar doğar:
+
+1. Server-owned veri TanStack Query katmanında yaşar
+2. Query data generic client store’a kopyalanmaz
+3. Mutation lifecycle explicit düşünülür
+4. Invalidation resmi tasarım konusu olur
+5. Loading/error/empty/retry state’ler query lifecycle ile bağlanır
+6. Screen ve component’ler raw fetch owner olmaktan çıkar
+7. Data access contracts ve feature orchestration ayrımı güçlenir
+
+---
+
+# 41. Gelecekte Bu Karar Ne Zaman Yeniden Açılabilir?
+
+Aşağıdaki durumlarda bu ADR yeniden değerlendirilebilir:
+
+- TanStack Query ekosistem veya performans açısından ciddi darboğaz yaratırsa
+- ürün server-state modelinde köklü değişim olursa
+- offline-first gereksinimler mevcut yaklaşımı sistematik olarak yetersiz bırakırsa
+- platform bağımsız data modelinde başka bir yaklaşım belirgin üstünlük sunarsa
+
+Bu seviyedeki değişiklik yeni ADR ve muhtemelen geniş refactor gerektirir.
+
+---
+
+# 42. Kararın Kısa Hükmü
+
+> Data fetching, cache ve mutation modeli için canonical karar: server-owned async data TanStack Query ile yönetilir; raw fetch component’lere dağılmaz; query key, stale, retry, invalidation ve mutation lifecycle açık ownership ile tasarlanır; server state generic client store’a kopyalanmaz.
+
+---
+
+# 43. Onay Kriterleri
+
+Bu ADR yeterli kabul edilir eğer:
+
+1. TanStack Query seçiminin kapsamı açıkça yazılmışsa
+2. Server state’in resmi evi net tanımlanmışsa
+3. Query key, fetch, mapping, mutation, invalidation, retry, error ve loading politikaları görünür kılınmışsa
+4. Store duplication yasağı net yazılmışsa
+5. SWR / RTK Query / custom fetch yaklaşımının neden canonical seçilmediği açıklanmışsa
+6. Riskler ve mitigations görünürse
+7. Bu karar implementasyon öncesi kilitlenmiş async data baseline olarak kullanılabilecek netlikteyse
+
+---
+
+# 44. Kısa Sonuç
+
+Bu ADR’nin ana çıktısı şudur:
+
+> Bu boilerplate’te server state generic app state değildir. Async veri davranışı TanStack Query ile, açık ownership ve lifecycle disiplini içinde yönetilecektir. Query cache, stale data, invalidation, retry ve mutation correctness bu katmanın resmi sorumluluğudur; UI ve store bu veriyi duplicate ederek değil, doğru katmandan tüketerek çalışacaktır.

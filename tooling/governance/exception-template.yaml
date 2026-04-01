@@ -1,0 +1,37 @@
+# Exception Kayıt Şablonu
+# Referans: 44-exception-and-exemption-policy.md
+#
+# Bu dosyayı kopyalayarak yeni exception kaydı oluşturun.
+# Dosya adı formatı: EXC-NNN-kisa-aciklama.yaml
+# Konum: exceptions/EXC-NNN-kisa-aciklama.yaml
+
+id: EXC-NNN
+type: exception        # exception (geçici) | exemption (kalıcı)
+
+# Hangi kural ihlal ediliyor?
+rule: ""               # Örnek: no-hardcoded-colors, no-restricted-imports, a11y-touch-target
+rule_source: ""        # Örnek: 22-design-tokens-spec.md, 07-module-boundaries.md
+
+# Nerede?
+file: ""               # Örnek: apps/web/src/components/LegacyBanner.tsx
+scope: ""              # file | package | feature | app
+
+# Neden?
+reason: ""             # Kısa ve net gerekçe
+
+# Severity
+severity: minor        # minor | major | blocker
+
+# Tarihler
+created: "YYYY-MM-DD"
+expiry: "YYYY-MM-DD"   # exception için zorunlu, exemption için bir sonraki review tarihi
+
+# Onay
+approver: ""           # Onaylayan kişi / rol
+ticket: ""             # İlgili issue/ticket numarası (opsiyonel)
+
+# Durum
+status: active         # active | expired | resolved | extended
+
+# Notlar
+notes: ""
