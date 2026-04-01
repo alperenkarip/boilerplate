@@ -1,22 +1,21 @@
-# 42-stitch-pipeline-spec.md
+# 46-stitch-pipeline-spec.md
 
-## Dokuman Kimligi
+## Doküman Kimliği
 
-- **Dokuman adi:** Stitch Pipeline Specification
-- **Dosya adi:** `42-stitch-pipeline-spec.md`
-- **Dokuman turu:** Specification / design-to-code pipeline / token integration document
+- **Doküman adı:** Stitch Pipeline Specification
+- **Dosya adı:** `46-stitch-pipeline-spec.md`
+- **Doküman türü:** Specification / design-to-code pipeline / token integration document
 - **Durum:** Accepted
 - **Tarih:** 2026-04-01
-- **Kapsam:** Google Stitch'in boilerplate design-to-code pipeline'i olarak konumunu, DESIGN.md uretim ve tuketim kurallarini, Stitch MCP entegrasyonunu, stitch-to-react skill akisini, token eslestirme mekanizmasini (CSS degiskenleri --> Tailwind config --> NativeWind) ve kalite kapilarini tanimlar.
-- **Bagli oldugu ust dokumanlar:**
+- **Kapsam:** Google Stitch'in boilerplate design-to-code pipeline'ı olarak konumunu, DESIGN.md üretim ve tüketim kurallarını, Stitch MCP entegrasyonunu, stitch-to-react skill akışını, token eşleme mekanizmasını (CSS değişkenleri → Tailwind config → NativeWind) ve kalite kapılarını tanımlar.
+- **Bağlı olduğu üst dokümanlar:**
   - `22-design-tokens-spec.md`
   - `ADR-007-styling-tokens-and-theming-implementation.md`
   - `04-design-system-architecture.md`
   - `40-ai-workflow-and-tooling.md`
-- **Dogrudan etkileyecegi dokumanlar:**
+- **Doğrudan etkileyeceği dokümanlar:**
   - `22-design-tokens-spec.md`
   - `23-component-governance-rules.md`
-  - `33-ai-guidelines.md`
   - `35-document-map.md`
 
 ---

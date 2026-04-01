@@ -913,7 +913,7 @@ Oku:
 
 ## C.4. Yeni Ana Doküman: Stitch Pipeline Spec
 
-**Dosya adı:** `42-stitch-pipeline-spec.md`
+**Dosya adı:** `46-stitch-pipeline-spec.md`
 **Belge ailesi:** Design system / UX (04, 05, 22 ile aynı aile)
 **Bağlı olduğu üst dokümanlar:** 22-design-tokens-spec.md, ADR-007, 04-design-system-architecture.md, 40-ai-workflow-and-tooling.md
 **Doğrudan etkileyeceği dokümanlar:** 22, 23, 33, 35
@@ -1237,7 +1237,7 @@ Boilerplate güncellendi (upstream)
 | **2** | AGENTS.md oluştur | `AGENTS.md` | Düşük | Yok | Codex review'u hemen proje-spesifik hale getirir. CLAUDE.md ile paralel yapılabilir |
 | **3** | AI Workflow dokümanını yaz | `40-ai-workflow-and-tooling.md` | Yüksek | 1, 2 | Dört aracın rol, etkileşim ve governance tanımı. Diğer tüm güncellemelerin referans noktası |
 | **4** | Talimat standartlarını yaz | `41-ai-instruction-standards.md` | Orta | 3 | CLAUDE.md, AGENTS.md, SPEC, DESIGN.md formatlarının standartları |
-| **5** | Stitch pipeline spec'ini yaz | `42-stitch-pipeline-spec.md` | Orta | 4 | Design-to-code akışının 22-design-tokens-spec.md ile eşleşme kuralları |
+| **5** | Stitch pipeline spec'ini yaz | `46-stitch-pipeline-spec.md` | Orta | 4 | Design-to-code akışının 22-design-tokens-spec.md ile eşleşme kuralları |
 | **6** | Repo yapısına AI dizinlerini ekle | `21-repo-structure-spec.md` güncelle | Düşük | 3 | .moai/, CLAUDE.md, AGENTS.md, DESIGN.md placement kuralları |
 | **7** | Tooling/governance güncelle | `16-tooling-and-governance.md` güncelle | Düşük | 3 | AI governance modelinin mevcut governance'a entegrasyonu |
 | **8** | Contribution guide güncelle | `30-contribution-guide.md` güncelle | Düşük | 3, 4 | AI destekli katkı sürecinin operasyonel kuralları |

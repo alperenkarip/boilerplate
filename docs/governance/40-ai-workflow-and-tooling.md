@@ -14,7 +14,7 @@
   - `01-working-principles.md`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `41-ai-instruction-standards.md`
-  - `42-ai-review-and-audit-protocol.md`
+  - `46-stitch-pipeline-spec.md`
   - `21-repo-structure-spec.md`
   - `30-contribution-guide.md`
   - `32-definition-of-done.md`
@@ -613,7 +613,7 @@ Bu ilke şu anlamları taşır:
 **Codex CLI kullanılamaz hale gelirse:**
 1. AGENTS.md'deki review kuralları Claude Code'a veya başka bir review aracına aktarılır.
 2. Review süreci insan review'ı ile devam eder.
-3. `42-ai-review-and-audit-protocol.md`'deki kontrol listesi manuel uygulanır.
+3. `41-ai-instruction-standards.md`'deki kontrol listesi manuel uygulanır.
 
 ## 10.3. Vendor Lock-in Önleme
 
@@ -956,4 +956,4 @@ Temel ilkeler:
 
 Detay kuralları bu dokümanın alt dokümanlarında tanımlanır:
 - Talimat dosyası formatları ve standartları → `41-ai-instruction-standards.md`
-- AI review ve audit protokolü → `42-ai-review-and-audit-protocol.md`
+- Stitch pipeline ve token eşleme → `46-stitch-pipeline-spec.md`

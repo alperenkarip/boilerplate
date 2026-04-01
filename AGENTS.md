@@ -59,7 +59,7 @@
 - `tooling/governance/exception-template.yaml` şablonunu kullan
 
 ## Boundary Contract
-- Boilerplate kuralları `41-boilerplate-project-boundary-contract.md`'ye göre miras alınır
+- Boilerplate kuralları `45-boilerplate-project-boundary-contract.md`'ye göre miras alınır
 - Zorunlu miras kuralları (canonical stack, dependency policy, a11y baseline) override edilemez
 - Yapısal miras kuralları sıkılaştırılabilir, gevşetilemez
 

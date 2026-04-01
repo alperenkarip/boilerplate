@@ -1,19 +1,19 @@
-# 41-boilerplate-project-boundary-contract.md
+# 45-boilerplate-project-boundary-contract.md
 
-## Dokuman Kimligi
+## Doküman Kimliği
 
-- **Dokuman adi:** Boilerplate-Project Boundary Contract
-- **Dosya adi:** `41-boilerplate-project-boundary-contract.md`
-- **Dokuman turu:** Governance / boundary contract
+- **Doküman adı:** Boilerplate-Project Boundary Contract
+- **Dosya adı:** `45-boilerplate-project-boundary-contract.md`
+- **Doküman türü:** Governance / boundary contract
 - **Durum:** Accepted
 - **Tarih:** 2026-04-01
-- **Kapsam:** Bu belge, boilerplate'ten turetilen (derived) projelerin hangi kurallari zorunlu olarak miras alacagini, hangilerini yapisal cercevede genisletebilecegini, hangilerini proje-ozel yorumlayabilecegini ve hangilerini hicbir kosulda override edemeyecegini tanimlar. Override sureci, audit entegrasyonu ve anti-pattern tanimlarini icerir.
-- **Bagli oldugu ust dokumanlar:**
+- **Kapsam:** Bu belge, boilerplate'ten türetilen (derived) projelerin hangi kuralları zorunlu olarak miras alacağını, hangilerini yapısal çerçevede genişletebileceğini, hangilerini proje-özel yorumlayabileceğini ve hangilerini hiçbir koşulda override edemeyeceğini tanımlar. Override süreci, audit entegrasyonu ve anti-pattern tanımlarını içerir.
+- **Bağlı olduğu üst dokümanlar:**
   - `00-project-charter.md`
   - `01-working-principles.md`
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
-- **Dogrudan etkileyecegi dokumanlar:**
+- **Doğrudan etkileyeceği dokümanlar:**
   - `35-document-map.md`
   - `31-audit-checklist.md`
   - `43-derived-project-creation-guide.md`

@@ -168,6 +168,46 @@ jobs:
       - name: Import direction validation
         run: |
           # packages/ → apps/ yönünde import olmamalı
-          # Bu script proje bootstrap sırasında özelleştirilir
-          echo "Boundary check — import direction validation"
-          # pnpm boundary:check
+          echo "=== Boundary Check: packages/ → apps/ import taraması ==="
+          VIOLATIONS=$(grep -r "from ['\"].*apps/" packages/ --include="*.ts" --include="*.tsx" 2>/dev/null || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "❌ BOUNDARY İHLALİ: packages/ → apps/ yönünde import tespit edildi:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+          echo "✅ Boundary check geçti — ihlal yok"
+
+  # ────────────────────────────────────────────
+  # 7. Security scan — BLOCKER
+  # ────────────────────────────────────────────
+  security:
+    name: Security Scan
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Dependency security audit
+        run: pnpm audit --audit-level=high
+        continue-on-error: false
+      - name: Secret leak detection
+        run: |
+          echo "=== Secret Leak Taraması ==="
+          LEAKS=$(grep -r -E "(api_key|apikey|secret_key|password|token)\s*[:=]\s*['\"][^'\"]{8,}" --include="*.ts" --include="*.tsx" --include="*.js" apps/ packages/ 2>/dev/null || true)
+          if [ -n "$LEAKS" ]; then
+            echo "❌ OLASI SECRET LEAK TESPİT EDİLDİ:"
+            echo "$LEAKS"
+            exit 1
+          fi
+          echo "✅ Secret leak taraması geçti"

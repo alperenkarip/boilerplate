@@ -93,7 +93,7 @@ Bu aile, boilerplate ile türetilen projeler arasındaki sınırları, dallanma 
 
 | Dosya | Açıklama | Tür |
 |---|---|---|
-| `41-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi | Governance |
+| `45-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi | Governance |
 | `42-branching-and-merge-strategy.md` | Branching ve merge stratejisi | Process |
 | `43-derived-project-creation-guide.md` | Türetilen proje oluşturma rehberi | Guide |
 | `44-exception-and-exemption-policy.md` | İstisna ve muafiyet politikası | Governance
@@ -251,7 +251,7 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 ## 8.8. AI workflow ve talimat standartları
 45. `40-ai-workflow-and-tooling.md`
 46. `41-ai-instruction-standards.md`
-47. `42-stitch-pipeline-spec.md`
+47. `46-stitch-pipeline-spec.md`
 
 ## 8.9. Operasyon ve denetim
 48. `30-contribution-guide.md`
@@ -393,14 +393,14 @@ Oku:
 - `CLAUDE.md` (proje talimatı)
 - `AGENTS.md` (denetim talimatı)
 - İlgili SPEC varsa: `.moai/specs/SPEC-XXX.md`
-- Stitch işi varsa: `42-stitch-pipeline-spec.md` + `DESIGN.md`
+- Stitch işi varsa: `46-stitch-pipeline-spec.md` + `DESIGN.md`
 
 ---
 
 ## 10.9. Yeni derived project türetme
 Oku:
 - `43-derived-project-creation-guide.md`
-- `41-boilerplate-project-boundary-contract.md`
+- `45-boilerplate-project-boundary-contract.md`
 - `20-initial-implementation-checklist.md`
 - `21-repo-structure-spec.md`
 - `42-branching-and-merge-strategy.md`

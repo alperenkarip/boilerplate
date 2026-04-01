@@ -58,7 +58,7 @@ Amacınız: Mimari kararları, governance'ı ve kalite mekanizmalarını anlamak
 | 2 | `06-application-architecture.md` | 25 dk | Katman mimarisi |
 | 3 | `17-technology-decision-framework.md` | 20 dk | Teknoloji karar modeli |
 | 4 | `15-quality-gates-and-ci-rules.md` | 20 dk | CI gates, blocker/major/minor |
-| 5 | `41-boilerplate-project-boundary-contract.md` | 20 dk | Miras kuralları, override izinleri |
+| 5 | `45-boilerplate-project-boundary-contract.md` | 20 dk | Miras kuralları, override izinleri |
 
 **Bonus okuma:** `37-dependency-policy.md`, `38-version-compatibility-matrix.md`, `31-audit-checklist.md`
 

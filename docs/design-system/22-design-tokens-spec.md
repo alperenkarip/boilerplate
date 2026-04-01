@@ -901,7 +901,7 @@ Bir token tanımlanırken şu sorular sorulmalıdır:
 
 # 30. Stitch Pipeline Token Eşleştirme Referansı
 
-Bu token standardının Google Stitch design-to-code pipeline'ı ile nasıl eşleşeceği `42-stitch-pipeline-spec.md` tarafından tanımlanır. Temel kurallar:
+Bu token standardının Google Stitch design-to-code pipeline'ı ile nasıl eşleşeceği `46-stitch-pipeline-spec.md` tarafından tanımlanır. Temel kurallar:
 
 ## 30.1. Eşleştirme prensibi
 
@@ -923,7 +923,7 @@ DESIGN.md ile bu doküman çelişirse, bu doküman kazanır. DESIGN.md Stitch'te
 
 ## 30.4. Dönüşüm mekanizması
 
-Stitch DESIGN.md'deki CSS değişkenleri → `packages/design-tokens/` altındaki kaynak dosyalara → `tailwind.config.js` (web) ve NativeWind config (mobile) olarak dönüştürülür. Detaylı dönüşüm adımları `42-stitch-pipeline-spec.md` bölüm 4.6'da tanımlanmıştır.
+Stitch DESIGN.md'deki CSS değişkenleri → `packages/design-tokens/` altındaki kaynak dosyalara → `tailwind.config.js` (web) ve NativeWind config (mobile) olarak dönüştürülür. Detaylı dönüşüm adımları `46-stitch-pipeline-spec.md` bölüm 4.6'da tanımlanmıştır.
 
 ---
 

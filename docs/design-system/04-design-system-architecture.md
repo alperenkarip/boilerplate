@@ -1075,7 +1075,7 @@ Bir karar alınmadan önce şu sorular sorulmalıdır:
 `15-quality-gates-and-ci-rules.md` ve `16-tooling-and-governance.md`, burada tanımlanan enforcement alanlarını denetim mekanizmasına dönüştürmelidir.
 
 ## 30.6. Stitch pipeline spec
-`42-stitch-pipeline-spec.md`, bu design system mimarisinin AI destekli design-to-code pipeline'ı ile nasıl tüketileceğini tanımlar. Stitch'in DESIGN.md çıktısı bu dokümandaki token hiyerarşisine uymalıdır.
+`46-stitch-pipeline-spec.md`, bu design system mimarisinin AI destekli design-to-code pipeline'ı ile nasıl tüketileceğini tanımlar. Stitch'in DESIGN.md çıktısı bu dokümandaki token hiyerarşisine uymalıdır.
 
 ---
 

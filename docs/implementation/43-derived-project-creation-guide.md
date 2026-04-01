@@ -1,18 +1,18 @@
 # 43-derived-project-creation-guide.md
 
-## Dokuman Kimligi
+## Doküman Kimliği
 
-- **Dokuman adi:** Derived Project Creation Guide
-- **Dosya adi:** `43-derived-project-creation-guide.md`
-- **Dokuman turu:** Guide / project creation process
+- **Doküman adı:** Derived Project Creation Guide
+- **Dosya adı:** `43-derived-project-creation-guide.md`
+- **Doküman türü:** Guide / project creation process
 - **Durum:** Accepted
 - **Tarih:** 2026-04-01
-- **Kapsam:** Boilerplate'ten yeni proje turetme sureci, adimlar, kontrol noktalari, baslangic dosya seti
-- **Bagli oldugu ust dokumanlar:**
+- **Kapsam:** Boilerplate'ten yeni proje türetme süreci, adımlar, kontrol noktaları, başlangıç dosya seti
+- **Bağlı olduğu üst dokümanlar:**
   - `20-initial-implementation-checklist.md`
   - `21-repo-structure-spec.md`
-  - `41-boilerplate-project-boundary-contract.md`
-- **Dogrudan etkileyecegi dokumanlar:**
+  - `45-boilerplate-project-boundary-contract.md`
+- **Doğrudan etkileyeceği dokümanlar:**
   - `35-document-map.md`
 
 ---
@@ -46,7 +46,7 @@ Bu proje kapsaminda temel tez sudur:
 Bu tez su sonuclari dogurur:
 
 1. Turetme sureci adim adim izlenen bir checklist'tir, kisisel yorum alani degildir.
-2. Boilerplate'in zorunlu miras katmani (bkz. `41-boilerplate-project-boundary-contract.md`) ilk gunden itibaren gecerlidir.
+2. Boilerplate'in zorunlu miras katmani (bkz. `45-boilerplate-project-boundary-contract.md`) ilk gunden itibaren gecerlidir.
 3. Proje-ozel yapilandirma, boundary contract'in izin verdigi alanda yapilir.
 4. Her adimin tamamlanmasi icin dogrulama kriteri vardir.
 5. Adimlar atlanamaz; atlanan adim audit'te blocker olarak doner.
@@ -65,7 +65,7 @@ Turetme surecine baslamadan once asagidaki on kosullar saglanmis olmalidir:
 | Turborepo 2.x | Build orchestrator. pnpm ile birlikte gelir (`turbo` komutu erisebilir olmali) |
 | Boilerplate erisimi | Boilerplate repo'sunun clone/fork edilebilir olmasi veya scaffold script'inin mevcut olmasi |
 | Turkce dokumantasyon | Tum proje belgeleri Turkce yazilir. Bu kural boilerplate'in felsefi miras katmanindan gelir |
-| Boundary contract bilgisi | `41-boilerplate-project-boundary-contract.md` belgesi okunmus ve anlasimis olmali |
+| Boundary contract bilgisi | `45-boilerplate-project-boundary-contract.md` belgesi okunmus ve anlasimis olmali |
 
 On kosullar saglanmadan turetme sureci baslatilmaz.
 
@@ -158,13 +158,13 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 **Yapilacaklar:**
 
-1. `41-boilerplate-project-boundary-contract.md` belgesini oku. Ozellikle Bolum 3 (miras tipleri), Bolum 4 (override izin tablosu) ve Bolum 10 (anti-pattern'ler) onemli.
+1. `45-boilerplate-project-boundary-contract.md` belgesini oku. Ozellikle Bolum 3 (miras tipleri), Bolum 4 (override izin tablosu) ve Bolum 10 (anti-pattern'ler) onemli.
 
 2. Zorunlu miras kurallarini kabul et: canonical stack (ADR-001 → ADR-011), dependency policy (`37-dependency-policy.md`), compatibility matrix (`38-version-compatibility-matrix.md`), WCAG AA esigi, security baseline (`27-security-and-secrets-baseline.md`).
 
 3. Override gereksinimlerin varsa Bolum 7'deki sureci baslat ve `44-exception-and-exemption-policy.md` ile uyumlu sekilde belgele.
 
-4. Root dizinde `BOUNDARY.md` dosyasini olustur. Bu dosya boilerplate surumunu, aktif override'lari, proje-ozel eklemeleri ve son audit tarihini icerir. Ornek format icin `41-boilerplate-project-boundary-contract.md` Bolum 9.1'e bak.
+4. Root dizinde `BOUNDARY.md` dosyasini olustur. Bu dosya boilerplate surumunu, aktif override'lari, proje-ozel eklemeleri ve son audit tarihini icerir. Ornek format icin `45-boilerplate-project-boundary-contract.md` Bolum 9.1'e bak.
 
 **Dogrulama:**
 - [ ] Boundary contract okundu ve zorunlu miras kurallari kabul edildi
@@ -282,7 +282,7 @@ Proje ADR'leri `project/adr/` altinda, boilerplate ADR'leri `docs/adr/` altinda 
 ## 5.2. Catismazlik Kurali
 
 - Catisma otomatik olarak **boilerplate ADR lehine** cozulur. Proje ADR'si gecersiz sayilir.
-- Farkli karar alinmak isteniyorsa boilerplate ADR revision sureci baslatilmalidir (`41-boilerplate-project-boundary-contract.md` Bolum 7).
+- Farkli karar alinmak isteniyorsa boilerplate ADR revision sureci baslatilmalidir (`45-boilerplate-project-boundary-contract.md` Bolum 7).
 - Boilerplate ADR'sinin kapsamadigi alanlarda catisma yoktur, proje ADR'si gecerlidir.
 
 ## 5.3. Sablon ve Ek Alanlar
@@ -393,6 +393,6 @@ Bu belge asagidaki kosullar saglandiginda uygulamaya hazir kabul edilir:
 - [ ] En az 5 anti-pattern tanimlanmis ve cozumleriyle birlikte yazilmistir
 - [ ] `20-initial-implementation-checklist.md` ile uyumlu referans verilmistir
 - [ ] `21-repo-structure-spec.md` ile uyumlu dizin yapisi referans verilmistir
-- [ ] `41-boilerplate-project-boundary-contract.md` ile tutarli miras modeli kullanilmistir
+- [ ] `45-boilerplate-project-boundary-contract.md` ile tutarli miras modeli kullanilmistir
 - [ ] Belge, yeni bir ekip uyesinin tek basina takip edebilecegi netlikte yazilmistir
 - [ ] `35-document-map.md`'de bu belgenin yeri isaretlenmistir

@@ -137,8 +137,8 @@ Artık çalışan bir sisteminiz var. Şimdi rolünüze göre belgeleri okuyun:
 | 2 | Global state'e server data koyma | TanStack Query kullan | `10-data-fetching-cache-sync.md` |
 | 3 | `any` tipi kullanma | Doğru tipi yaz | `36-canonical-stack-decision.md` |
 | 4 | Inline string yazma (`"Kaydet"`) | i18n key kullan | `ADR-011` |
-| 5 | `packages/` → `apps/` import | Tersini kullan | `07-module-boundaries.md` |
-| 6 | Feature kodu `packages/`'a taşıma | Shared-by-proof ilkesi | `07-module-boundaries.md` |
+| 5 | `packages/` → `apps/` import | Tersini kullan | `07-module-boundaries-and-code-organization.md` |
+| 6 | Feature kodu `packages/`'a taşıma | Shared-by-proof ilkesi | `07-module-boundaries-and-code-organization.md` |
 | 7 | `eslint-disable` exception'sız | Exception kaydı oluştur | `44-exception-and-exemption-policy.md` |
 | 8 | Test yazmadan PR açma | İlgili test türünü yaz | `14-testing-strategy.md` |
 | 9 | Canonical stack dışı kütüphane ekleme | ADR sürecini başlat | `17-technology-decision-framework.md` |

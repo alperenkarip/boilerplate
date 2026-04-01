@@ -88,7 +88,7 @@ pnpm build            # Tüm workspace'i derle
 7. `35-document-map.md` (navigasyon)
 
 ## Boilerplate-Project Sınırları
-- Derived project'ler boilerplate kurallarını `41-boilerplate-project-boundary-contract.md`'ye göre miras alır
+- Derived project'ler boilerplate kurallarını `45-boilerplate-project-boundary-contract.md`'ye göre miras alır
 - Zorunlu miras kuralları override edilemez
 - Yapısal miras kuralları sıkılaştırılabilir ama gevşetilemez
 - Kural sapmaları `44-exception-and-exemption-policy.md`'ye göre kaydedilmeli

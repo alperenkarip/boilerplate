@@ -14,7 +14,7 @@
 - **Doğrudan etkileyeceği dokümanlar:**
   - `CLAUDE.md`
   - `AGENTS.md`
-  - `42-stitch-pipeline-spec.md`
+  - `46-stitch-pipeline-spec.md`
   - `30-contribution-guide.md`
 
 ---
@@ -165,10 +165,10 @@ AI aracı ihtiyaç duyduğunda Read komutuyla ilgili dokümanı okur.
 Tipik referanslar:
 
 - Component governance: `23-component-governance-rules.md`
-- Platform adaptation: `26-platform-adaptation.md`
-- Error states: `25-error-states-and-edge-cases.md`
+- Platform adaptation: `26-platform-adaptation-rules.md`
+- Error states: `25-error-empty-loading-states.md`
 - Navigation: `08-navigation-and-flow-rules.md`
-- Security: `27-security-baseline.md`
+- Security: `27-security-and-secrets-baseline.md`
 - Testing: `14-testing-strategy.md`
 - Design tokens: `22-design-tokens-spec.md`
 
