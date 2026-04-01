@@ -93,7 +93,7 @@ Projede hangi **major/minor ailelerin** canonical kabul edildiğini tanımlar.
 - React 19.2.x hattı
 - Expo SDK 55.x hattı
 - React Native 0.83.x hattı
-- Vite 7.x intentional baseline hattı
+- Vite 8.x stable baseline hattı
 - Tailwind 4.x hattı
 
 ## 4.2. Exact project pin
@@ -133,7 +133,7 @@ Bu boilerplate için çekirdek omurga aşağıdaki sürüm hattı üzerinden kab
 - **TypeScript:** 5.9.x stable baseline
 - **Web React:** 19.2.x
 - **React DOM:** 19.2.x
-- **Vite:** 7.x intentional baseline (Vite 8 watchlist)
+- **Vite:** 8.x stable baseline
 - **React Router:** 7.x
 - **Mobile Runtime:** Expo SDK 55.x
 - **React Native:** 0.83.x
@@ -141,10 +141,11 @@ Bu boilerplate için çekirdek omurga aşağıdaki sürüm hattı üzerinden kab
 - **Tailwind CSS:** 4.x
 - **NativeWind:** 5.x candidate track (pre-release status doğrulanmadan production baseline sayılmaz)
 - **Zustand:** 5.x
-- **TanStack Query:** 5.x
+- **TanStack Query:** 5.x conditional track
 - **React Hook Form:** 7.x
 - **Zod:** 4.x
 - **Vitest:** 4.x baseline track
+- **Storybook:** 10.x
 - **Jest:** 30.x
 - **Playwright:** 1.58.x current baseline track
 - **React Navigation:** 7.x stable baseline
@@ -167,11 +168,11 @@ Bu boilerplate’in default Node baseline’ı:
 
 Çünkü çekirdek stack’in iki kritik ayağı bunu aynı anda karşılar:
 - Expo SDK 55 reference track
-- Vite 7 intentional baseline track
+- Vite 8 stable baseline track
 
 ## 7.3. Neden 22.x seçilmiyor?
 
-Vite 7 Node 22.12+ hattını da destekler.  
+Vite 8 Node 22.12+ hattını da destekler.  
 Ama canonical baseline olarak 20.19.x seçmek:
 - daha geniş ekosistem uyumu
 - Expo ile doğal hizalanma
@@ -218,7 +219,7 @@ Bu nedenle React Native uyumluluğu yalnızca API değil, native ecosystem readi
 
 - **React 19.2.x**
 - **React DOM 19.2.x**
-- **Vite 7.x intentional baseline**
+- **Vite 8.x stable baseline**
 - **React Router 7.x**
 
 ## 9.2. Kural
@@ -268,7 +269,7 @@ Bu, web support matrix’i ile birlikte yorumlanmalıdır.
 ## 11.1. Canonical eşleşme
 
 - **Zustand:** 5.x
-- **TanStack Query:** 5.x
+- **TanStack Query:** 5.x conditional track
 - **React Hook Form:** 7.x
 - **Zod:** 4.x
 
@@ -289,13 +290,14 @@ Sürüm yükseltmesi bu family’nin birlikte çalışma düzenini bozuyorsa ADR
 ## 12.1. Canonical eşleşme
 
 - **Vitest:** 4.x baseline track
+- **Storybook:** 10.x
 - **Jest:** 30.x
 - **Playwright:** 1.58.x baseline track
 - **Testing Library family:** current stable matching runtime expectations
 
 ## 12.2. En kritik uyum
 
-- Vite 7 → Vitest minimum support line dikkate alınmalı
+- Vite 8 → Vitest minimum support line dikkate alınmalı
 - RN ecosystem → Jest track dikkatle korunmalı
 - Playwright E2E toolchain CI image ve browser matrix ile birlikte düşünülmeli
 
@@ -387,7 +389,7 @@ TS 6.x gibi major sıçramalar compatibility re-validation olmadan baseline’a 
 | TypeScript | 5.9.x | Stable baseline | 6.x upgrade re-validation ister |
 | React | 19.2.x | Web + Expo chain ile hizalı | Farklı minor hatlar kontrolsüz karıştırılmaz |
 | React DOM | 19.2.x | React ile aynı hatta | React minor ile mismatch yasak |
-| Vite | 7.x | Web build standardı | Node 20.19+/22.12+ ister |
+| Vite | 8.x | Web build standardı | Node 20.19+/22.12+ ister |
 | React Router | 7.x | Web navigation baseline | 6.x geriye dönüş baseline dışı |
 | Expo SDK | 55.x | Mobile canonical shell | Expo major upgrade ayrı karar ister |
 | React Native | 0.83.x | Expo 55 ile bağlı | Expo’dan bağımsız sıçratılmaz |
@@ -395,10 +397,11 @@ TS 6.x gibi major sıçramalar compatibility re-validation olmadan baseline’a 
 | Tailwind CSS | 4.x | Web styling baseline | 3.x geri dönüş canonical dışı |
 | NativeWind | 5.x candidate track | Mobile styling için pre-release izleme hattı | GA olmadan bootstrap lock-in yasak; 4.x/5.x geçişi styling audit ister |
 | Zustand | 5.x | State management canonical | İkinci state library eklenmez |
-| TanStack Query | 5.x | Server-state canonical | v4 hattı baseline dışı |
+| TanStack Query | 5.x conditional track | Query/cache karmaşıklık eşiği aşılırsa canonical query layer | v4 hattı baseline dışı; her repo bootstrap'ında zorunlu değil |
 | React Hook Form | 7.x | Forms baseline | Alternative engine eklenmez |
 | Zod | 4.x | Schema baseline | v3 ile karışık kullanım yasak |
 | Vitest | 4.x | Web-side fast tests | Vite uyumu korunmalı |
+| Storybook | 10.x | Web component lab / docs / story-based browser testing | ESM-only; Vite builder ve Storybook Test/Vitest addon ile hizalanmalı |
 | Jest | 30.x | RN-side tests | Web-side default runner değildir |
 | Playwright | 1.58.x track | Web E2E baseline | CI/browser image uyumu korunmalı |
 | React Navigation | 7.x stable | Mobile navigation baseline | 8.x watchlist, baseline değil |
@@ -635,7 +638,7 @@ Aşağıdaki kombinasyonlar varsayılan olarak blocker veya çok yüksek risk sa
 
 1. Expo SDK 55.x ile React Native 0.83 dışı random hat
 2. React 19.2 hattı ile React DOM farklı minör hat
-3. Vite 7.x intentional baseline ile Node 20.19 altı
+3. Vite 8.x stable baseline ile Node 20.19 altı
 4. Tailwind 4.x ile eski config alışkanlıklarını sürdürme
 5. NativeWind 5.x candidate hattını eski mobile styling assumptions ile karıştırma
 6. Zod 4.x ile eski schema helper ekosistemini doğrulamadan kullanma
@@ -763,8 +766,17 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
+# 30.1. Ek Watch Notları (2026-04 güncellemesi)
+
+- **React Compiler:** resmi stabil hatta geçmiş olsa da default-on baseline değildir; controlled opt-in hattı olarak değerlendirilir.
+- **Biome 2.x:** formatter/import sorting/commodity lint için güçlü adaydır; ancak ESLint custom governance zincirini otomatik replace etmez, pilot/watchlist statüsündedir.
+- **Expo development build:** mobile doğrulama için canonical zemindir; Expo Go compatibility kanıtı sayılmaz.
+- **React Native DevTools:** RN debugging'de birincil yüzey olarak kabul edilir; legacy standalone araçlar ikincildir.
+- **pnpm install security:** `minimumReleaseAge`, `allowBuilds` ve `trustPolicy: no-downgrade` workspace baseline'ı olarak kabul edilir; install-time güvenlik gevşetmeleri ADR/exception ister.
+- **NativeWind 5.x:** candidate track statüsü sürüyorsa bootstrap anında fallback kararı yazılı olmalıdır.
+
 # 31. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 7.x intentional baseline, React Router 7.x, Tailwind 4.x, NativeWind 5.x candidate track, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Playwright 1.58.x, React Navigation 7.x ve i18next 26.x hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.
+> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 8.x stable baseline, React Router 7.x, Tailwind 4.x, NativeWind 5.x candidate track, Zustand 5.x, **TanStack Query 5.x conditional track**, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Storybook 10.x, Playwright 1.58.x, React Navigation 7.x ve i18next 26.x hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.

@@ -13,7 +13,7 @@ son-güncelleme: 2026-04-01
 # A-NEW-API: Yeni API Entegrasyonu Guardrail
 
 ## Aktiviteye Özel Kurallar
-1. TanStack Query ile entegre et (ADR-005)
+1. ADR-005 uyarınca veri erişim modeline entegre et; complexity threshold aşıldıysa TanStack Query kullan
 2. Response type'ı TypeScript/Zod ile tanımla
 3. Error handling: network, server, timeout ayrı handle et (D-ERR)
 4. Integration test zorunlu (D-TST)
@@ -22,7 +22,7 @@ son-güncelleme: 2026-04-01
 7. Custom hook ile sarma — component'ten doğrudan çağırma
 
 ## DoD Ek Maddeleri
-- [ ] TanStack Query kullanılıyor
+- [ ] ADR-005 kararı görünür (fetch-first veya TanStack Query)
 - [ ] Response type tanımlı (Zod/TS)
 - [ ] Error handling (network/server/timeout)
 - [ ] Integration test yazılmış

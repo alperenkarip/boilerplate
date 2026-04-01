@@ -19,7 +19,7 @@ son-güncelleme: 2026-04-01
 ## Aktif Domain Guardrail'ler
 - **D-FIR** → Veri modelleme, güvenlik kuralları, query, batch, offline
 - **D-SEC** → Secret yönetimi, auth, PII koruması
-- **D-DAT** → TanStack Query entegrasyonu, cache stratejisi
+- **D-DAT** → ADR-005 veri erişim modeli, cache stratejisi
 
 ## Aktiviteye Özel Kurallar
 1. Koleksiyon adı: kebab-case, çoğul
@@ -27,7 +27,7 @@ son-güncelleme: 2026-04-01
 3. Security rules: default deny, owner-based access
 4. Query'lerde limit + pagination
 5. Snapshot listener cleanup (component unmount)
-6. TanStack Query ile cache koordinasyonu
+6. Chosen query/cache modeli ile cache koordinasyonu
 
 ## DoD Ek Maddeleri
 - [ ] Security rules yazılmış (default deny)

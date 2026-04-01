@@ -17,8 +17,8 @@ son-güncelleme: 2026-04-01
 2. Cached data'yı göster — beyaz ekran gösterme
 3. Offline'da yapılan değişiklikleri queue'la
 4. Online olunca sync et — conflict resolution stratejisi tanımla
-5. Cache invalidation stratejisi net olmalı (TanStack Query — ADR-005)
-6. Firestore offline persistence varsa TanStack Query ile koordine et (D-FIR)
+5. Cache invalidation stratejisi net olmalı (ADR-005; query-layer adopt edilmişse TanStack Query policy ile)
+6. Firestore offline persistence varsa chosen query/cache modeli ile koordine et (D-FIR)
 7. Platform-specific offline davranışı düşün (D-PLT)
 
 ## DoD Ek Maddeleri

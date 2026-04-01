@@ -304,7 +304,7 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Mobil runtime: React Native + Expo (ADR-002)
 - Monorepo: pnpm 10.x + Turborepo 2.x (ADR-003)
 - State management: Zustand (ADR-004)
-- Data fetching: TanStack Query (ADR-005)
+- Data fetching: fetch-first default + conditional TanStack Query policy (ADR-005)
 - Forms: React Hook Form + Zod (ADR-006)
 - Styling/tokens: Tailwind CSS (web) + NativeWind (mobile), semantic token-first (ADR-007)
 - Testing: Vitest (web) + Jest (mobile) + Testing Library + Playwright E2E (ADR-008)
@@ -374,7 +374,7 @@ Codex CLI her iş öncesi bu dosyayı okur. Boilerplate'in denetim kurallarını
 - Yeni API entegrasyonu: integration testi zorunlu
 
 ## Canonical Stack (DO NOT suggest alternatives)
-- State: Zustand | Data: TanStack Query | Forms: React Hook Form + Zod
+- State: Zustand | Data: fetch-first / conditional TanStack Query | Forms: React Hook Form + Zod
 - Styling: Tailwind CSS + NativeWind | Testing: Vitest + Jest + Playwright | i18n: i18next
 ```
 

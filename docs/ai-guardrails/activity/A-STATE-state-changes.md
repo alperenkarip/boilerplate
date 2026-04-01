@@ -18,7 +18,7 @@ son-güncelleme: 2026-04-01
 
 ## Aktiviteye Özel Kurallar
 1. En dar scope'ta tut — gereksiz yere global yapma
-2. Server state → TanStack Query (Zustand'a koyma)
+2. Server state → ADR-005 veri erişim modeli (generic store'a koyma; query-layer adopt edilmişse TanStack Query)
 3. Form state → React Hook Form (Zustand'a koyma)
 4. Store slice izolasyonu koru
 5. Re-render etkisini düşün (D-PRF)

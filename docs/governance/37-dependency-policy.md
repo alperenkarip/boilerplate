@@ -193,7 +193,7 @@ Aşağıdaki yönlerle doğrudan çelişen dependency eklemek normal kabul edilm
 - React + Vite web yönü
 - React Native + Expo mobile yönü
 - Zustand state policy
-- TanStack Query async data policy
+- koşullu TanStack Query async data policy (ADR-005)
 - RHF + Zod forms policy
 - Tailwind + NativeWind styling policy
 - Sentry error tracking baseline
@@ -249,6 +249,55 @@ Dependency’nin aktif ve güvenilir bakım sinyalleri olmalıdır.
 Ekosistem olgunluğu zayıfsa kabul çıtası çok yükselir.
 
 ---
+
+# 10A. pnpm Supply-Chain Security Baseline
+
+## 10A.1. Kural
+
+Dependency policy yalnızca "hangi paketi alalım" sorusu değildir; install-time güvenlik de resmi politika alanıdır. Bu boilerplate'te pnpm 10.x için aşağıdaki baseline zorunludur:
+
+- `minimumReleaseAge` tanımlanır. Varsayılan öneri **en az 1440 dakika (24 saat)** gecikmedir; daha agresif güvenlik isteyen ekipler bunu yükseltebilir.
+- Build script çalıştırma izni global olarak açılmaz; trusted paketler `allowBuilds` ile açık allowlist mantığında işaretlenir.
+- `trustPolicy: no-downgrade` etkin düşünülür; bir paketin trust seviyesindeki düşüş sessizce kabul edilmez.
+- `dangerouslyAllowAllBuilds` baseline dışıdır.
+
+## 10A.2. Ne anlama gelir?
+
+1. Yeni eklenen dependency install sırasında build script çalıştırmak istiyorsa otomatik meşru sayılmaz.
+2. `pnpm approve-builds` veya eşdeğer yazılı allowlist kararı olmadan script execution kabul edilmez.
+3. Güvenlik istisnaları `44-exception-and-exemption-policy.md` ile belgelenir.
+4. Supply-chain ayarları docs-only aşamada bile yazılı policy olarak tutulur; bootstrap başladığında `pnpm-workspace.yaml` / config katmanına uygulanır.
+
+## 10A.3. Review checklist
+
+Yeni dependency review'unda ayrıca şu sorular sorulur:
+- Paket build script gerektiriyor mu?
+- Gerektiriyorsa `allowBuilds` listesine neden alınmalı?
+- Paket çok yeni yayımlanmış sürüme mi dayanıyor? `minimumReleaseAge` bunu yakalıyor mu?
+- Trust düşüşü veya provenance belirsizliği var mı?
+
+## 10A.4. Zayıf yaklaşımlar
+
+- "Kurulsun diye geçici olarak tüm build script'leri açalım"
+- `dangerouslyAllowAllBuilds` kalıcı hale getirmek
+- `minimumReleaseAge` kapatıp bunu görünmez bırakmak
+- `allowBuilds` listesini açıklamasız şişirmek
+
+## 10A.5. Teknik konfigürasyon örneği
+
+Docs-only repoda bile pnpm security policy yalnızca metin olarak bırakılmamalıdır. Derived project bootstrap'te aşağıdaki gibi **somut config artefaktı** üretilir:
+
+```yaml
+# pnpm-workspace.yaml (örnek ek blok)
+minimumReleaseAge: 1440
+trustPolicy: no-downgrade
+allowBuilds:
+  esbuild: true
+  sharp: true
+  "@sentry/cli": true
+```
+
+Bu örnek kanonik allowlist değildir; proje ihtiyacına göre daraltılır. Referans örnek dosya: `tooling/pnpm/pnpm-workspace.security.example.yaml`.
 
 # 11. Mimari Uyum Kriteri
 

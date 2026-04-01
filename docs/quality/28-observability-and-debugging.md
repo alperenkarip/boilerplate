@@ -228,14 +228,14 @@ Debugging süreci, prod ortamına sınırsız debug yüzeyi açma gerekçesi ola
 
 Bu bölüm, geliştirme sırasında hata ayıklama (debugging) için hangi araçların hangi senaryoda, nasıl kurulacağını ve nasıl kullanılacağını tanımlar. Amaç, geliştiricinin bir sorunla karşılaştığında doğru araca doğru refleksle yönelmesini sağlamaktır. `console.log` refleksi yerine araç bazlı sistematik teşhis kültürü hedeflenir.
 
-### 9.4.1. React DevTools
+### 9.4.1. React DevTools / React Native DevTools
 
 **Ne işe yarar:**
 Web ve mobile ortamda component tree yapısını, her component'in props, state ve hooks değerlerini görsel olarak incelemeye yarar. Hangi component'in hangi veriyle render edildiğini, parent-child ilişkilerini ve hook durumlarını canlı olarak gösterir.
 
 **Kurulum:**
 - **Web:** Chrome veya Firefox için React DevTools browser extension yüklenir. Extension yüklendikten sonra React uygulaması çalıştırıldığında browser DevTools panelinde "Components" ve "Profiler" sekmeleri otomatik olarak belirir.
-- **React Native:** `react-devtools` npm paketi global olarak yüklenir (`npm install -g react-devtools`). Ardından terminal'den `react-devtools` komutuyla standalone uygulama başlatılır. React Native uygulaması bu standalone uygulamaya otomatik bağlanır.
+- **React Native:** Birincil araç artık **React Native DevTools**'tur. Development build veya uygun RN debug oturumu üzerinden entegre DevTools açılır; component tree, console, network ve profiler yüzeyleri buradan kullanılır. Standalone `react-devtools` akışı artık ikincil/geri uyumluluk aracıdır; canonical ilk tercih değildir.
 
 **Kullanım:**
 1. Components sekmesini aç.
@@ -252,7 +252,7 @@ React DevTools Profiler sekmesi, render performansını ölçmek için kullanıl
 
 Profiler kullanım adımları: Profiler sekmesini aç → Record butonuna bas → Uygulamada ilgili akışı gerçekleştir → Stop ile kaydı durdur → Commit bazlı render detaylarını incele.
 
-### 9.4.2. React Query DevTools (TanStack Query)
+### 9.4.2. React Query DevTools (TanStack Query — yalnızca query layer adopt edilmişse)
 
 **Ne işe yarar:**
 TanStack Query (React Query) ile yönetilen tüm query'lerin durumunu, cache içeriğini ve invalidation süreçlerini görsel olarak izlemeye yarar. Query'nin şu anki lifecycle state'ini (fresh, stale, fetching, paused, inactive, error) anlık olarak gösterir.
@@ -302,30 +302,23 @@ Browser'da **Redux DevTools** extension yüklü olmalıdır. Zustand'ın `devtoo
 4. Time-travel debugging: Timeline üzerinde ileri-geri giderek state'in herhangi bir andaki halini gör. Bu özellik, "state bir noktada bozuluyor ama nerede?" sorusuna cevap verir.
 5. State'i manuel olarak değiştirerek farklı senaryoları test et.
 
-### 9.4.4. Flipper (React Native)
+### 9.4.4. Flipper (React Native) — İkincil / özel durum aracı
 
-**Ne işe yarar:**
-React Native uygulamaları için kapsamlı bir desktop debugging aracıdır. Tek bir araç içinde network inspector, layout inspector, uygulama logları, database inspector ve AsyncStorage/SharedPreferences inspector sunar.
+**Rolü:**
+Flipper artık bu boilerplate için React Native'de birincil debug yüzeyi değildir. Canonical sıra şöyledir:
+1. React Native DevTools
+2. Expo development build + ilgili platform profiler
+3. Gerekirse Flipper / native platform araçları
 
-**Kurulum:**
-- Flipper desktop uygulaması resmi sitesinden indirilir ve kurulur.
-- React Native projesine `react-native-flipper` paketi eklenir.
-- Uygulama çalıştırıldığında Flipper desktop uygulaması cihazı veya emülatörü otomatik algılar ve bağlanır.
+Flipper; bare veya özel native debugging ihtiyacı olan senaryolarda yararlı olabilir. Ancak Expo-first managed foundation'da varsayılan teşhis refleksi Flipper değildir.
+
+**Ne zaman gerçekten gerekir?**
+- belirli native plugin'lerin derin log ve inspector ihtiyacı varsa,
+- platform-spesifik database/storage/plugin debug'ı gerekiyorsa,
+- RN DevTools + platform profiler yetmiyorsa.
 
 **Expo ile durum:**
-Expo managed workflow'da Flipper desteği sınırlıdır. Expo managed projeler için Flipper yerine şu alternatifler tercih edilir:
-- Expo DevTools (browser tabanlı diagnostics arayüzü)
-- Standalone React DevTools (`react-devtools` paketi)
-- `expo-dev-client` ile oluşturulan custom development client
-
-Eğer Flipper zorunluysa Expo projesinin eject edilmesi (bare workflow'a geçiş) veya `expo-dev-client` ile custom native build oluşturulması gerekir.
-
-**Flipper'ın sunduğu başlıca plugin'ler:**
-- **Network Inspector:** Tüm HTTP/HTTPS isteklerini yakalar. Request URL, method, headers, body, response status, response body ve timing bilgilerini gösterir.
-- **Layout Inspector:** Native view hierarchy'yi görsel olarak inceler. Accessibility bilgileri ve layout parametreleri görünür.
-- **Logs:** Uygulama loglarını gerçek zamanlı izler. Severity bazlı filtreleme yapılabilir.
-- **Database Inspector:** SQLite veritabanlarını sorgular ve görüntüler.
-- **SharedPreferences / AsyncStorage Inspector:** Key-value storage içeriğini inceler ve düzenler.
+Expo managed workflow'da Flipper desteği garanti baseline kabul edilmez. Bu nedenle Flipper gereksinimi, çoğu durumda "daha derin native debug ihtiyacı" sinyali olarak ele alınmalıdır; günlük geliştirme zemini olarak değil.
 
 ### 9.4.5. Network Debugging
 
@@ -338,8 +331,9 @@ Browser DevTools'un Network sekmesi birincil araçtır. Bu sekmede:
 - Request'e sağ tıklayıp "Copy as cURL" ile isteği terminal'de tekrar çalıştırabilirsin.
 
 **Mobile (React Native):**
-- Flipper Network Plugin (yukarıda açıklandı).
-- React Native Debugger: Chrome DevTools tabanlı standalone debugger. Network inspect, React DevTools ve Redux DevTools'u tek arayüzde birleştirir.
+- Birincil yüzey React Native DevTools'tur. Network, console ve component inspection önce burada aranır.
+- Gerekirse proxy araçları (Charles / Proxyman) ile cihaz trafiği dışarıdan incelenir.
+- Flipper ve React Native Debugger legacy/özel durum aracı olarak değerlendirilir; canonical ilk tercih değildir.
 
 **Proxy araçları:**
 Charles Proxy veya Proxyman ile cihaz veya emülatörden geçen tüm HTTPS trafiği inspect edilebilir. Bu araçlar özellikle şu durumlarda gereklidir:
@@ -363,15 +357,12 @@ Charles Proxy veya Proxyman ile cihaz veya emülatörden geçen tüm HTTPS trafi
 
 ### 9.4.7. Expo'ya Özel Debugging
 
-Expo projelerinde debugging için aşağıdaki araçlar ve yöntemler kullanılır:
+Expo projelerinde debugging için canonical kural şudur: **production-grade feature geliştirme, Expo Go üzerinde değil development build üzerinde yapılır.**
 
 - **Cache temizleme:** `npx expo start --clear` komutu Metro bundler cache'ini temizleyerek başlatır. Garip build hataları veya eski kod'un cache'den serve edilmesi durumlarında ilk denenecek adımdır.
-- **Developer menu:** Expo Go uygulamasında cihazı sallama (shake gesture) ile developer menu açılır. Bu menüden:
-  - Remote JS debugging açılabilir.
-  - Performance monitor etkinleştirilebilir.
-  - Element inspector başlatılabilir.
-  - Fast refresh durumu kontrol edilebilir.
-- **Custom dev client:** `expo-dev-client` paketi ile oluşturulan custom development client, Expo Go'nun sınırlamalarını aşar. Native modül debugging, daha zengin DevTools entegrasyonu ve Flipper benzeri araç desteği sağlar. Bare workflow gerektirmeden native seviyede debugging imkanı tanır.
+- **Expo Go:** Yalnızca sınırlı sandbox ve hızlı görsel deneme aracıdır. Native modül, linking, push, auth, secure storage, config plugin veya release-behavior doğrulaması için kanıt sayılmaz.
+- **Development build / custom dev client:** `expo-dev-client` ile üretilen development build, bu boilerplate'in gerçek debugging baseline'ıdır. Native modül davranışı, linking, secure storage, push, in-app purchase ve benzeri kabiliyetler development build üzerinde doğrulanır.
+- **Sağlık kontrolü:** `expo-doctor` düzenli çalıştırılır; React Native Directory uyumsuzlukları ve dependency sorunları mobile foundation hatası olarak ele alınır.
 
 ### 9.4.8. Performans Debugging
 
@@ -384,8 +375,8 @@ Chrome DevTools Performance sekmesi kullanılır. Bu sekme ile:
 
 **Mobile (React Native):**
 - **React Native Perf Monitor:** Emülatör veya cihazda developer menu'den (iOS: Cmd+D, Android: Cmd+M veya shake) "Show Perf Monitor" seçilerek etkinleştirilir. Ekranda JS thread FPS ve UI thread FPS değerlerini gerçek zamanlı gösterir. JS FPS düşüyorsa JavaScript tarafında, UI FPS düşüyorsa native rendering tarafında sorun vardır.
-- **Flipper Performance Plugin:** CPU kullanımı, memory tüketimi ve frame rate'i timeline üzerinde izler.
-- **Hermes Profiler:** Hermes engine kullanan projelerde (Expo ve React Native'de varsayılan) CPU profiling yapar. Chrome DevTools'a bağlanarak flame chart üretir. Hangi JS fonksiyonunun ne kadar CPU tükettiğini gösterir.
+- **React Native DevTools / Hermes profiling:** Modern RN debug yüzeyi üzerinden profiler ve Hermes odaklı teşhis kullanılır. CPU yoğun JS işlerinin flame chart analizi burada yapılır.
+- **Flipper Performance Plugin:** Yalnızca ek native görünürlük gerektiğinde ikincil araç olarak değerlendirilir.
 
 ### 9.4.9. Memory Debugging
 
@@ -414,7 +405,7 @@ Aşağıda geliştirme sürecinde sık karşılaşılan sorunlar ve her biri iç
 → Zustand DevTools'u (Redux DevTools paneli) aç. Action listesinde beklenen action'ın dispatch edilip edilmediğini kontrol et. Action dispatch edildiyse state diff'ini incele: state gerçekten değişti mi? Eğer action dispatch edilmediyse, action'ı tetikleyen kodda sorun var demektir (event handler bağlanmamış, koşul sağlanmamış vb.). Eğer action dispatch edildi ama state değişmediyse, reducer/set fonksiyonundaki mantığı kontrol et.
 
 **4. "API isteği neden başarısız?"**
-→ Network debugging aracını aç (web: DevTools Network tab, mobile: Flipper Network Plugin veya React Native Debugger). Başarısız isteği bul. Şunları kontrol et: HTTP status code (4xx client error mı, 5xx server error mı?), response body (backend ne mesaj döndü?), request headers (auth token gönderildi mi, doğru mu?), request body (payload doğru formatta mı?). Yalnızca "bir hata oluştu" mesajına bakmak yetersizdir; her zaman response body ve status code incelenmelidir.
+→ Network debugging aracını aç (web: DevTools Network tab, mobile: önce React Native DevTools veya proxy aracı; gerekirse Flipper). Başarısız isteği bul. Şunları kontrol et: HTTP status code (4xx client error mı, 5xx server error mı?), response body (backend ne mesaj döndü?), request headers (auth token gönderildi mi, doğru mu?), request body (payload doğru formatta mı?). Yalnızca "bir hata oluştu" mesajına bakmak yetersizdir; her zaman response body ve status code incelenmelidir.
 
 **5. "Uygulama neden yavaş?"**
 → Performans profiler kullan. Web'de Chrome DevTools Performance sekmesinde kayıt al, flame chart'ta long task'ları ve bottleneck'leri tespit et. Mobile'da Perf Monitor ile JS ve UI thread FPS değerlerini izle; düşük FPS hangi thread'de ise sorun o taraftadır. Hermes Profiler ile CPU-intensive fonksiyonları tespit et. "Yavaş hissediyorum" demek yeterli değildir; profiling verisi ile somut bottleneck gösterilmelidir.
@@ -428,7 +419,7 @@ Aşağıdaki davranışlar sistematik debugging disiplinine aykırıdır ve bu p
 
 1. **Her yere `console.log` bırakıp DevTools kullanmamak.** Console geçici ve kaba bir araçtır. DevTools component state'ini, query cache'ini, store timeline'ını ve network detayını console'dan çok daha iyi gösterir. Console ile debugging yapmak, DevTools varken kağıt-kalemle hesap yapmaya benzer.
 
-2. **Production'da debug araçlarını aktif bırakmak.** React Query DevTools, Zustand DevTools middleware'i, Flipper bağlantısı ve benzeri araçlar production build'de devre dışı olmalıdır. Aktif bırakılması hem performans kaybına hem güvenlik açığına neden olur. Build konfigürasyonunda environment bazlı kontrol zorunludur.
+2. **Production'da debug araçlarını aktif bırakmak.** Query layer adopt edilmişse React Query DevTools, ayrıca Zustand DevTools middleware'i, Flipper bağlantısı ve benzeri araçlar production build'de devre dışı olmalıdır. Aktif bırakılması hem performans kaybına hem güvenlik açığına neden olur. Build konfigürasyonunda environment bazlı kontrol zorunludur.
 
 3. **Network debugging için yalnızca "bir hata oluştu" mesajına bakmak.** Uygulama tarafındaki generic hata mesajı teşhis için yeterli değildir. Her zaman Network tab'a gidip response body, status code, request headers ve request payload incelenmelidir. Backend'in döndüğü gerçek hata mesajı ve HTTP status code olmadan debugging eksiktir.
 

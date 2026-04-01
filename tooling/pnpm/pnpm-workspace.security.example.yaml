@@ -1,0 +1,8 @@
+# Example only — derived project must tailor this allowlist.
+# Reference: docs/governance/37-dependency-policy.md
+minimumReleaseAge: 1440
+trustPolicy: no-downgrade
+allowBuilds:
+  esbuild: true
+  sharp: true
+  "@sentry/cli": true

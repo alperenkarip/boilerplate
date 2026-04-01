@@ -123,22 +123,26 @@ Bu belge aşağıdaki alanlarda canonical karar verir:
 
 Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 
-- **Web runtime:** React 19.x + Vite 7.x intentional baseline + React Router 7.x
+- **Web runtime:** React 19.x + Vite 8.x stable baseline + React Router 7.x
+- **Web router entry mode:** React Router 7 data-router / `RouterProvider`-first SPA shell
 - **Mobile runtime:** React Native 0.83.x + Expo SDK 55.x
 - **Repo/workspace:** Monorepo + pnpm 10.x + Turborepo 2.x
+- **Workspace install security:** pnpm `minimumReleaseAge` + `allowBuilds` + `trustPolicy` baseline
 - **Type system:** TypeScript 5.9.x baseline
 - **App-global client state:** Zustand 5.x
-- **Server-state / query-cache:** TanStack Query 5.x
+- **Server-state / query-cache:** Conditional TanStack Query 5.x track (server-state complexity threshold aşıldığında canonical query layer)
 - **Forms:** React Hook Form 7.x
-- **Validation/schema:** Zod 4.x
+- **Validation/schema:** Zod 4.x schema authority
 - **Web styling:** Tailwind CSS 4.x
 - **Mobile styling:** NativeWind 5.x candidate track (pre-release status bootstrap öncesi doğrulanır)
 - **Token authority:** shared design tokens + semantic token layer
 - **Web testing:** Vitest 4.x + Testing Library
 - **Mobile component/integration testing:** Jest 30.x + Testing Library
+- **Web component lab / docs:** Storybook 10.x + Storybook Test (Vitest addon)
 - **Web E2E:** Playwright 1.58.x track
 - **Error tracking:** Sentry
 - **Analytics:** abstraction-first, vendor-agnostic
+- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist
 - **Auth/session:** web cookie-preferred, mobile secure storage adapter
 - **i18n:** i18next + react-i18next
 - **Docs/governance:** ADR set + dependency policy + compatibility matrix + audit/DoD
@@ -156,11 +160,21 @@ Web uygulaması için canonical yön:
 
 - **React 19.x**
 - **React DOM 19.x**
-- **Vite 7.x**
+- **Vite 8.x**
 - **React Router 7.x**
 - **SPA application shell baseline**
 
 ## 6.2. Bu ne anlama gelir?
+
+### 6.1.1. Router mode standardı
+
+Web routing için canonical giriş modeli `BrowserRouter` değil, React Router 7'nin data-router hattıdır. Root app entry `createBrowserRouter` + `RouterProvider` zinciri ile kurulmalıdır. Bu tercih:
+- route-aware data/error boundary modelini daha erken görünür kılar,
+- React Router 7'nin typegen ve Vite plugin yönüyle hizalanır,
+- gelecekte framework/data mode genişlemesi gerekirse sessiz yeniden mimari ihtiyacını azaltır.
+
+`BrowserRouter` tamamen yasak değildir; ancak canonical boilerplate başlangıç çizgisi değildir.
+
 
 Bu şu demektir:
 
@@ -212,7 +226,17 @@ Neden reddedildi?
 - modern toolchain ve runtime beklentisini taşımaz
 - Vite ekosistemi kadar güçlü ve verimli değildir
 
-## 6.5. Sınırlar
+## 6.5. React Compiler statüsü
+
+React Compiler artık resmi stabil hat olarak görünse de bu boilerplate'te **baseline-default** kabul edilmez. Compiler, yalnızca şu kapılar sağlandığında kontrollü opt-in adaydır:
+- purity ve rules-of-hooks ihlalleri düşük seviyeye inmiş olmalı,
+- lint ve test zinciri temiz olmalı,
+- referans performans profili alınmış olmalı,
+- compiler-on / compiler-off karşılaştırması yazılı audit ile doğrulanmalı.
+
+Bu yüzden React Compiler burada trend-watch / controlled adoption alanıdır; sessiz default switch değildir.
+
+## 6.6. Sınırlar
 Bu karar:
 - gelecekte SSR imkânsız demek değildir
 - ama baseline’ın SSR olmayacağı anlamına gelir
@@ -360,8 +384,9 @@ olarak değerlendirildi.
 
 ## 10.1. Seçim
 
-Canonical server-state ve query/cache katmanı:
-- **TanStack Query 5.x**
+Canonical server-state politikası:
+- **Fetch-first + explicit data access contract** default bootstrap hattıdır
+- **TanStack Query 5.x**, ancak query/cache/mutation/offline karmaşıklık eşiği aşıldığında canonical query layer olarak devreye alınır
 
 ## 10.2. Bu karar neyi çözer?
 
@@ -374,10 +399,11 @@ Canonical server-state ve query/cache katmanı:
 
 ## 10.3. Neden önemli?
 
-Bu seçim sayesinde şu ayrım resmi hale gelir:
+Bu karar sayesinde şu ayrım resmi hale gelir:
 - server-state ≠ app-global UI state
-- query cache ≠ generic local store
+- query cache (adopt edilirse) ≠ generic local store
 - fetch logic ≠ screen logic
+- küçük projelerde fetch-first başlangıç ile yüksek karmaşıklıkta query-layer adoption birbirine karıştırılmaz
 
 ## 10.4. Neden ad-hoc fetch layer reddedildi?
 
@@ -389,12 +415,13 @@ Bu seçim sayesinde şu ayrım resmi hale gelir:
 
 ## 10.5. Neden SWR veya başka hafif alternatifler değil?
 
-Bu boilerplate bağlamında:
+Bu boilerplate bağlamında TanStack Query;
 - cross-platform shared mental model
 - mutation/invalidation
 - operational maturity
 - geniş veri lifecycle kontrolü
-açısından TanStack Query daha uygun kabul edilmiştir.
+
+açısından **query layer gerçekten gerektiğinde** en güçlü aday kabul edilmiştir. Ancak bu, her derived project'in bootstrap anında TanStack Query kurmak zorunda olduğu anlamına gelmez.
 
 ---
 
@@ -403,7 +430,7 @@ açısından TanStack Query daha uygun kabul edilmiştir.
 ## 11.1. Seçim
 
 - **Forms:** React Hook Form 7.x
-- **Schema/validation:** Zod 4.x
+- **Schema/validation:** Zod 4.x schema authority
 
 ## 11.2. Neden birlikte?
 
@@ -434,7 +461,7 @@ olarak değerlendirilmiştir.
 ## 11.5. Kural
 
 Validation yalnızca UI field error mesajı üretmek için kullanılmaz.  
-Schema ve contract katmanı olarak da düşünülür.
+Zod 4, form validasyonu yanında transport/input-output/domain sözleşmeleri için **schema authority** olarak da düşünülür.
 
 ---
 
@@ -478,7 +505,7 @@ Tam tersine:
 - cross-platform styling dilini tekilleştirmek zorlaşır
 
 ## 12.5. Dikkat edilmesi gereken risk
-NativeWind 5.x hattı dikkatli izlenmelidir. 2026-04-01 doğrulamasında v5 dokümantasyonu hâlâ pre-release olarak işaretlenmiştir; bu nedenle bootstrap öncesi release-status kontrolü zorunludur ve GA olmadan sessiz production lock-in yapılamaz.
+NativeWind 5.x hattı dikkatli izlenmelidir. 2026-04-01 doğrulamasında v5 dokümantasyonu hâlâ pre-release olarak işaretlenmiştir; bu nedenle bootstrap öncesi release-status kontrolü zorunludur ve GA olmadan sessiz production lock-in yapılamaz. Bootstrap anında v5 hâlâ pre-release ise iki yoldan biri yazılı karar ile seçilir: (a) kontrollü candidate POC hattı veya (b) stable mobile styling fallback'i. “Pre-release olmasına rağmen devam edelim” varsayılan kabul değildir.
 Bu nedenle bu karar:
 - “kurduk, bitti” değil
 - audit ve compatibility matrix ile birlikte yaşar
@@ -520,6 +547,7 @@ Bu nedenle Expo Router bu baseline’da canonical seçim yapılmamıştır.
 ## 14.1. Seçim
 
 - **Web-side fast tests:** Vitest 4.x
+- **Web component lab / docs / story-based browser tests:** Storybook 10.x + Storybook Test (Vitest addon)
 - **RN-side component/integration:** Jest 30.x
 - **UI behavior tests:** Testing Library family
 - **Web E2E:** Playwright 1.58 track
@@ -540,12 +568,34 @@ bir arada sağlar.
 
 ## 14.3. Neden web-side Jest default değil?
 
-Vite tabanlı web zincirinde Vitest daha doğal ve daha hızlıdır. Vite 7.x için Vitest desteği olgunlaşmış durumdadır; 4.x hattı modern baseline için uygundur. Bu eşleşme major upgrade öncesi resmi release notlarıyla yeniden doğrulanmalıdır.
+Vite tabanlı web zincirinde Vitest daha doğal ve daha hızlıdır. Vite 8.x için Vitest desteği olgunlaşmış durumdadır; 4.x hattı modern baseline için uygundur. Bu eşleşme major upgrade öncesi resmi release notlarıyla yeniden doğrulanmalıdır.
 
 ## 14.4. Neden RN-side Vitest değil?
 
 RN ekosisteminde Jest hâlâ daha güvenli ve daha doğal test omurgasıdır.  
 Ayrıca Jest 30.x stable kabul edilir ve bizim Node/TS hattımız bu gereksinimlerin üzerindedir. Exact alt sürüm ve peer koşulları bootstrap öncesi manifest düzeyinde doğrulanmalıdır.
+
+## 14.5. Neden Storybook 10 baseline component lab olarak görülür?
+
+Storybook burada yalnızca katalog değildir. Reusable component'lerin:
+- isolated inspection,
+- hard-to-reach state görünürlüğü,
+- interactive docs,
+- selected browser-mode story testleri,
+- component-level coverage ve visual review
+yüzeyi olarak düşünülür.
+
+Storybook 10 hattı ESM-only dağıtımı ve Vite builder uyumu ile canonical web zincirine daha iyi oturur. Storybook Test + addon-vitest kullanımı, story'leri gerçek browser ortamında çalıştırabildiği için design-system contract doğrulamasını güçlendirir.
+
+## 14.6. pnpm supply-chain security neden canonical baseline parçasıdır?
+
+pnpm 10 hattında install-time güvenlik artık yalnızca kurumsal ekstra önlem değil, workspace standardının parçası sayılmalıdır. Bu boilerplate için canonical politika şudur:
+- `minimumReleaseAge` ile yeni yayımlanmış sürümler belirli gecikme olmadan kurulmaz,
+- build script çalıştırma izni `allowBuilds` ile açık allowlist mantığında yönetilir,
+- trust düşüşleri `trustPolicy: no-downgrade` ile yakalanır,
+- `dangerouslyAllowAllBuilds` yaklaşımı baseline dışıdır.
+
+Bu alan dependency policy ve bootstrap checklist içinde ayrıca denetlenir; ancak canonical stack özetinde de görünür olmalıdır.
 
 ---
 
@@ -555,6 +605,7 @@ Ayrıca Jest 30.x stable kabul edilir ve bizim Node/TS hattımız bu gereksiniml
 
 - **Error tracking:** Sentry
 - **Analytics:** abstraction-first, vendor-agnostic
+- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist
 - **Logging:** structured, privacy-safe
 - **Diagnostics:** environment-aware
 
@@ -647,7 +698,7 @@ Bu ayrım korunmalıdır.
 
 # 20. Canonical Yardımcı Kütüphane Seti
 
-Bu bölüm, canonical stack'ın (React, Vite, Expo, Zustand, TanStack Query, RHF, Zod, Tailwind, NativeWind, Sentry, i18next) üzerine eklenen, bootstrap için zorunlu yardımcı kütüphaneleri tanımlar. Bu kütüphaneler canonical stack ile aynı otoriteye sahip değildir; canonical stack kararları bu belgenin 5-19 arası bölümlerinde kilitlenmiştir ve o seviyede korunur. Ancak bu yardımcı kütüphaneler, repo bootstrap sırasında varsayılan başlangıç seti olarak kabul edilir. Yani projeye ilk `pnpm install` çalıştırıldığında bu kütüphaneler de dependency olarak yerinde olmalıdır.
+Bu bölüm, canonical stack'ın (React, Vite, Expo, Zustand, koşullu TanStack Query track, RHF, Zod, Tailwind, NativeWind, Sentry, i18next) üzerine eklenen, bootstrap için zorunlu yardımcı kütüphaneleri tanımlar. Bu kütüphaneler canonical stack ile aynı otoriteye sahip değildir; canonical stack kararları bu belgenin 5-19 arası bölümlerinde kilitlenmiştir ve o seviyede korunur. Ancak bu yardımcı kütüphaneler, repo bootstrap sırasında varsayılan başlangıç seti olarak kabul edilir. Yani projeye ilk `pnpm install` çalıştırıldığında bu kütüphaneler de dependency olarak yerinde olmalıdır.
 
 Bu ayrımın önemi şudur: canonical stack'ta bir aracı değiştirmek belge revizyonu ve karar yeniden açma süreci gerektirir. Yardımcı kütüphane setinde ise değişim daha pragmatik değerlendirilir; ancak yine de nedensiz çıkarma veya alternatif ekleme kabul edilmez. Her değişiklik dependency policy (`37-dependency-policy.md`) ve compatibility matrix (`38-version-compatibility-matrix.md`) ile birlikte değerlendirilir.
 
@@ -975,13 +1026,13 @@ Bu belge yeterli kabul edilir eğer:
 
 Bu boilerplate için canonical teknik blueprint şudur:
 
-- Web: React 19.x + Vite 7.x intentional baseline + React Router 7.x
+- Web: React 19.x + Vite 8.x stable baseline + React Router 7.x
 - Mobile: React Native 0.83.x + Expo SDK 55.x
 - Repo: Monorepo + pnpm 10.x + Turborepo 2.x
 - State: Zustand 5.x
-- Server-state: TanStack Query 5.x
+- Server-state: fetch-first default + TanStack Query 5.x conditional query-layer track
 - Forms: React Hook Form 7.x
-- Validation: Zod 4.x
+- Validation: Zod 4.x schema authority
 - Styling: Tailwind CSS 4.x + NativeWind 5.x candidate track + semantic token layer
 - Testing: Vitest 4.x + Jest 30.x + Testing Library + Playwright
 - Observability: Sentry + analytics abstraction

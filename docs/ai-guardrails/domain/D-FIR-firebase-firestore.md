@@ -45,8 +45,8 @@ son-güncelleme: 2026-04-01
 
 ### Offline & Cache
 19. [YAPILMALI] Offline persistence konfigürasyonunu bilinçli yap
-20. [YAPILMALI] Cache stratejisini TanStack Query (ADR-005) ile koordine et
-21. [YAPILMAMALI] Firestore cache ve TanStack Query cache'i çakıştırma
+20. [YAPILMALI] Cache stratejisini ADR-005 veri erişim modeli ile koordine et
+21. [YAPILMAMALI] Firestore cache ve chosen query/cache modelini çakıştırma
 
 ### Cloud Functions
 22. [YAPILMALI] Cloud Function'larda input validation yap (server-side)

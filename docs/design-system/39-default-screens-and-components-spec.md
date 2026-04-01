@@ -113,7 +113,7 @@ Bu tez şu sonuçları doğurur:
 
 # 4. Kütüphane Seçim İlkeleri
 
-Canonical stack (React 19.2.x, Vite 7.x intentional baseline, Expo SDK 55.x, RN 0.83.x, Zustand 5.x, TanStack Query 5.x, RHF 7.x, Zod 4.x, Tailwind 4.x, NativeWind 5.x candidate track, Sentry, i18next) zaten kilitlidir. Ancak bu stack tek başına tüm UI ihtiyaçlarını karşılamaz. Animasyon, gesture, image loading, haptic feedback, biometric auth, bottom sheet, keyboard handling gibi alanlar yardımcı kütüphane gerektirir.
+Canonical stack (React 19.2.x, Vite 8.x stable baseline, Expo SDK 55.x, RN 0.83.x, Zustand 5.x, koşullu TanStack Query 5.x track, RHF 7.x, Zod 4.x schema authority, Tailwind 4.x, NativeWind 5.x candidate track, Sentry, i18next) zaten kilitlidir. Ancak bu stack tek başına tüm UI ihtiyaçlarını karşılamaz. Animasyon, gesture, image loading, haptic feedback, biometric auth, bottom sheet, keyboard handling gibi alanlar yardımcı kütüphane gerektirir.
 
 Bu bölüm, yardımcı kütüphane seçimlerinin hangi ilkelerle yapıldığını tanımlar.
 
@@ -133,7 +133,7 @@ Yardımcı kütüphane seçimi canonical stack'ın ruhuna, versiyonuna ve mimari
 Örnekler:
 - Tailwind + NativeWind varken Material UI veya Chakra UI eklenmez.
 - Zustand varken MobX veya Redux state'e dahil edilmez.
-- TanStack Query varken Apollo Client veya SWR eklenmez.
+- ADR-005 ile TanStack Query adopt edilmişse Apollo Client veya SWR eklenmez.
 - RHF + Zod varken Formik + Yup eklenmez.
 
 ## 4.3. Headless/unstyled kütüphaneler tercih edilir
@@ -157,7 +157,7 @@ Mobile uyumluluk bu boilerplate'te birinci sınıf vatandaştır. Bu nedenle:
 - Expo SDK'da bundled gelen modüller (expo-haptics, expo-image, expo-secure-store vb.) üçüncü taraf alternatiflerine tercih edilir,
 - Expo bundled modüller native bridge'i Expo config plugin sistemi ile yönetir, ek native setup gerektirmez,
 - Expo bundled olmayan native modüller için config plugin desteği kontrol edilmelidir,
-- Expo Go uyumluluğu başlangıç geliştirme döneminde faydalıdır ama production build'ler için zorunlu değildir.
+- Expo Go uyumluluğu yalnızca sınırlı sandbox değeri taşır; gerçek feature doğrulaması development build üzerinde yapılmalıdır.
 
 ---
 

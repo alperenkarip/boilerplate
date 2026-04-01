@@ -17,7 +17,7 @@ son-güncelleme: 2026-04-01
 ## Zorunlu Kurallar
 
 ### Canonical Stack
-1. [ZORUNLU] Data fetching: TanStack Query 5.x (ADR-005)
+1. [ZORUNLU] ADR-005 veri erişim modeline uy: fetch-first default + yazılı query-layer kararı; complexity threshold aşıldıysa TanStack Query 5.x kullan
 2. [YAPILMAMALI] Raw fetch/axios ile manuel cache yönetimi yapma
 
 ### Query Tasarımı
@@ -42,14 +42,14 @@ son-güncelleme: 2026-04-01
 15. [YAPILMAMALI] Her component mount'ta refetch zorla — cache'e güven
 
 ## Anti-pattern'ler
-1. [ZAYIF] `useEffect(() => { fetch(...) }, [])` — raw fetch, TanStack Query kullan
+1. [ZAYIF] `useEffect(() => { fetch(...) }, [])` ile screen-level raw fetch — veri erişim contract'ı kullan; query-layer adopt edilmişse TanStack Query kullan
 2. [ZAYIF] Her component mount'ta refetch — cache'e güven
 3. [ZAYIF] Query key'leri tutarsız — aynı veri için farklı key'ler
 4. [ZAYIF] Mutation sonrası invalidation yok — stale data gösterimi
 5. [ZAYIF] Tüm hatalara generic "Bir hata oluştu" mesajı
 
 ## Kontrol Listesi
-- [ ] TanStack Query kullanılıyor mu?
+- [ ] ADR-005 kararı görünür mü? (fetch-first veya TanStack Query adoption)
 - [ ] Query key tutarlı mı?
 - [ ] Error/loading state handle ediliyor mu?
 - [ ] Mutation sonrası invalidation var mı?

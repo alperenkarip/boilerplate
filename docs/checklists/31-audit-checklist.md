@@ -194,7 +194,7 @@ Implementation mevcut canonical stack ile uyumlu mu?
 - [ ] Mobile runtime Expo-first baseline’ı deliyor mu?
 - [ ] Monorepo/pnpm/turbo rejimine aykırı local kararlar var mı?
 - [ ] Zustand policy ihlali var mı?
-- [ ] TanStack Query yerine ad-hoc fetch/state duplication var mı?
+- [ ] ADR-005 ile uyumsuz ad-hoc fetch/state duplication veya yazısız query-layer adoption var mı?
 - [ ] RHF + Zod dışında ikinci forms/validation yönü açılmış mı?
 - [ ] Tailwind/NativeWind + token authority dışı styling otoritesi oluşmuş mu?
 - [ ] Jest/Vitest/Playwright baseline’ı dışında dağınık testing tool sprawl var mı?

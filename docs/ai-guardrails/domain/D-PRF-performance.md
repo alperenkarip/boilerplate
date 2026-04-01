@@ -30,7 +30,7 @@ son-güncelleme: 2026-04-01
 
 ### Network
 8. [YAPILMALI] Image'ları optimize et (boyut, format, lazy load)
-9. [YAPILMALI] API response'ları cache'le (TanStack Query — ADR-005)
+9. [YAPILMALI] API response davranışını ADR-005'e göre cache'le; query-layer adopt edilmişse TanStack Query policy uygula
 10. [YAPILMAMALI] Her mount'ta refetch — cache'e güven
 
 ### Perceived Performance

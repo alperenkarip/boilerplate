@@ -35,7 +35,7 @@
 Bu boilerplate kapsamında forms ve validation için aşağıdaki karar kabul edilmiştir:
 
 - **Form engine:** React Hook Form
-- **Validation / schema aracı:** Zod
+- **Validation / schema aracı:** Zod 4 (form + transport + domain sözleşmeleri için schema authority)
 - **Canonical yaklaşım:** Form state, generic app-global store konusu değildir; dedicated form lifecycle ile yönetilir
 - **Schema yaklaşımı:** Validation kuralları mümkün olduğunca schema-first ve type-safe tanımlanır
 - **Submit yaklaşımı:** Form submit behavior, form engine ile mutation/query lifecycle arasında açık orchestration ile kurulur
@@ -168,7 +168,7 @@ Boilerplate için bu denge önemlidir.
 
 ## 6.2. Neden Zod?
 
-Zod şu nedenlerle seçilmiştir:
+Zod 4 şu nedenlerle seçilmiştir:
 
 ### 6.2.1. Validation + type safety birlikteliği
 Bu proje validation’ı yalnızca “hata göster” alanı olarak değil, contract ve schema alanı olarak görüyor.  
@@ -204,7 +204,7 @@ Bu ayrım temizdir.
 Bu ADR çok kolay yanlış yorumlanabilir.  
 Bu yüzden sınırlar açık yazılmalıdır.
 
-## 7.1. “Her validation kuralı Zod şemasında bitecek” demek değildir
+## 7.1. “Zod yalnızca form field error üretmek için vardır” demek değildir
 Her şey aynı katmanda çözülmez.  
 Bazı kurallar domain katmanında, bazıları backend’te, bazıları UI semantics’te yaşar.
 
@@ -971,7 +971,7 @@ Bu alanlar sonraki belge ve policy’lerde kapanacaktır.
 Bu ADR kabul edildiğinde aşağıdaki sonuçlar doğar:
 
 1. Forms canonical olarak React Hook Form ile kurulacaktır
-2. Validation ve schema yaklaşımı canonical olarak Zod ile kurulacaktır
+2. Validation ve schema yaklaşımı canonical olarak Zod 4 ile kurulacaktır; Zod yalnızca form error değil, input/output/domain sözleşmeleri için schema authority olarak ele alınacaktır
 3. Form state generic app store’a taşınmayacaktır
 4. Field-level ve form-level error ayrımı korunacaktır
 5. Submit lifecycle explicit tasarlanacaktır

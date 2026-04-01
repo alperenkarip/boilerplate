@@ -380,7 +380,7 @@ Shell’leri gerçek ürün davranışı için hazır hale getirmek.
 ## 16.2. Ana alt alanlar
 - navigation root model
 - Zustand summary stores
-- TanStack Query wiring
+- ADR-005 kararı doğrultusunda fetch-first wiring veya TanStack Query wiring
 - RHF + Zod foundation
 - auth boundary / session restore baseline
 - i18next bootstrapping

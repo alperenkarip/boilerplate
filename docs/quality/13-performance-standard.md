@@ -628,7 +628,8 @@ Tarayıcıda render pipeline şu adımlardan oluşur: JavaScript → Style → L
 
 - **Chrome DevTools Performance tab:** Frame timing, dropped frame sayısı, main thread activity ve compositor frame’leri burada izlenir. "Frames" bölümünde kırmızı işaretli frame’ler dropped frame’leri gösterir.
 - **React Native Perf Monitor:** Geliştirme modunda `Ctrl+M` (Android) veya shake gesture (iOS) ile açılır. JS thread FPS ve UI thread FPS ayrı ayrı gösterilir. JS FPS < 60 ise JS thread’de ağır iş var demektir. UI FPS < 60 ise native tarafta render problemi var demektir.
-- **Flipper performance plugin:** React Native uygulamalarında detaylı frame timing, bridge traffic ve layout calculation süreleri izlenebilir.
+- **React Native DevTools / Hermes profiling:** React Native uygulamalarında modern profiler yüzeyi birincil tercih olmalıdır. Detaylı frame timing ve JS maliyeti burada izlenir.
+- **Flipper performance plugin:** Ek native görünürlük gerektiğinde ikincil araç olarak kullanılabilir.
 
 ---
 
@@ -711,7 +712,7 @@ UI uygulamalarında memory leak’in en sık karşılaşılan nedenleri şunlard
 **Tespit araçları:**
 - Chrome DevTools Memory tab: Heap snapshot alarak belirli bir andaki bellek dağılımı incelenir. İki snapshot arasında comparison yapılarak büyüyen object’ler tespit edilir. Allocation timeline ile zaman içinde hangi object’lerin biriktiği izlenir.
 - React DevTools Profiler: Gereksiz re-render ve mount/unmount döngüleri tespit edilir. Unmount olmayan component’ler potansiyel leak kaynağıdır.
-- React Native (Hermes): Hermes memory profiling ile JS heap boyutu ve object retention izlenir. Flipper üzerinden memory plugin kullanılabilir.
+- React Native (Hermes): Hermes memory profiling ile JS heap boyutu ve object retention izlenir. Öncelik React Native DevTools / Hermes profiling yüzeyindedir; gerekirse Flipper memory plugin ikincil olarak kullanılır.
 
 **CI’da memory leak testi (opsiyonel ama önerilen):** Otomatik test senaryosu olarak component mount → kullanıcı etkileşimi simülasyonu → component unmount → heap snapshot karşılaştırması yapılabilir. İlk snapshot ile son snapshot arasında anlamlı fark varsa (unmount sonrası temizlenmesi gereken object’ler hâlâ heap’te duruyorsa) test başarısız kabul edilir. Bu yaklaşım özellikle uzun ömürlü uygulamalarda (dashboard, chat, real-time veri takip ekranları) kritiktir.
 

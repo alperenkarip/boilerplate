@@ -117,6 +117,11 @@ Repo bootstrap başlamadan önce exact çalışma zemini sabitlenmelidir.
 
 - [ ] **Scaffold script:** Eğer boilerplate scaffold script'i mevcutsa (`scripts/bootstrap.sh` veya `npx create-boilerplate-app`), önce bu script çalıştırılarak temel repo yapısı, config dosyaları ve starter package'lar otomatik oluşturulur. Script yoksa aşağıdaki adımlar manuel olarak takip edilir. Detay: `43-derived-project-creation-guide.md`.
 - [ ] Node baseline `20.19.x` hattı repo standardı olarak kilitlendi
+- [ ] pnpm install güvenlik baseline'ı (`minimumReleaseAge`, `allowBuilds`, `trustPolicy`) workspace config düzeyinde tanımlandı
+- [ ] `tooling/pnpm/pnpm-workspace.security.example.yaml` referans alınarak gerçek config artefaktı üretildi
+- [ ] `expo-doctor` temiz geçti ve React Native Directory uyarıları gözden geçirildi
+- [ ] Mobile theme bootstrap için `userInterfaceStyle: "automatic"` ve gerekli durumda `expo-system-ui` doğrulandı
+- [ ] mobile development build fiziksel cihaz veya emülatörde açıldı (Expo Go kanıt sayılmaz)
 - [ ] pnpm `10.x` hattı workspace standardı olarak kilitlendi
 - [ ] Turborepo `2.x` hattı orchestrator standardı olarak kilitlendi
 - [ ] TypeScript `5.9.x` baseline’ı kabul edildi
@@ -216,8 +221,10 @@ Karar verilmiş çekirdek teknoloji omurgası kontrollü biçimde repo’ya alı
 ### Web chain
 - [ ] React `19.2.x`
 - [ ] React DOM `19.2.x`
-- [ ] Vite `7.x`
+- [ ] Vite `8.x`
 - [ ] React Router `7.x`
+- [ ] React Router data-router / `RouterProvider` root entry standardı kabul edildi
+- [ ] React Router resmi Vite plugin / route-module-capable bootstrap yolu değerlendirildi ve tercih kayda geçirildi
 
 ### Mobile chain
 - [ ] Expo SDK `55.x`
@@ -226,19 +233,22 @@ Karar verilmiş çekirdek teknoloji omurgası kontrollü biçimde repo’ya alı
 
 ### State/data/forms
 - [ ] Zustand baseline
-- [ ] TanStack Query `5.x`
+- [ ] ADR-005 uyarınca server-state complexity threshold değerlendirildi; TanStack Query `5.x` adopt/omit kararı yazılı kayda geçirildi
 - [ ] React Hook Form `7.x`
 - [ ] Zod `4.x`
 
 ### Styling
 - [ ] Tailwind CSS `4.x`
-- [ ] NativeWind `5.x` baseline
+- [ ] NativeWind `5.x` release status doğrulandı
+- [ ] NativeWind hâlâ pre-release ise written fallback/candidate kararı açıldı
 - [ ] semantic token consumption pipeline için gerekli çekirdek bağımlılıklar
 
 ### Testing
 - [ ] Vitest `4.x`
 - [ ] Jest `30.x`
 - [ ] Playwright `1.58.x` track
+- [ ] React Compiler default-off watch policy kayda geçirildi
+- [ ] Biome 2.x için pilot/watchlist kararı kayda geçirildi (default replacement yok)
 - [ ] Testing Library family
 
 ### Observability / i18n
@@ -455,7 +465,7 @@ State/data/forms kararları birlikte ama karışmadan kurulmalıdır.
 - [ ] local-first yaklaşımı bozmayan store policy ilk kullanım yüzeyiyle doğrulandı
 
 ### Query
-- [ ] TanStack Query root client kuruldu
+- [ ] TanStack Query root client kuruldu **veya** ADR-005 uyarınca fetch-first başlangıç kararı yazılı kayda geçirildi
 - [ ] query key policy için ilk örnek tanımlandı
 - [ ] mutation + invalidation örneği düşünüldü
 
@@ -523,6 +533,8 @@ Testing stack yalnızca kurulu değil, çalışan ve doğru katmanlara ayrılmı
 - [ ] Jest RN-side ilk test ile çalışıyor
 - [ ] Testing Library aileleri bağlandı
 - [ ] Playwright smoke wiring kuruldu
+- [ ] Vitest Browser Mode / component-browser test ihtiyacı değerlendirildi ve karar kayda geçirildi
+- [ ] Storybook 10 + Storybook Test (Vitest addon) kurulumu / ertelenme kararı yazılı kayda geçirildi
 - [ ] shared testing helpers alanı ilk haliyle var
 - [ ] CI test adımları bağlandı
 

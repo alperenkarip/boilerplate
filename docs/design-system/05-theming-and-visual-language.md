@@ -891,6 +891,11 @@ Web platformunda kullanıcının tema tercihi `prefers-color-scheme` media query
 
 React Native'de `Appearance` API ile sistem teması algılanır. `Appearance.getColorScheme()` ile anlık tema sorgulanır, `Appearance.addChangeListener()` ile değişiklikler dinlenir. Expo ortamında bu API doğrudan kullanılabilir.
 
+Expo tabanlı mobile foundation için ayrıca şu bootstrap kuralları geçerlidir:
+- `app.json` / app config içinde `userInterfaceStyle: "automatic"` canonical varsayımdır; light-only veya dark-only kararları ayrı exception ister.
+- Android development build tarafında tema senkronizasyonunun gerçekten çalışması için `expo-system-ui` kurulu olmalıdır.
+- Theme doğrulaması Expo Go üzerinde kanıt sayılmaz; development build üzerinde test edilmelidir.
+
 ### 29.1.3. Override sırası
 
 Tema belirlemede override sırası şu şekildedir:

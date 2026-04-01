@@ -29,7 +29,7 @@ Bu boilerplate kapsamında web runtime ve application shell için aşağıdaki k
 
 - **Web UI runtime:** React
 - **Web development/build runtime:** Vite
-- **Web routing solution:** React Router
+- **Web routing solution:** React Router 7 data-router / `RouterProvider`-first
 - **Rendering yaklaşımı:** Canonical baseline olarak **SPA-first client-rendered application shell**
 - **SSR / RSC / App Router style framework yaklaşımı:** v1 canonical stack içinde **bilinçli olarak seçilmemiştir**
 - **Application shell yaklaşımı:** route-aware, provider-composed, design-system-first, documentation-first bir React app shell
@@ -181,6 +181,8 @@ React Router:
 - navigation state,
 - path-based product organization
 için olgun zemin sunar.
+- data-router ve route-aware error/data boundary modeli ile daha kurallı shell kurulmasına izin verir.
+- `RouterProvider` tabanlı giriş modeli, gelecekte framework/data mode genişlemesi gerektiğinde daha temiz yükseltme yolu bırakır.
 
 ### 6.3.2. React shell ile uyum
 App shell → route groups → feature screens zincirini doğal kurmaya izin verir.
@@ -193,6 +195,10 @@ Bu da behavior parity kurarken önemlidir.
 ### 6.3.4. Boilerplate için yeterli esneklik
 Bu proje çok ağır server-driven router paradigmasına ihtiyaç duymadan güçlü ürün akışları kurmak istiyor.  
 React Router bu iş için yeterlidir.
+
+### 6.3.5. Resmi Vite entegrasyon yolu ile hizalanma
+Bootstrap sırasında React Router'ın resmi **Vite plugin / route-module-capable** entegrasyon yolu varsayılan değerlendirme çizgisidir ve adopt/omit kararı yazılı kayda geçirilmelidir. Bu, SSR veya RSC’ye geçmek zorunda olduğumuz anlamına gelmez; `ssr: false` SPA shell korunabilir. Ama ad-hoc `BrowserRouter` wiring yerine resmi route module, loader/clientLoader ve route-level ErrorBoundary kabiliyetleriyle hizalı başlangıç çizgisi daha güçlüdür.
+
 
 ---
 
@@ -581,7 +587,7 @@ Bu tür bir değişiklik yeni ADR ve muhtemelen major versioning etkisi gerektir
 
 # 26. Kararın Kısa Hükmü
 
-> Web runtime ve application shell için canonical karar: React + Vite + React Router tabanlı, SPA-first, route-aware, provider-composed, design-system-first application shell modelidir. Next.js/SSR-first veya benzeri daha ağır web-first çerçeveler v1 canonical boilerplate kapsamında seçilmemiştir.
+> Web runtime ve application shell için canonical karar: React + Vite + React Router tabanlı, SPA-first, route-aware, provider-composed, design-system-first application shell modelidir. Root router girişi canonical olarak `createBrowserRouter` + `RouterProvider` hattında kurulur; `BrowserRouter` ancak geçişsel veya bilinçli istisna durumlarında kabul edilebilir. Next.js/SSR-first veya benzeri daha ağır web-first çerçeveler v1 canonical boilerplate kapsamında seçilmemiştir.
 
 ---
 

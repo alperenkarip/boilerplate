@@ -261,7 +261,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 1. Basit ama anlamli bir feature sec (ornek: `39-default-screens-and-components-spec.md` S25 List → S26 Detail → S27 Form akisi).
 
-2. Feature su katmanlari kapsamali: route entry, UI primitives kullanimi, en az bir query fetch (TanStack Query), loading/error/empty/success state'leri, en az bir form interaction (RHF + Zod), en az bir mutation, i18n copy (inline string yok), auth/session-aware shell, test coverage, a11y degerlendirmesi.
+2. Feature su katmanlari kapsamali: route entry, UI primitives kullanimi, ADR-005 kararı doğrultusunda en az bir fetch/query data flow, loading/error/empty/success state'leri, en az bir form interaction (RHF + Zod), en az bir mutation, i18n copy (inline string yok), auth/session-aware shell, test coverage, a11y degerlendirmesi.
 
 3. Full DoD (`32-definition-of-done.md`) uygula ve ilk PR template'ini kullanarak PR ac.
 

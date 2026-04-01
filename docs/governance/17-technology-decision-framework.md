@@ -147,7 +147,7 @@ Kapalı alanlar:
 - **Mobile runtime:** React Native + Expo-first yaklaşım
 - **Repo topology:** Monorepo + pnpm workspace + Turborepo
 - **State management:** Zustand policy
-- **Server-state/data lifecycle:** TanStack Query policy
+- **Server-state/data lifecycle:** fetch-first default + conditional TanStack Query policy
 - **Forms/validation:** React Hook Form + Zod
 - **Styling runtime:** Tailwind CSS + NativeWind + semantic token discipline
 - **Testing baseline:** Vitest + Jest + Testing Library + Playwright
@@ -184,6 +184,17 @@ Bunlar yönü belirlenmiş ama exact uygulama detayı veya vendor seçimi tam ki
 - Yön açık bırakılmıştır ama tamamen serbest değildir.
 - Yeni öneri canonical ilke ile uyumlu olmak zorundadır.
 - Bu alanlarda yanlış vendor kararı, çekirdek mimari kadar değil ama operasyonel risk yaratır.
+
+### Trend-watch ama default olmayan alanlar
+Aşağıdaki başlıklar güncel ve anlamlı olabilir; ancak canonical baseline'a sessizce geçirilmez:
+- React Compiler
+- React Router'ın framework/data mode genişlemeleri
+- Vite major yükseltmeleri
+- React Native DevTools / debug workflow değişimleri
+- Expo development build ve New Architecture çevresindeki yeni zorunluluklar
+- NativeWind major hat değişimleri
+
+Bu alanlarda “yeni çıktı, geçelim” yaklaşımı kabul edilmez; compatibility revalidation ve gerekirse ADR eki gerekir.
 
 ---
 
@@ -687,3 +698,17 @@ Bu doküman yeterli kabul edilir eğer:
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate kapsamında teknoloji seçimi artık serbest araştırma alanı değildir. Çekirdek teknoloji omurgası ADR-001 → ADR-017 ile kapanmıştır; dependency kabul rejimi `37-dependency-policy.md`, sürüm uyum rejimi ise `38-version-compatibility-matrix.md` ile tanımlanmıştır. Bundan sonra yeni teknoloji önerileri ancak problem-fit, mimari uyum, security/a11y/testability, dependency riski ve compatibility güvenliği üzerinden; gerektiğinde ADR ve POC ile değerlendirilecektir.
+
+
+---
+
+# 26. Pilot / Watchlist Teknolojileri
+
+Aşağıdaki araçlar backlog'da görünse bile otomatik baseline yapılmaz; ADR, POC veya written pilot ister:
+
+- React Compiler (controlled opt-in)
+- Biome 2.x (formatter/import/commodity lint pilotu)
+- NativeWind 5.x candidate track
+- Expo Router (navigation canonical aday, otomatik final karar değil)
+
+Bu sınıftaki araçlar için “ekosistemde güncel” olmak tek başına yeterli kabul edilmez.

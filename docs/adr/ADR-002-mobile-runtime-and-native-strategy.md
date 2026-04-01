@@ -185,6 +185,24 @@ Doğru yaklaşım:
 - varsayılan çözüm Expo-first
 - gerçek ihtiyaçta documented native widening
 
+### 6.2.6. Development-build-first çalışma kuralı
+
+Expo ekosisteminde `Expo Go`, öğrenme ve sınırlı sandbox denemeleri için yararlı olabilir; ancak bu boilerplate için **production-grade mobile geliştirme baseline'ı değildir**. Canonical kural:
+- günlük geliştirme ve gerçek feature doğrulaması development build üzerinde yapılır,
+- native modül, config plugin, linking, push, auth, secure storage ve benzeri kabiliyetler Expo Go varsayımıyla tasarlanmaz,
+- “Expo Go'da açılıyor” done kanıtı sayılmaz.
+
+### 6.2.7. Bootstrap doğrulama kapısı
+
+Mobile bootstrap tamamlandı sayılmadan önce şu doğrulamalar zorunludur:
+- `expo-doctor` temiz geçer,
+- development build fiziksel cihaz veya emülatörde açılır,
+- config plugin zinciri ve autolinking beklenen paketleri görür,
+- appearance/theming zinciri için `userInterfaceStyle: "automatic"` ve gerekli durumda `expo-system-ui` doğrulanır,
+- New Architecture varsayımıyla çelişen bağımlılık kalmaz.
+
+Bu dört sinyalden biri yoksa mobile foundation hazır sayılmaz.
+
 ---
 
 # 7. Neden Bare React Native Varsayılan Seçilmedi?

@@ -3,6 +3,7 @@
 ## Proje Kimliği
 - Cross-platform boilerplate: React + React Native (Expo)
 - Monorepo: pnpm 10.x + Turborepo 2.x (ADR-003)
+- Install Security: pnpm minimumReleaseAge + allowBuilds + trustPolicy (ADR-003 / 37)
 - Documentation-first, spec-first yaklaşım
 - Apple HIG uyumlu, design system merkezli
 
@@ -13,12 +14,15 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Web runtime: React + Vite + React Router 7.x, SPA-first (ADR-001)
 - Mobil runtime: React Native + Expo SDK 55.x (ADR-002)
 - Monorepo: pnpm 10.x + Turborepo 2.x (ADR-003)
+- Install Security: pnpm minimumReleaseAge + allowBuilds + trustPolicy (ADR-003 / 37)
 - State management: Zustand 5.x (ADR-004)
-- Data fetching: TanStack Query 5.x (ADR-005)
-- Forms: React Hook Form 7.x + Zod 4.x (ADR-006)
+- Data fetching: fetch-first default + TanStack Query 5.x conditional query-layer track (ADR-005)
+- Forms: React Hook Form 7.x + Zod 4.x schema authority (ADR-006)
 - Styling/tokens: Tailwind CSS 4.x (web) + NativeWind 5.x candidate track (mobile), semantic token-first (ADR-007). Bootstrap öncesi release-status doğrulaması zorunludur.
 - Testing: Vitest 4.x (web) + Jest 30.x (mobile) + Testing Library + Playwright 1.58.x E2E (ADR-008)
+- Component Lab: Storybook 10.x + Storybook Test (web)
 - Observability: Sentry + vendor-agnostic analytics abstraction (ADR-009)
+- Watchlist: React Compiler controlled opt-in, Biome 2.x pilot/watchlist
 - Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) + Biometric (expo-local-authentication) (ADR-010)
 - i18n: i18next 26.x, namespace-based (ADR-011)
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile) (ADR-012)

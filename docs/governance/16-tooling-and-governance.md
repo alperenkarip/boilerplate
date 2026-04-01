@@ -943,7 +943,17 @@ Neden gereklidir:
 
 ## 29.2. Storybook web kurulumu
 
-Bu proje kapsamında React + Vite altyapısı için **Storybook 8.x** kullanılır.
+Bu proje kapsamında React + Vite altyapısı için **Storybook 10.x** kullanılır.
+
+Bu kararın gerekçesi:
+- Storybook 10 hattı güncel bakım hattıdır ve **ESM-only** dağıtım modeline geçmiştir. Bu, canonical Vite 8 + ESM-first web zinciri ile daha doğal hizalanır.
+- React + Vite için resmi framework/builder hattı güçlüdür; component catalog, docs ve preview yüzeyi bu zincirde ayrı webpack karmaşası oluşturmadan çalışır.
+- **Storybook Test + Vitest addon** hattı ile story'ler gerçek browser ortamında test yüzeyine dönüşebilir. Bu, interaction testleri, selected component-browser doğrulamaları ve coverage görünürlüğü için güçlü tamamlayıcıdır.
+
+Canonical kural:
+- Storybook component lab / docs / preview yüzeyidir.
+- Storybook Test + Vitest addon, story'leri browser-mode test yüzeyine çevirmek için tercih edilen entegrasyondur.
+- Chromatic veya eşdeğer görsel fark servisleri opsiyonel ama güçlü adaydır; baseline kalite yüzeyi story'lerin kendisidir.
 
 Story dosyaları `packages/ui/` altında, ilgili component'in yanında tutulur. Örnek dizin yapısı:
 
@@ -978,6 +988,12 @@ export const Disabled: Story = {
   args: { variant: 'primary', children: 'Kaydet', disabled: true },
 };
 ```
+
+## 29.2.1. Builder ve test entegrasyonu
+
+- Web component catalog için resmi **React + Vite Storybook framework** kullanılır. Vite config ile ayrışan özel alias veya plugin ihtiyacı varsa mümkün olduğunca Storybook içinde yeniden tanımlanmaz; ana Vite config ile hizalanır.
+- Storybook Test kullanılıyorsa, story'ler **Vitest browser mode** üzerinden çalıştırılır. Bu sayede interaction testleri, selected accessibility kontrolleri ve coverage raporu aynı story yüzeyinden türetilebilir.
+- Storybook, test runner'ın yerine geçmez. Ancak story tabanlı browser testleri ile UI contract görünürlüğü ciddi biçimde güçlenir.
 
 ## 29.3. Story yazım kuralları
 
@@ -1032,7 +1048,7 @@ PR akışında Storybook preview link'i otomatik oluşturulmalıdır. Reviewer, 
 
 Storybook story'leri, visual regression testinin temel yüzeyidir.
 
-**Chromatic entegrasyonu** kullanıldığında:
+**Chromatic entegrasyonu** kullanıldığında (opsiyonel ama güçlü aday):
 - Her PR'da tüm story'lerin ekran görüntüsü alınır.
 - Önceki ekran görüntüsüyle piksel bazında karşılaştırılır.
 - Değişiklik varsa reviewer'a diff gösterilir.
@@ -1729,3 +1745,16 @@ Bu nedenle bundan sonraki hiçbir doküman:
 - design system ve mimari governance’i toolsuz düşünemez,
 - dokümantasyon-first yaklaşımını operasyonel süreçten koparamaz,
 - tooling seçimini problem tanımı olmadan yapamaz.
+
+
+---
+
+# 37. Biome 2.x Pilot Politikası (2026-04-02 Eki)
+
+Biome 2.x formatter, import organization ve commodity lint alanında güçlü adaydır; ancak bu boilerplate'te **ESLint custom governance/HIG rule engine yerine varsayılan geçiş** olarak kabul edilmez.
+
+Kural:
+- ESLint custom rule zinciri korunur
+- Biome ancak pilot olarak formatter/import sorting/commodity lint yüzeyinde değerlendirilir
+- Pilot kararı olmadan `.eslintrc`/flat-config ve custom plugin zinciri sökülemez
+- Pilot çıktısı; performans, suppressions, editor uyumu ve custom rule coverage karşılaştırmasıyla belgelenir

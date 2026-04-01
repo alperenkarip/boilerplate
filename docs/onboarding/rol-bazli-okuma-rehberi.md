@@ -27,7 +27,7 @@ Developer Fast Track sonrası, frontend özelinde:
 | Sıra | Belge | Süre | Ne Öğrenirsiniz |
 |------|-------|------|-----------------|
 | 1 | `09-state-management-strategy.md` | 20 dk | Zustand kullanım kuralları |
-| 2 | `10-data-fetching-cache-sync.md` | 25 dk | TanStack Query pattern'leri |
+| 2 | `10-data-fetching-cache-sync.md` | 25 dk | ADR-005 server-state / fetch-first vs query-layer karar modeli |
 | 3 | `11-forms-inputs-and-validation.md` | 20 dk | React Hook Form + Zod |
 | 4 | `08-navigation-and-flow-rules.md` | 20 dk | Navigasyon parity kuralları |
 | 5 | `25-error-empty-loading-states.md` | 15 dk | Error/empty/loading pattern'leri |

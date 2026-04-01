@@ -23,7 +23,7 @@ son-güncelleme: 2026-04-01
 ### State Sahipliği
 3. [YAPILMALI] State türünü belirle: local, feature, app-global, server, form, persisted, derived
 4. [YAPILMALI] State sahipliği en dar kapsamda tut — global yapma gereksiz yere
-5. [YAPILMAMALI] Server state'i Zustand'da tutma — TanStack Query kullan (ADR-005)
+5. [YAPILMAMALI] Server state'i Zustand'da tutma — ADR-005 veri erişim modeline uy; query-layer adopt edilmişse TanStack Query kullan
 6. [YAPILMAMALI] Form state'i global store'a koyma — React Hook Form kullan (ADR-006)
 
 ### Store Yapısı
@@ -37,7 +37,7 @@ son-güncelleme: 2026-04-01
 12. [YAPILMAMALI] Kullanıcı verisi session sonrası bellekte kalmamalı
 
 ## Anti-pattern'ler
-1. [ZAYIF] Server state (API response) Zustand store'da — TanStack Query kullan
+1. [ZAYIF] Server state (API response) Zustand store'da — generic store'a kopyalama; ADR-005 modeline dön
 2. [ZAYIF] Form state global store'da — React Hook Form kullan
 3. [ZAYIF] Tek monolitik store — tüm state tek slice'ta
 4. [ZAYIF] Logout sonrası kullanıcı verisi bellekte kalmış — state reset yok
@@ -45,7 +45,7 @@ son-güncelleme: 2026-04-01
 
 ## Kontrol Listesi
 - [ ] State türü doğru belirlenmiş mi (local/feature/global/server/form)?
-- [ ] Server state TanStack Query'de mi?
+- [ ] Server state generic store'a kopyalanmamış mı?
 - [ ] Form state React Hook Form'da mı?
 - [ ] Store slice izole mi?
 - [ ] Logout'ta state sıfırlanıyor mu?

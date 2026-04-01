@@ -200,6 +200,9 @@ Modern TS projeleri için güçlü ergonomi sağlar.
 ### 7.2.4. Component ve utility katmanları için güçlü pratiklik
 Domain helpers, selectors, mappers ve selected web-side component/integration testleri için iyi temeldir.
 
+### 7.2.5. Browser Mode ve görsel yardımcı yüzeyler
+Vitest 4 hattındaki Browser Mode / component-browser test kabiliyeti, tam E2E'ye çıkmadan belirli browser-behavior doğrulamaları için güçlü adaydır. Ancak bu boilerplate'te varsayılan olarak her web testi browser-mode'a taşınmaz; yalnızca DOM/runtime farkı önemli ise kontrollü biçimde kullanılır.
+
 ## 7.3. Bu karar neyi kapsamaz?
 
 - Mobile-side React Native testlerini
@@ -616,7 +619,7 @@ Reusable component’ler için:
 
 ## 21.3. Sonuç
 
-Storybook benzeri component lab test runner değildir; ama test ve audit ekosisteminin güçlü tamamlayıcısıdır.
+Storybook bu boilerplate'te gevşek bir fikir değil, **Storybook 10.x + Storybook Test (Vitest addon)** hattı ile önerilen web component lab yüzeyidir. Storybook tek başına test runner değildir; ama story'leri browser-mode testlerine, interaction senaryolarına ve coverage görünürlüğüne bağlayabildiği için test ve audit ekosisteminin güçlü tamamlayıcısıdır.
 
 ---
 
@@ -771,7 +774,6 @@ Bu ADR aşağıdakileri çözmez:
 - mobile E2E exact tool lock
 - visual regression tool exact choice
 - CI YAML configuration details
-- Storybook exact integration setup
 
 Bu alanlar ilgili setup ve policy belgelerinde kapanacaktır.
 

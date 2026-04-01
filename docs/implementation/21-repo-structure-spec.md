@@ -703,7 +703,7 @@ Cevap hayırsa erken paylaşım vardır.
 - feature stores: ilgili feature içinde
 - core package içinde generic global store authority kurulmaz
 
-## 21.2. TanStack Query usage
+## 21.2. Data-fetching / query-layer usage
 - root QueryClient: app shell/provider düzeyi
 - feature query hooks and orchestration: app feature düzeyi
 - raw network transport veya domain mapping: controlled data access boundary

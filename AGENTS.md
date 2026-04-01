@@ -30,12 +30,15 @@
 - Web: React + Vite + React Router 7.x
 - Mobile: React Native + Expo SDK 55.x
 - Monorepo: pnpm 10.x + Turborepo 2.x
+- Install Security: pnpm minimumReleaseAge + allowBuilds + trustPolicy
 - State: Zustand 5.x
-- Data: TanStack Query 5.x
-- Forms: React Hook Form 7.x + Zod 4.x
+- Data: fetch-first default + TanStack Query 5.x conditional query-layer track
+- Forms: React Hook Form 7.x + Zod 4.x schema authority
 - Styling: Tailwind CSS 4.x + NativeWind 5.x candidate track (bootstrap öncesi release-status doğrulaması zorunlu)
 - Testing: Vitest 4.x + Jest 30.x + Playwright 1.58.x
+- Component Lab: Storybook 10.x + Storybook Test (web)
 - Observability: Sentry
+- Watchlist: React Compiler controlled opt-in + Biome 2.x pilot/watchlist
 - Auth: HttpOnly cookies (web) + Expo SecureStore (mobile)
 - i18n: i18next 26.x
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile)

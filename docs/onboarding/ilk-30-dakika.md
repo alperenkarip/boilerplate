@@ -134,7 +134,7 @@ Artık çalışan bir sisteminiz var. Şimdi rolünüze göre belgeleri okuyun:
 | # | Anti-Pattern | Doğrusu | Referans |
 |---|-------------|---------|----------|
 | 1 | Hardcoded renk (`#fff`) kullanma | Semantic token kullan | `22-design-tokens-spec.md` |
-| 2 | Global state'e server data koyma | TanStack Query kullan | `10-data-fetching-cache-sync.md` |
+| 2 | Global state'e server data koyma | ADR-005 uyarınca fetch-first veya query-layer modeli kullan; generic store'a kopyalama | `10-data-fetching-cache-sync.md` |
 | 3 | `any` tipi kullanma | Doğru tipi yaz | `36-canonical-stack-decision.md` |
 | 4 | Inline string yazma (`"Kaydet"`) | i18n key kullan | `ADR-011` |
 | 5 | `packages/` → `apps/` import | Tersini kullan | `07-module-boundaries-and-code-organization.md` |

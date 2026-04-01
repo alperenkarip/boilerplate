@@ -470,7 +470,7 @@ Tek router abstraction bu aşamada yanlış soyutlama seviyesidir. Navigation sh
 ## 10.1. Web
 
 Web'de navigation runtime, application shell'in parçasıdır (ADR-001, bölüm 11-12):
-- `RouterProvider` veya `BrowserRouter` root app entry'de kurulur,
+- `createBrowserRouter` + `RouterProvider` root app entry'de kurulur,
 - route tanımları app shell tarafından yönetilir,
 - feature screen'ler route tanımlarına kayıtlanır,
 - app-level error boundary ve auth gate navigation root seviyesinde çözülür.
