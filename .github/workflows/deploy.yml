@@ -1,0 +1,71 @@
+# Deploy Pipeline — Web + Mobile
+# Web: Vite build → hosting (Vercel/Netlify/custom)
+# Mobile: EAS Build → App Store / Play Store
+#
+# Bu workflow production release icin kullanilir.
+# Manual trigger (workflow_dispatch) ile calistirilir.
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deploy hedefi'
+        required: true
+        type: choice
+        options:
+          - web-preview
+          - web-production
+          - mobile-preview
+          - mobile-production
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '10'
+
+jobs:
+  web-deploy:
+    name: Web Deploy
+    if: startsWith(github.event.inputs.target, 'web')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @project/web build
+      - name: Deploy to hosting
+        run: echo "Web build tamamlandi. Hosting deploy adimi buraya eklenecek."
+
+  mobile-deploy:
+    name: Mobile Deploy (EAS)
+    if: startsWith(github.event.inputs.target, 'mobile')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: EAS Build
+        working-directory: apps/mobile
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "mobile-preview" ]; then
+            eas build --platform all --profile preview --non-interactive
+          else
+            eas build --platform all --profile production --non-interactive
+          fi

@@ -30,6 +30,13 @@
   },
   "home": {
     "title": "Boilerplate",
-    "description": "Uygulama başarıyla ayağa kalktı."
+    "description": "Hoş geldiniz. Aşağıdan hızlı erişim sağlayabilirsiniz.",
+    "quickActions": "Hızlı İşlemler",
+    "viewRecords": "Kayıtları Gör",
+    "createNew": "Yeni Oluştur",
+    "navigation": "Gezinme",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "about": "Hakkında"
   }
 }

@@ -18,9 +18,7 @@
       "description": "Uygulama beklenmeyen bir durumla karşılaştı.",
       "action": "Tekrar Dene"
     },
-    "loading": {
-      "title": "Yükleniyor"
-    }
+    "loading": { "title": "Yükleniyor" }
   },
   "sample": {
     "list": {
@@ -43,21 +41,102 @@
     },
     "form": {
       "title": "Yeni Kayıt Oluştur",
-      "fields": {
-        "title": "Başlık",
-        "description": "Açıklama",
-        "status": "Durum"
-      },
-      "placeholders": {
-        "title": "Kayıt başlığı",
-        "description": "Kayıt açıklaması"
-      },
+      "fields": { "title": "Başlık", "description": "Açıklama", "status": "Durum" },
+      "placeholders": { "title": "Kayıt başlığı", "description": "Kayıt açıklaması" },
       "cancel": "İptal",
       "save": "Kaydet",
-      "statusOptions": {
-        "active": "Aktif",
-        "archived": "Arşiv"
-      }
+      "statusOptions": { "active": "Aktif", "archived": "Arşiv" }
     }
+  },
+  "onboarding": {
+    "slide1": { "title": "Hoş Geldiniz", "description": "Uygulamanızı keşfetmeye hazır mısınız?" },
+    "slide2": {
+      "title": "Güvenli ve Hızlı",
+      "description": "Verileriniz güvende, deneyiminiz pürüzsüz."
+    },
+    "slide3": {
+      "title": "Hemen Başlayın",
+      "description": "Profilinizi oluşturun ve kullanmaya başlayın."
+    },
+    "getStarted": "Başla"
+  },
+  "permissions": {
+    "title": "İzinler",
+    "subtitle": "Daha iyi bir deneyim için aşağıdaki izinlere ihtiyacımız var.",
+    "continue": "Devam Et",
+    "skip": "Şimdilik Atla",
+    "notifications": {
+      "title": "Bildirimler",
+      "description": "Önemli güncellemeler ve hatırlatmalar için bildirim alın."
+    },
+    "location": {
+      "title": "Konum",
+      "description": "Yakınınızdaki hizmetleri gösterebilmemiz için konumunuza erişim."
+    },
+    "camera": {
+      "title": "Kamera",
+      "description": "Profil fotoğrafı çekmek ve belge taramak için kamera erişimi."
+    }
+  },
+  "profileSetup": {
+    "title": "Profilinizi Tamamlayın",
+    "subtitle": "Birkaç bilgi daha ve hazırsınız.",
+    "fields": { "displayName": "Ad Soyad", "phone": "Telefon", "birthDate": "Doğum Tarihi" },
+    "placeholders": { "displayName": "Adınız Soyadınız", "phone": "+90 5XX XXX XX XX" },
+    "submit": "Tamamla"
+  },
+  "profile": {
+    "displayName": "Kullanıcı Adı",
+    "edit": "Profili Düzenle",
+    "fields": { "email": "E-posta", "phone": "Telefon", "joinDate": "Kayıt Tarihi" }
+  },
+  "editProfile": {
+    "title": "Profili Düzenle",
+    "fields": { "displayName": "Ad Soyad", "phone": "Telefon" }
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "sections": { "appearance": "Görünüm", "account": "Hesap", "info": "Bilgi" },
+    "darkMode": "Karanlık Mod",
+    "profile": "Profil",
+    "notifications": "Bildirim Tercihleri",
+    "changePassword": "Şifre Değiştir",
+    "about": "Hakkında",
+    "deleteAccount": "Hesabı Sil"
+  },
+  "notificationPrefs": {
+    "title": "Bildirim Tercihleri",
+    "subtitle": "Hangi bildirimleri almak istediğinizi seçin.",
+    "push": "Push Bildirimleri",
+    "email": "E-posta Bildirimleri",
+    "marketing": "Pazarlama Bildirimleri"
+  },
+  "changePassword": {
+    "title": "Şifre Değiştir",
+    "currentPassword": "Mevcut Şifre",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Yeni Şifre (Tekrar)",
+    "submit": "Şifreyi Güncelle"
+  },
+  "deleteAccount": {
+    "title": "Hesabı Sil",
+    "warning": "Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir.",
+    "description": "Hesabınızı silmek istediğinizden emin miseniz? Onaylamak için aşağıya 'SİL' yazın.",
+    "confirmLabel": "Onay",
+    "confirmPlaceholder": "SİL",
+    "submit": "Hesabımı Kalıcı Olarak Sil",
+    "dialogTitle": "Emin misiniz?",
+    "dialogMessage": "Bu işlem geri alınamaz.",
+    "dialogConfirm": "Evet, Sil"
+  },
+  "about": {
+    "title": "Hakkında",
+    "appVersion": "Uygulama Sürümü",
+    "buildNumber": "Build Numarası",
+    "platform": "Platform",
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfService": "Kullanım Koşulları",
+    "licenses": "Açık Kaynak Lisansları",
+    "copyright": "© 2026 Boilerplate. Tüm hakları saklıdır."
   }
 }

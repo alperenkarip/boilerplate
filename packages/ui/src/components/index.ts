@@ -14,3 +14,12 @@ export { Avatar, Badge, Chip, Card, ListItem, SectionHeader, KeyValueRow } from 
 
 // Overlay (5)
 export { Modal, ConfirmDialog, BottomSheet, ActionSheet, Drawer } from './overlay';
+
+// Navigation (2)
+export { StepIndicator, SegmentedControl } from './navigation';
+
+// Utility (4)
+export { Accordion, CountdownTimer, WebViewPlaceholder, DividerWithLabel } from './utility';
+
+// Input (5)
+export { PasswordField, PhoneInput, SearchBar, DatePicker, Slider } from './input';
