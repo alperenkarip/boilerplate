@@ -46,6 +46,7 @@ Bu kararlar ADR-001 → ADR-019 ile kilitlenmistir. Alternatif onermek, sorgulat
 | Forms | React Hook Form + Zod | 7.x / 4.x | ADR-006 |
 | Styling/tokens | Tailwind CSS + NativeWind | 4.x / 5.x | ADR-007 |
 | Testing | Vitest + Jest + Playwright | 4.x / 30.x / 1.58.x | ADR-008 |
+| Component lab | Storybook + Storybook Test | 10.x | ADR-008 |
 | Observability | Sentry + vendor-agnostic analytics | - | ADR-009 |
 | Auth | HttpOnly cookies (web) + SecureStore (mobil) + Biometric | - | ADR-010 |
 | i18n | i18next, namespace-based | 26.x | ADR-011 |

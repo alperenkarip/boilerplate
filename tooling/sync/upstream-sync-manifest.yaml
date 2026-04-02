@@ -136,7 +136,6 @@ categories:
           - "Boundary Contract"
           - "Guardrail Compliance Review"
         preserve_sections:
-          - "Proje Kimligi"
           - "Testing Requirements"
 
       # --- Claude AI altyapisi ---
