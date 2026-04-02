@@ -91,34 +91,34 @@ Bu yeni aile ayrımı, eski versiyondan farklı olarak ADR + dependency + compat
 
 Bu aile, boilerplate ile türetilen projeler arasındaki sınırları, dallanma stratejisini, yeni proje türetme sürecini ve istisna politikasını tanımlar.
 
-| Dosya | Açıklama | Tür |
-|---|---|---|
-| `45-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi | Governance |
-| `42-branching-and-merge-strategy.md` | Branching ve merge stratejisi | Process |
-| `43-derived-project-creation-guide.md` | Türetilen proje oluşturma rehberi | Guide |
-| `44-exception-and-exemption-policy.md` | İstisna ve muafiyet politikası | Governance |
-| `48-expo-sdk-upgrade-strategy.md` | Expo SDK major upgrade operasyonel stratejisi | Governance |
-| `49-upstream-sync-strategy.md` | Boilerplate → derived proje upstream sync mekanizması | Governance |
+| Dosya                                         | Açıklama                                              | Tür        |
+| --------------------------------------------- | ----------------------------------------------------- | ---------- |
+| `45-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi                  | Governance |
+| `42-branching-and-merge-strategy.md`          | Branching ve merge stratejisi                         | Process    |
+| `43-derived-project-creation-guide.md`        | Türetilen proje oluşturma rehberi                     | Guide      |
+| `44-exception-and-exemption-policy.md`        | İstisna ve muafiyet politikası                        | Governance |
+| `48-expo-sdk-upgrade-strategy.md`             | Expo SDK major upgrade operasyonel stratejisi         | Governance |
+| `49-upstream-sync-strategy.md`                | Boilerplate → derived proje upstream sync mekanizması | Governance |
 
 ### Operations Ailesi
 
 Bu aile, production ortamındaki operasyonel prosedürleri ve incident yönetimini tanımlar.
 
-| Dosya | Açıklama | Tür |
-|---|---|---|
+| Dosya                                              | Açıklama                                     | Tür        |
+| -------------------------------------------------- | -------------------------------------------- | ---------- |
 | `docs/operations/runbook-and-incident-response.md` | Operasyonel prosedürler ve incident response | Operations |
 
 ### AI Guardrail Ailesi
 
 Bu aile, AI araçlarının kod üretirken boilerplate standartlarına uyumunu garanti eden guardrail çerçevesini tanımlar.
 
-| Dosya | Açıklama | Tür |
-|---|---|---|
-| `47-ai-guardrail-governance.md` | AI guardrail çerçevesi ana dokümanı | Governance |
-| `docs/ai-guardrails/domain/D-XXX-*.md` | Domain guardrail'ler (26 adet) | Guardrail |
-| `docs/ai-guardrails/activity/A-XXX-*.md` | Aktivite guardrail'ler (30 adet) | Guardrail |
-| `.claude/skills/*/SKILL.md` | Claude Code guardrail skill'leri (7 adet) | Skill |
-| `.claude/settings.json` | Claude Code hook tanımları | Config |
+| Dosya                                    | Açıklama                                  | Tür        |
+| ---------------------------------------- | ----------------------------------------- | ---------- |
+| `47-ai-guardrail-governance.md`          | AI guardrail çerçevesi ana dokümanı       | Governance |
+| `docs/ai-guardrails/domain/D-XXX-*.md`   | Domain guardrail'ler (26 adet)            | Guardrail  |
+| `docs/ai-guardrails/activity/A-XXX-*.md` | Aktivite guardrail'ler (30 adet)          | Guardrail  |
+| `.claude/skills/*/SKILL.md`              | Claude Code guardrail skill'leri (7 adet) | Skill      |
+| `.claude/settings.json`                  | Claude Code hook tanımları                | Config     |
 
 Bu aile `40-ai-workflow-and-tooling.md` ve `41-ai-instruction-standards.md` ile doğrudan bağlıdır. Guardrail dokümanları mevcut boilerplate dokümanlarının AI-native özetidir, alternatifi değildir. Çelişki durumunda kaynak doküman kazanır.
 
@@ -126,15 +126,15 @@ Bu aile `40-ai-workflow-and-tooling.md` ve `41-ai-instruction-standards.md` ile 
 
 Bu aile, yeni ekip üyelerinin projeye hızlı adaptasyonunu sağlayan rehber dokümanları içerir.
 
-| Dosya | Açıklama | Tür |
-|---|---|---|
-| `docs/onboarding/ilk-30-dakika.md` | İlk 30 dakika hızlı başlangıç rehberi | Onboarding |
-| `docs/onboarding/rol-bazli-okuma-rehberi.md` | Rol bazlı doküman okuma sırası | Onboarding |
+| Dosya                                        | Açıklama                              | Tür        |
+| -------------------------------------------- | ------------------------------------- | ---------- |
+| `docs/onboarding/ilk-30-dakika.md`           | İlk 30 dakika hızlı başlangıç rehberi | Onboarding |
+| `docs/onboarding/rol-bazli-okuma-rehberi.md` | Rol bazlı doküman okuma sırası        | Onboarding |
 
 ### AI Entegrasyon Dokümantasyonu
 
-| Dosya | Açıklama | Tür |
-|---|---|---|
+| Dosya                                                  | Açıklama                                                        | Tür        |
+| ------------------------------------------------------ | --------------------------------------------------------------- | ---------- |
 | `docs/governance/ai-integration-documentation-plan.md` | AI araç entegrasyonu ve türetilen projelerde AI konumlandırması | Governance |
 
 ### Önemli Ayrım: Boilerplate Dökümanları vs Proje Dökümanları
@@ -153,33 +153,40 @@ Bu belge haritası yalnızca boilerplate seviyesindeki dökümanları kapsar. Bo
 Bir çelişki olduğunda belgeler aşağıdaki sırayla yorumlanmalıdır:
 
 ## 5.1. Birinci katman — En üst niyet ve çalışma rejimi
+
 1. `00-project-charter.md`
 2. `01-working-principles.md`
 
 ## 5.2. İkinci katman — Ürün ve kalite yönü
+
 3. `02-product-platform-philosophy.md`
 4. alanın ilgili ana standardı (`03`–`16` arası)
 
 ## 5.3. Üçüncü katman — Karar yönetim rejimi
+
 5. `17-technology-decision-framework.md`
 6. `18-adr-template.md`
 
 ## 5.4. Dördüncü katman — Canonical karar otoritesi
+
 7. `ADR-001` → `ADR-019`
-8. `36-canonical-stack-decision.md` *(canonical stack index / bridge belgesi)*
+8. `36-canonical-stack-decision.md` _(canonical stack index / bridge belgesi)_
 9. `37-dependency-policy.md`
 10. `38-version-compatibility-matrix.md`
 
 ## 5.5. Beşinci katman — Uygulama geçiş ve bootstrap belgeleri
+
 11. `19-roadmap-to-implementation.md`
 12. `20-initial-implementation-checklist.md`
 13. `21-repo-structure-spec.md`
 
 ## 5.6. Altıncı katman — Operasyonel standartlar
+
 13. `22` → `29` arası alan belgeleri
 14. `30-contribution-guide.md`
 
 ## 5.7. Yedinci katman — Denetim ve tamamlanma
+
 15. `31-audit-checklist.md`
 16. `32-definition-of-done.md`
 17. `33-visual-implementation-contract.md`
@@ -220,6 +227,7 @@ Aşağıdaki sıra izlenir:
    - gerekiyorsa üst belge veya ADR supersede edilir
 
 ### Kural
+
 PR notu, chat cevabı veya geçici yorum, bu belge setini sessizce geçersiz kılamaz.
 
 ---
@@ -229,11 +237,13 @@ PR notu, chat cevabı veya geçici yorum, bu belge setini sessizce geçersiz kı
 Bu sıralama artık yeni canonical katmanı da içerir.
 
 ## 8.1. Başlangıç zemini
+
 1. `00-project-charter.md`
 2. `01-working-principles.md`
 3. `02-product-platform-philosophy.md`
 
 ## 8.2. Kalite ve sistem yönü
+
 4. `03-ui-ux-quality-standard.md`
 5. `04-design-system-architecture.md`
 6. `05-theming-and-visual-language.md`
@@ -241,6 +251,7 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 8. `13-performance-standard.md`
 
 ## 8.3. Mimari ve runtime yönü
+
 9. `06-application-architecture.md`
 10. `07-module-boundaries-and-code-organization.md`
 11. `08-navigation-and-flow-rules.md`
@@ -249,6 +260,7 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 14. `11-forms-inputs-and-validation.md`
 
 ## 8.4. Governance ve karar sistemi
+
 15. `14-testing-strategy.md`
 16. `15-quality-gates-and-ci-rules.md`
 17. `16-tooling-and-governance.md`
@@ -256,36 +268,39 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 19. `18-adr-template.md`
 
 ## 8.5. Canonical teknik karar katmanı
-20. `ADR-001-web-runtime-and-application-shell.md` *(Web Runtime)*
-21. `ADR-002-mobile-runtime-and-native-strategy.md` *(Mobile Runtime)*
-22. `ADR-003-monorepo-package-manager-and-build-orchestration.md` *(Monorepo)*
-23. `ADR-004-state-management.md` *(State Management)*
-24. `ADR-005-data-fetching-cache-and-mutation-model.md` *(Data Fetching)*
-25. `ADR-006-forms-and-validation.md` *(Forms)*
-26. `ADR-007-styling-tokens-and-theming-implementation.md` *(Styling/Tokens)*
-27. `ADR-008-testing-stack.md` *(Testing)*
-28. `ADR-009-observability-stack.md` *(Observability)*
-29. `ADR-010-auth-session-and-secure-storage-baseline.md` *(Auth/Session)*
-30. `ADR-011-internationalization-baseline.md` *(i18n)*
-31. `ADR-012-navigation-baseline.md` *(Navigation)*
-32. `ADR-013-push-notification-strategy.md` *(Push Notification)*
-33. `ADR-014-deep-linking-and-universal-links.md` *(Deep Linking)*
-34. `ADR-015-ota-update-strategy.md` *(OTA Update)*
-35. `ADR-016-in-app-purchase-and-subscription.md` *(In-App Purchase)*
-36. `ADR-017-privacy-and-data-protection-framework.md` *(Privacy/GDPR/KVKK)*
-37. `ADR-018-new-architecture-migration-and-readiness-strategy.md` *(New Architecture Migration)*
-38. `ADR-019-local-storage-and-offline-first-strategy.md` *(Local Storage/Offline-First)*
+
+20. `ADR-001-web-runtime-and-application-shell.md` _(Web Runtime)_
+21. `ADR-002-mobile-runtime-and-native-strategy.md` _(Mobile Runtime)_
+22. `ADR-003-monorepo-package-manager-and-build-orchestration.md` _(Monorepo)_
+23. `ADR-004-state-management.md` _(State Management)_
+24. `ADR-005-data-fetching-cache-and-mutation-model.md` _(Data Fetching)_
+25. `ADR-006-forms-and-validation.md` _(Forms)_
+26. `ADR-007-styling-tokens-and-theming-implementation.md` _(Styling/Tokens)_
+27. `ADR-008-testing-stack.md` _(Testing)_
+28. `ADR-009-observability-stack.md` _(Observability)_
+29. `ADR-010-auth-session-and-secure-storage-baseline.md` _(Auth/Session)_
+30. `ADR-011-internationalization-baseline.md` _(i18n)_
+31. `ADR-012-navigation-baseline.md` _(Navigation)_
+32. `ADR-013-push-notification-strategy.md` _(Push Notification)_
+33. `ADR-014-deep-linking-and-universal-links.md` _(Deep Linking)_
+34. `ADR-015-ota-update-strategy.md` _(OTA Update)_
+35. `ADR-016-in-app-purchase-and-subscription.md` _(In-App Purchase)_
+36. `ADR-017-privacy-and-data-protection-framework.md` _(Privacy/GDPR/KVKK)_
+37. `ADR-018-new-architecture-migration-and-readiness-strategy.md` _(New Architecture Migration)_
+38. `ADR-019-local-storage-and-offline-first-strategy.md` _(Local Storage/Offline-First)_
 39. `36-canonical-stack-decision.md`
 40. `37-dependency-policy.md`
 41. `38-version-compatibility-matrix.md`
 
 ## 8.6. Uygulama geçiş belgeleri
+
 42. `19-roadmap-to-implementation.md`
 43. `20-initial-implementation-checklist.md`
 44. `21-repo-structure-spec.md`
 45. `39-default-screens-and-components-spec.md`
 
 ## 8.7. Derin uygulama standartları
+
 46. `22-design-tokens-spec.md`
 47. `23-component-governance-rules.md`
 48. `24-motion-and-interaction-standard.md`
@@ -296,16 +311,19 @@ Bu sıralama artık yeni canonical katmanı da içerir.
 53. `29-release-and-versioning-rules.md`
 
 ## 8.8. AI workflow ve talimat standartları
+
 54. `40-ai-workflow-and-tooling.md`
 55. `41-ai-instruction-standards.md`
 56. `46-stitch-pipeline-spec.md`
 57. `docs/governance/ai-integration-documentation-plan.md`
 
 ## 8.9. Onboarding
+
 58. `docs/onboarding/ilk-30-dakika.md`
 59. `docs/onboarding/rol-bazli-okuma-rehberi.md`
 
 ## 8.10. Operasyon ve denetim
+
 60. `30-contribution-guide.md`
 61. `31-audit-checklist.md`
 62. `32-definition-of-done.md`
@@ -342,7 +360,7 @@ Aşağıdaki belgeler repo bootstrap öncesi bloklayıcı kabul edilmelidir:
 - `17-technology-decision-framework.md`
 - `18-adr-template.md`
 - `ADR-001` → `ADR-019`
-- `36-canonical-stack-decision.md` *(canonical stack index / bridge)*
+- `36-canonical-stack-decision.md` _(canonical stack index / bridge)_
 - `37-dependency-policy.md`
 - `38-version-compatibility-matrix.md`
 - `19-roadmap-to-implementation.md`
@@ -351,6 +369,7 @@ Aşağıdaki belgeler repo bootstrap öncesi bloklayıcı kabul edilmelidir:
 - `40-ai-workflow-and-tooling.md`
 
 ### Not
+
 Eski sürümde `20` ve `21` daha çok “destekleyici ama kritik” gibi okunabiliyordu.  
 Artık bu zayıf olur. Çünkü bunlar doğrudan bootstrap’ın uygulama belgeleridir.
 `40` ise AI araçlarının geliştirme sürecindeki konumunu tanımlar; AI araçları kullanılmadan repo bootstrap’ına başlanamaz.
@@ -362,7 +381,9 @@ Artık bu zayıf olur. Çünkü bunlar doğrudan bootstrap’ın uygulama belgel
 ---
 
 ## 10.1. Yeni teknoloji veya dependency öneriyorum
+
 Oku:
+
 - `17-technology-decision-framework.md`
 - ilgili ADR
 - `37-dependency-policy.md`
@@ -372,7 +393,9 @@ Oku:
 ---
 
 ## 10.2. Repo bootstrap başlatacağım
+
 Oku:
+
 - `19-roadmap-to-implementation.md`
 - `20-initial-implementation-checklist.md`
 - `21-repo-structure-spec.md`
@@ -382,7 +405,9 @@ Oku:
 ---
 
 ## 10.3. Yeni reusable component açacağım
+
 Oku:
+
 - `04-design-system-architecture.md`
 - `05-theming-and-visual-language.md`
 - `22-design-tokens-spec.md`
@@ -395,7 +420,9 @@ Oku:
 ---
 
 ## 10.4. Yeni feature flow açacağım
+
 Oku:
+
 - `02-product-platform-philosophy.md`
 - `08-navigation-and-flow-rules.md`
 - `09-state-management-strategy.md`
@@ -408,7 +435,9 @@ Oku:
 ---
 
 ## 10.5. Auth/session ile ilgili iş yapacağım
+
 Oku:
+
 - `ADR-010`
 - `27-security-and-secrets-baseline.md`
 - `28-observability-and-debugging.md`
@@ -419,7 +448,9 @@ Oku:
 ---
 
 ## 10.6. i18n / copy / locale işi yapacağım
+
 Oku:
+
 - `ADR-011`
 - `ADR-012` (navigation title, tab label, locale-aware route metadata etkisi varsa)
 - `11-forms-inputs-and-validation.md` (form copy etkisi varsa)
@@ -430,7 +461,9 @@ Oku:
 ---
 
 ## 10.7. Testing veya CI ile ilgili iş yapacağım
+
 Oku:
+
 - `ADR-008`
 - `14-testing-strategy.md`
 - `15-quality-gates-and-ci-rules.md`
@@ -440,7 +473,9 @@ Oku:
 ---
 
 ## 10.8. AI aracıyla iş yapacağım
+
 Oku:
+
 - `40-ai-workflow-and-tooling.md`
 - `41-ai-instruction-standards.md`
 - `CLAUDE.md` (proje talimatı)
@@ -451,7 +486,9 @@ Oku:
 ---
 
 ## 10.9. Yeni derived project türetme
+
 Oku:
+
 - `43-derived-project-creation-guide.md`
 - `45-boilerplate-project-boundary-contract.md`
 - `20-initial-implementation-checklist.md`
@@ -461,7 +498,9 @@ Oku:
 ---
 
 ## 10.10. Push notification geliştireceğim
+
 Oku:
+
 - `ADR-013-push-notification-strategy.md`
 - `ADR-014-deep-linking-and-universal-links.md` (notification → deep link entegrasyonu)
 - `27-security-and-secrets-baseline.md`
@@ -471,7 +510,9 @@ Oku:
 ---
 
 ## 10.11. Deep linking implementasyonu yapacağım
+
 Oku:
+
 - `ADR-014-deep-linking-and-universal-links.md`
 - `ADR-012-navigation-baseline.md`
 - `08-navigation-and-flow-rules.md`
@@ -481,7 +522,9 @@ Oku:
 ---
 
 ## 10.12. In-app purchase / ödeme entegrasyonu yapacağım
+
 Oku:
+
 - `ADR-016-in-app-purchase-and-subscription.md`
 - `ADR-010-auth-session-and-secure-storage-baseline.md`
 - `ADR-017-privacy-and-data-protection-framework.md`
@@ -491,7 +534,9 @@ Oku:
 ---
 
 ## 10.13. OTA güncelleme yapacağım
+
 Oku:
+
 - `ADR-015-ota-update-strategy.md`
 - `29-release-and-versioning-rules.md`
 - `28-observability-and-debugging.md`
@@ -501,7 +546,9 @@ Oku:
 ---
 
 ## 10.14. Privacy / GDPR / KVKK uyum çalışması yapacağım
+
 Oku:
+
 - `ADR-017-privacy-and-data-protection-framework.md`
 - `27-security-and-secrets-baseline.md`
 - `28-observability-and-debugging.md`
@@ -511,7 +558,9 @@ Oku:
 ---
 
 ## 10.15. Production incident / sorun müdahalesi yapacağım
+
 Oku:
+
 - `docs/operations/runbook-and-incident-response.md`
 - `28-observability-and-debugging.md`
 - `ADR-009-observability-stack.md`
@@ -521,7 +570,9 @@ Oku:
 ---
 
 ## 10.16. Güvenlik denetimi / pentest hazırlığı yapacağım
+
 Oku:
+
 - `27-security-and-secrets-baseline.md` (§39-41: encryption, pentest, cert pinning)
 - `ADR-010-auth-session-and-secure-storage-baseline.md`
 - `ADR-017-privacy-and-data-protection-framework.md`
@@ -530,7 +581,9 @@ Oku:
 ---
 
 ## 10.17. Onboarding / first-time user experience tasarlayacağım
+
 Oku:
+
 - `03-ui-ux-quality-standard.md` (§31: Onboarding ve FTUE)
 - `26-platform-adaptation-rules.md` (§37: AppState lifecycle)
 - `ADR-019-local-storage-and-offline-first-strategy.md` (onboarding state persistence)
@@ -541,6 +594,7 @@ Oku:
 # 11. Belge Bağımlılık Haritasının Yeni Özeti
 
 ## 11.1. Foundation zinciri
+
 - `00`
 - `01`
 - `02`
@@ -548,6 +602,7 @@ Oku:
 Bunlar en üst niyet ve çalışma rejimidir.
 
 ## 11.2. UX / design system zinciri
+
 - `03`
 - `04`
 - `05`
@@ -559,6 +614,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `34`
 
 ## 11.3. Mimari / runtime zinciri
+
 - `06`
 - `07`
 - `08`
@@ -568,6 +624,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `21`
 
 ## 11.4. Governance / decision zinciri
+
 - `14`
 - `15`
 - `16`
@@ -575,17 +632,20 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `18`
 
 ## 11.5. Canonical technical decision layer
+
 - `ADR-001` → `ADR-019`
 - `36`
 - `37`
 - `38`
 
 ## 11.6. Implementation transition zinciri
+
 - `19`
 - `20`
 - `21`
 
 ## 11.7. Operational quality zinciri
+
 - `25`
 - `26`
 - `27`
@@ -594,6 +654,7 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `30`
 
 ## 11.8. Audit / completion zinciri
+
 - `31`
 - `32`
 - `33`
@@ -601,14 +662,16 @@ Bunlar en üst niyet ve çalışma rejimidir.
 - `35`
 
 ## 11.9. AI tooling zinciri
+
 - `40`
 - `41`
 - `42`
-- `46` *(Stitch pipeline)*
-- `47` *(AI guardrail governance)*
+- `46` _(Stitch pipeline: MCP, skill ekosistemi, DESIGN.md rehberi, kapasite, RN sinirliliklari)_
+- `47` _(AI guardrail governance)_
 - `ai-integration-documentation-plan.md`
 
 ## 11.10. Onboarding zinciri
+
 - `docs/onboarding/ilk-30-dakika.md`
 - `docs/onboarding/rol-bazli-okuma-rehberi.md`
 
@@ -624,6 +687,7 @@ Bu haritadaki en önemli disiplinlerden biri şudur:
 > Checklist, roadmap, contribution guide, repo structure spec veya herhangi bir operational belge; canonical ADR ve dependency/compatibility katmanında kapanmış bir kararı yeniden “açık seçenek” gibi yazamaz.
 
 Örnek yanlışlar:
+
 - checklist içinde ikinci state library konuşmak
 - repo structure spec içinde package manager alternatif sunmak
 - contribution guide içinde “gerekirse başka query library de olabilir” demek
@@ -644,6 +708,7 @@ Aşağıdaki durumlarda `35-document-map.md` zorunlu olarak güncellenmelidir:
 6. görev bazlı hızlı harita değişirse
 
 ### Kural
+
 Document map güncellenmeden doküman sistemi tamam sayılmaz.
 
 ---
@@ -674,18 +739,23 @@ Neden?
 # 15. Bu Haritada Bilinçli Olarak Ayrı Tutulan Şeyler
 
 ## 15.1. Genel ilke belgeleri
+
 Bunlar neden ve nasıl çalıştığımızı söyler.
 
 ## 15.2. Alan standartları
+
 Bunlar UI, a11y, perf, data, forms gibi domain-standard alanları tanımlar.
 
 ## 15.3. Canonical ADR seti
+
 Bunlar çekirdek teknik kararları kilitler.
 
 ## 15.4. Operational belgeler
+
 Bunlar kararı günlük işe ve repo’ya indirir.
 
 ## 15.5. Audit/DoD belgeleri
+
 Bunlar uygulananın doğru yapılıp yapılmadığını denetler.
 
 Bu ayrım korunmazsa document-first sistem bulanır.
@@ -787,12 +857,12 @@ Bu bölüm, doküman haritası ile `docs/` dizini arasındaki tutarlılığı ot
 
 CI pipeline'da `pnpm docs:validate-map` komutu çalıştırılarak aşağıdaki kontroller yapılır:
 
-| Kontrol | Açıklama | Sonuç |
-|---------|----------|-------|
-| Eksik doküman | `docs/` dizininde dosya var ama haritada referans yok | ⚠️ Uyarı (warning) |
-| Fazla referans | Haritada referans var ama `docs/` dizininde dosya yok | ❌ Hata (error) |
-| ADR tutarlılığı | `docs/adr/` dizinindeki ADR sayısı ile haritadaki ADR listesi | ⚠️ Uyarı |
-| Guardrail tutarlılığı | `docs/ai-guardrails/` dizin içeriği ile haritadaki guardrail sayıları | ⚠️ Uyarı |
+| Kontrol               | Açıklama                                                              | Sonuç              |
+| --------------------- | --------------------------------------------------------------------- | ------------------ |
+| Eksik doküman         | `docs/` dizininde dosya var ama haritada referans yok                 | ⚠️ Uyarı (warning) |
+| Fazla referans        | Haritada referans var ama `docs/` dizininde dosya yok                 | ❌ Hata (error)    |
+| ADR tutarlılığı       | `docs/adr/` dizinindeki ADR sayısı ile haritadaki ADR listesi         | ⚠️ Uyarı           |
+| Guardrail tutarlılığı | `docs/ai-guardrails/` dizin içeriği ile haritadaki guardrail sayıları | ⚠️ Uyarı           |
 
 ## 18.4.2. Komut
 
@@ -802,6 +872,7 @@ pnpm docs:validate-map
 ```
 
 Bu komut:
+
 1. `docs/` dizinindeki tüm `.md` dosyalarını listeler.
 2. `35-document-map.md` dosyasındaki referansları parse eder.
 3. Eşleşmeyen dosyaları ve referansları raporlar.
@@ -817,11 +888,13 @@ Bu komut:
 ## 18.4.4. Scope
 
 Doğrulama kapsamı:
+
 - `docs/` kök dizini ve tüm alt dizinleri
 - `docs/adr/`, `docs/governance/`, `docs/quality/`, `docs/checklists/`, `docs/maps/`, `docs/onboarding/`, `docs/ai-guardrails/`
 - `.md` uzantılı dosyalar
 
 Kapsam dışı:
+
 - `docs/audits/` (arşiv dosyaları, haritada yer almaz)
 - `docs/design-system/` içindeki generated dosyalar
 - `DESIGN.md` (Stitch çıktısı, haritada ayrı işlenir)
@@ -985,58 +1058,58 @@ docs/
 
 Bu haritada dosyalar kısa numara/adlarıyla referans edilir. Aşağıdaki tablo kısa adı gerçek dizin yoluyla eşleştirir.
 
-| Kısa Ad | Tam Yol |
-|---------|---------|
-| `00` | `docs/foundation/00-project-charter.md` |
-| `01` | `docs/foundation/01-working-principles.md` |
-| `02` | `docs/foundation/02-product-platform-philosophy.md` |
-| `03` | `docs/design-system/03-ui-ux-quality-standard.md` |
-| `04` | `docs/design-system/04-design-system-architecture.md` |
-| `05` | `docs/design-system/05-theming-and-visual-language.md` |
-| `06` | `docs/architecture/06-application-architecture.md` |
-| `07` | `docs/architecture/07-module-boundaries-and-code-organization.md` |
-| `08` | `docs/architecture/08-navigation-and-flow-rules.md` |
-| `09` | `docs/architecture/09-state-management-strategy.md` |
-| `10` | `docs/architecture/10-data-fetching-cache-sync.md` |
-| `11` | `docs/architecture/11-forms-inputs-and-validation.md` |
-| `12` | `docs/quality/12-accessibility-standard.md` |
-| `13` | `docs/quality/13-performance-standard.md` |
-| `14` | `docs/quality/14-testing-strategy.md` |
-| `15` | `docs/governance/15-quality-gates-and-ci-rules.md` |
-| `16` | `docs/governance/16-tooling-and-governance.md` |
-| `17` | `docs/governance/17-technology-decision-framework.md` |
-| `18` | `docs/adr/18-adr-template.md` |
-| `19` | `docs/implementation/19-roadmap-to-implementation.md` |
-| `20` | `docs/implementation/20-initial-implementation-checklist.md` |
-| `21` | `docs/implementation/21-repo-structure-spec.md` |
-| `22` | `docs/design-system/22-design-tokens-spec.md` |
-| `23` | `docs/design-system/23-component-governance-rules.md` |
-| `24` | `docs/design-system/24-motion-and-interaction-standard.md` |
-| `25` | `docs/design-system/25-error-empty-loading-states.md` |
-| `26` | `docs/design-system/26-platform-adaptation-rules.md` |
-| `27` | `docs/quality/27-security-and-secrets-baseline.md` |
-| `28` | `docs/quality/28-observability-and-debugging.md` |
-| `29` | `docs/governance/29-release-and-versioning-rules.md` |
-| `30` | `docs/governance/30-contribution-guide.md` |
-| `31` | `docs/checklists/31-audit-checklist.md` |
-| `32` | `docs/checklists/32-definition-of-done.md` |
-| `33` | `docs/design-system/33-visual-implementation-contract.md` |
-| `34` | `docs/design-system/34-hig-enforcement-strategy.md` |
-| `35` | `docs/maps/35-document-map.md` |
-| `36` | `docs/governance/36-canonical-stack-decision.md` |
-| `37` | `docs/governance/37-dependency-policy.md` |
-| `38` | `docs/governance/38-version-compatibility-matrix.md` |
-| `39` | `docs/design-system/39-default-screens-and-components-spec.md` |
-| `40` | `docs/governance/40-ai-workflow-and-tooling.md` |
-| `41` | `docs/governance/41-ai-instruction-standards.md` |
-| `42` | `docs/governance/42-branching-and-merge-strategy.md` |
-| `43` | `docs/implementation/43-derived-project-creation-guide.md` |
-| `44` | `docs/governance/44-exception-and-exemption-policy.md` |
-| `45` | `docs/governance/45-boilerplate-project-boundary-contract.md` |
-| `46` | `docs/governance/46-stitch-pipeline-spec.md` |
-| `47` | `docs/governance/47-ai-guardrail-governance.md` |
-| `48` | `docs/governance/48-expo-sdk-upgrade-strategy.md` |
-| `49` | `docs/governance/49-upstream-sync-strategy.md` |
+| Kısa Ad | Tam Yol                                                           |
+| ------- | ----------------------------------------------------------------- |
+| `00`    | `docs/foundation/00-project-charter.md`                           |
+| `01`    | `docs/foundation/01-working-principles.md`                        |
+| `02`    | `docs/foundation/02-product-platform-philosophy.md`               |
+| `03`    | `docs/design-system/03-ui-ux-quality-standard.md`                 |
+| `04`    | `docs/design-system/04-design-system-architecture.md`             |
+| `05`    | `docs/design-system/05-theming-and-visual-language.md`            |
+| `06`    | `docs/architecture/06-application-architecture.md`                |
+| `07`    | `docs/architecture/07-module-boundaries-and-code-organization.md` |
+| `08`    | `docs/architecture/08-navigation-and-flow-rules.md`               |
+| `09`    | `docs/architecture/09-state-management-strategy.md`               |
+| `10`    | `docs/architecture/10-data-fetching-cache-sync.md`                |
+| `11`    | `docs/architecture/11-forms-inputs-and-validation.md`             |
+| `12`    | `docs/quality/12-accessibility-standard.md`                       |
+| `13`    | `docs/quality/13-performance-standard.md`                         |
+| `14`    | `docs/quality/14-testing-strategy.md`                             |
+| `15`    | `docs/governance/15-quality-gates-and-ci-rules.md`                |
+| `16`    | `docs/governance/16-tooling-and-governance.md`                    |
+| `17`    | `docs/governance/17-technology-decision-framework.md`             |
+| `18`    | `docs/adr/18-adr-template.md`                                     |
+| `19`    | `docs/implementation/19-roadmap-to-implementation.md`             |
+| `20`    | `docs/implementation/20-initial-implementation-checklist.md`      |
+| `21`    | `docs/implementation/21-repo-structure-spec.md`                   |
+| `22`    | `docs/design-system/22-design-tokens-spec.md`                     |
+| `23`    | `docs/design-system/23-component-governance-rules.md`             |
+| `24`    | `docs/design-system/24-motion-and-interaction-standard.md`        |
+| `25`    | `docs/design-system/25-error-empty-loading-states.md`             |
+| `26`    | `docs/design-system/26-platform-adaptation-rules.md`              |
+| `27`    | `docs/quality/27-security-and-secrets-baseline.md`                |
+| `28`    | `docs/quality/28-observability-and-debugging.md`                  |
+| `29`    | `docs/governance/29-release-and-versioning-rules.md`              |
+| `30`    | `docs/governance/30-contribution-guide.md`                        |
+| `31`    | `docs/checklists/31-audit-checklist.md`                           |
+| `32`    | `docs/checklists/32-definition-of-done.md`                        |
+| `33`    | `docs/design-system/33-visual-implementation-contract.md`         |
+| `34`    | `docs/design-system/34-hig-enforcement-strategy.md`               |
+| `35`    | `docs/maps/35-document-map.md`                                    |
+| `36`    | `docs/governance/36-canonical-stack-decision.md`                  |
+| `37`    | `docs/governance/37-dependency-policy.md`                         |
+| `38`    | `docs/governance/38-version-compatibility-matrix.md`              |
+| `39`    | `docs/design-system/39-default-screens-and-components-spec.md`    |
+| `40`    | `docs/governance/40-ai-workflow-and-tooling.md`                   |
+| `41`    | `docs/governance/41-ai-instruction-standards.md`                  |
+| `42`    | `docs/governance/42-branching-and-merge-strategy.md`              |
+| `43`    | `docs/implementation/43-derived-project-creation-guide.md`        |
+| `44`    | `docs/governance/44-exception-and-exemption-policy.md`            |
+| `45`    | `docs/governance/45-boilerplate-project-boundary-contract.md`     |
+| `46`    | `docs/governance/46-stitch-pipeline-spec.md`                      |
+| `47`    | `docs/governance/47-ai-guardrail-governance.md`                   |
+| `48`    | `docs/governance/48-expo-sdk-upgrade-strategy.md`                 |
+| `49`    | `docs/governance/49-upstream-sync-strategy.md`                    |
 
 ---
 

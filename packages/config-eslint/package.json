@@ -1,0 +1,8 @@
+{
+  "name": "@project/config-eslint",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./eslint.config.js",
+  "scripts": {}
+}

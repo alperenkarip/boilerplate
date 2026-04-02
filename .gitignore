@@ -1,1 +1,51 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# Dependency
+node_modules/
+
+# Build
+dist/
+build/
+.next/
+.expo/
+*.tsbuildinfo
+
+# Turbo
+.turbo/
+
+# Test & Coverage
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Debug
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MoAI memory (kisisel)
+.moai/memory/
+
+# Expo
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Secrets
+*.pem
+*.key
+credentials.*

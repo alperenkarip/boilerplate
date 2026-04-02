@@ -1,0 +1,10 @@
+{
+  "name": "@project/config-typescript",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "*.json"
+  ],
+  "scripts": {}
+}

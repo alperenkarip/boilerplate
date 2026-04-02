@@ -1,0 +1,31 @@
+{
+  "app": {
+    "name": "Boilerplate",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "status": {
+    "active": "Active",
+    "archived": "Archived",
+    "new": "New"
+  },
+  "empty": {
+    "title": "No Records Found",
+    "description": "No records have been added yet."
+  },
+  "error": {
+    "title": "An Error Occurred",
+    "generic": "An unexpected error occurred.",
+    "network": "Check your internet connection."
+  }
+}

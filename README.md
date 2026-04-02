@@ -36,28 +36,28 @@ Web ve mobil ayni urun sisteminin iki farkli platform yorumudur. Amac "maksimum 
 
 Bu kararlar ADR-001 → ADR-019 ile kilitlenmistir. Alternatif onermek, sorgulatmak veya bypass etmek yasaktir.
 
-| Alan | Teknoloji | Versiyon | ADR |
-|------|-----------|----------|-----|
-| Web runtime | React + Vite + React Router | 7.x | ADR-001 |
-| Mobil runtime | React Native + Expo | SDK 55.x | ADR-002 |
-| Monorepo | pnpm + Turborepo | 10.x / 2.x | ADR-003 |
-| State management | Zustand | 5.x | ADR-004 |
-| Data fetching | fetch-first + TanStack Query | 5.x | ADR-005 |
-| Forms | React Hook Form + Zod | 7.x / 4.x | ADR-006 |
-| Styling/tokens | Tailwind CSS + NativeWind | 4.x / 5.x | ADR-007 |
-| Testing | Vitest + Jest + Playwright | 4.x / 30.x / 1.58.x | ADR-008 |
-| Component lab | Storybook + Storybook Test | 10.x | ADR-008 |
-| Observability | Sentry + vendor-agnostic analytics | - | ADR-009 |
-| Auth | HttpOnly cookies (web) + SecureStore (mobil) + Biometric | - | ADR-010 |
-| i18n | i18next, namespace-based | 26.x | ADR-011 |
-| Navigation | React Router (web) + React Navigation (mobil) | 7.x / 7.x | ADR-012 |
-| Push notification | expo-notifications + FCM/APNs | - | ADR-013 |
-| Deep linking | expo-linking + Universal Links + App Links | - | ADR-014 |
-| OTA update | EAS Update | - | ADR-015 |
-| In-app purchase | RevenueCat (react-native-purchases) | - | ADR-016 |
-| Privacy/compliance | GDPR + KVKK uyum cercevesi | - | ADR-017 |
-| New architecture | Fabric + JSI + TurboModules + Hermes V1 | - | ADR-018 |
-| Local storage | MMKV + Expo SecureStore + Zustand persist | - | ADR-019 |
+| Alan               | Teknoloji                                                | Versiyon            | ADR     |
+| ------------------ | -------------------------------------------------------- | ------------------- | ------- |
+| Web runtime        | React + Vite + React Router                              | 7.x                 | ADR-001 |
+| Mobil runtime      | React Native + Expo                                      | SDK 55.x            | ADR-002 |
+| Monorepo           | pnpm + Turborepo                                         | 10.x / 2.x          | ADR-003 |
+| State management   | Zustand                                                  | 5.x                 | ADR-004 |
+| Data fetching      | fetch-first + TanStack Query                             | 5.x                 | ADR-005 |
+| Forms              | React Hook Form + Zod                                    | 7.x / 4.x           | ADR-006 |
+| Styling/tokens     | Tailwind CSS + NativeWind                                | 4.x / 5.x           | ADR-007 |
+| Testing            | Vitest + Jest + Playwright                               | 4.x / 30.x / 1.58.x | ADR-008 |
+| Component lab      | Storybook + Storybook Test                               | 10.x                | ADR-008 |
+| Observability      | Sentry + vendor-agnostic analytics                       | -                   | ADR-009 |
+| Auth               | HttpOnly cookies (web) + SecureStore (mobil) + Biometric | -                   | ADR-010 |
+| i18n               | i18next, namespace-based                                 | 26.x                | ADR-011 |
+| Navigation         | React Router (web) + React Navigation (mobil)            | 7.x / 7.x           | ADR-012 |
+| Push notification  | expo-notifications + FCM/APNs                            | -                   | ADR-013 |
+| Deep linking       | expo-linking + Universal Links + App Links               | -                   | ADR-014 |
+| OTA update         | EAS Update                                               | -                   | ADR-015 |
+| In-app purchase    | RevenueCat (react-native-purchases)                      | -                   | ADR-016 |
+| Privacy/compliance | GDPR + KVKK uyum cercevesi                               | -                   | ADR-017 |
+| New architecture   | Fabric + JSI + TurboModules + Hermes V1                  | -                   | ADR-018 |
+| Local storage      | MMKV + Expo SecureStore + Zustand persist                | -                   | ADR-019 |
 
 **Watchlist** (henuz canonical degil, izleniyor): React Compiler, Biome 2.x, @expo/ui 1.0
 
@@ -67,11 +67,11 @@ Bu kararlar ADR-001 → ADR-019 ile kilitlenmistir. Alternatif onermek, sorgulat
 
 ### On Kosullar
 
-| Arac | Minimum Versiyon | Kontrol Komutu |
-|------|-----------------|----------------|
-| Node.js | 20.x | `node --version` |
-| pnpm | 10.x | `pnpm --version` |
-| Git | 2.40+ | `git --version` |
+| Arac    | Minimum Versiyon | Kontrol Komutu   |
+| ------- | ---------------- | ---------------- |
+| Node.js | 20.x             | `node --version` |
+| pnpm    | 10.x             | `pnpm --version` |
+| Git     | 2.40+            | `git --version`  |
 
 ```bash
 # Node.js yoksa
@@ -106,11 +106,11 @@ pnpm turbo run build --dry-run
 ```bash
 # Web development server
 pnpm dev:web
-# http://localhost:5173 adresinde acilir
+# http://localhost:3000 adresinde acilir
 
-# Mobile development server (Expo)
+# Mobile development server (Expo dev client)
 pnpm dev:mobile
-# Expo Go ile QR kodunu okuyun
+# Development build gereklidir (Expo Go yeterli degildir)
 
 # Kalite kontrolleri
 pnpm typecheck        # TypeScript tip kontrolu
@@ -123,11 +123,11 @@ pnpm build            # Tum workspace'i derle
 
 `.env.example` dosyasini `.env.local` olarak kopyalayin. Asagidaki degiskenler tanimlanmalidir:
 
-| Degisken | Aciklama | Ornek |
-|----------|----------|-------|
-| `VITE_API_BASE_URL` | Backend API adresi | `https://api.example.com` |
-| `SENTRY_DSN` | Sentry hata izleme | `https://xxx@sentry.io/xxx` |
-| `EXPO_PUBLIC_API_URL` | Mobil API adresi | `https://api.example.com` |
+| Degisken              | Aciklama           | Ornek                       |
+| --------------------- | ------------------ | --------------------------- |
+| `VITE_API_BASE_URL`   | Backend API adresi | `https://api.example.com`   |
+| `SENTRY_DSN`          | Sentry hata izleme | `https://xxx@sentry.io/xxx` |
+| `EXPO_PUBLIC_API_URL` | Mobil API adresi   | `https://api.example.com`   |
 
 > `.env` dosyalari `.gitignore` ile korunur. Gercek credential'lar asla repo'ya girmez.
 
@@ -219,14 +219,14 @@ Feature disina actigi her sey `index.ts` uzerinden export edilir. Internal dosya
 
 ### Kodlama Standartlari
 
-| Kural | Aciklama |
-|-------|----------|
-| TypeScript strict mode | Zorunlu — `any` tipi yasak |
-| Semantic token | Hardcoded renk, spacing, font degeri yasak |
-| i18n | Inline user-facing string yasak, i18n key kullan |
-| Component naming | PascalCase, dosya adi ile eslesir |
-| Test dosyasi | `*.test.ts(x)` kaynak dosyanin yaninda |
-| Exception policy | `eslint-disable` / `@ts-ignore` icin exception kaydi zorunlu |
+| Kural                  | Aciklama                                                     |
+| ---------------------- | ------------------------------------------------------------ |
+| TypeScript strict mode | Zorunlu — `any` tipi yasak                                   |
+| Semantic token         | Hardcoded renk, spacing, font degeri yasak                   |
+| i18n                   | Inline user-facing string yasak, i18n key kullan             |
+| Component naming       | PascalCase, dosya adi ile eslesir                            |
+| Test dosyasi           | `*.test.ts(x)` kaynak dosyanin yaninda                       |
+| Exception policy       | `eslint-disable` / `@ts-ignore` icin exception kaydi zorunlu |
 
 ### Katmanli Mimari
 
@@ -266,12 +266,12 @@ Component      →  Button background, Card padding
 
 ### Test Stratejisi
 
-| Test Turu | Arac | Nerede |
-|-----------|------|--------|
-| Unit test | Vitest (web) / Jest (mobil) | Yeni utility, hook, helper |
-| Component test | React Testing Library | Yeni component |
-| Integration test | Vitest / Jest | API entegrasyonu |
-| E2E test | Playwright | Kritik kullanici akislari |
+| Test Turu        | Arac                        | Nerede                     |
+| ---------------- | --------------------------- | -------------------------- |
+| Unit test        | Vitest (web) / Jest (mobil) | Yeni utility, hook, helper |
+| Component test   | React Testing Library       | Yeni component             |
+| Integration test | Vitest / Jest               | API entegrasyonu           |
+| E2E test         | Playwright                  | Kritik kullanici akislari  |
 
 Test dosyalari kaynak dosyanin yaninda tutulur: `Button.tsx` → `Button.test.tsx`
 
@@ -323,11 +323,11 @@ pnpm --filter mobile build
 
 ### Ortam Yonetimi
 
-| Ortam | Amac | Config |
-|-------|------|--------|
-| `development` | Lokal gelistirme | `.env.local` |
-| `staging` | Test ve QA | `.env.staging` |
-| `production` | Canli ortam | `.env.production` |
+| Ortam         | Amac             | Config            |
+| ------------- | ---------------- | ----------------- |
+| `development` | Lokal gelistirme | `.env.local`      |
+| `staging`     | Test ve QA       | `.env.staging`    |
+| `production`  | Canli ortam      | `.env.production` |
 
 Her ortam icin ayri `.env` dosyasi kullanilir. Ortam degiskenleri CI/CD pipeline'inda secret olarak tanimlanir.
 
@@ -357,6 +357,7 @@ eas update --branch production --message "Bug fix v1.2.1"
 ```
 
 **OTA Guncelleme Kurallari (ADR-015):**
+
 - `runtimeVersion` degisikligi OTA uyumluluguyla birlikte degerlendirilir
 - Native kod degisikligi → yeni binary build zorunlu
 - JavaScript-only degisiklik → OTA update mumkun
@@ -377,15 +378,15 @@ eas update --branch production --message "Bug fix v1.2.1"
 
 CI otomatik olarak su kontrolleri yapar:
 
-| Kontrol | Basarisizlik |
-|---------|-------------|
-| TypeScript type-check | Merge engellenir |
-| ESLint | Merge engellenir |
-| Unit/integration testler | Merge engellenir |
-| Build | Merge engellenir |
+| Kontrol                      | Basarisizlik     |
+| ---------------------------- | ---------------- |
+| TypeScript type-check        | Merge engellenir |
+| ESLint                       | Merge engellenir |
+| Unit/integration testler     | Merge engellenir |
+| Build                        | Merge engellenir |
 | Boundary check (import yonu) | Merge engellenir |
-| Security scan (secret leak) | Merge engellenir |
-| Doc reference integrity | Uyari |
+| Security scan (secret leak)  | Merge engellenir |
+| Doc reference integrity      | Uyari            |
 
 Ek olarak haftalik scheduled audit calisir: dependency guvenlik taramasi, lisans uyumlulugu, belge guncellik kontrolu, exception suresi kontrolu.
 
@@ -415,6 +416,7 @@ mkdir -p apps/web/src/features/my-feature/{components,hooks}
 ```
 
 Yeni component icin:
+
 - Semantic token kullan (hardcoded deger yasak)
 - Accessibility prop'lari ekle (`role`, `aria-label`, `accessibilityLabel`)
 - Storybook story yaz
@@ -529,6 +531,7 @@ Detay: `docs/onboarding/upstream-sync-rehberi.md`
 **Sorun:** Post-edit hook `#fff` gibi hex deger veya `16px` gibi spacing tespit etti.
 
 **Cozum:** Semantic token kullanin:
+
 ```tsx
 // Onceki
 style={{ color: '#333', padding: 16 }}
@@ -554,6 +557,7 @@ className="text-foreground-primary p-md"
 **Sorun:** Peer dependency uyarisi veya versiyon catismasi.
 
 **Cozum:**
+
 ```bash
 # Node versiyonunu kontrol et
 node --version  # 20.x olmali
@@ -571,6 +575,7 @@ pnpm install
 **Sorun:** Mobil build basarisiz.
 
 **Cozum:**
+
 ```bash
 # Expo doctor ile kontrol et
 npx expo-doctor
@@ -590,6 +595,7 @@ npx expo start --clear
 **Sorun:** `upstream-drift-check` job uyari veya hata veriyor.
 
 **Cozum:** Boilerplate'te yeni degisiklikler var. Sync yapin:
+
 ```bash
 ./tooling/sync/upstream-sync.sh <guncel-tag>
 ```
@@ -606,39 +612,39 @@ npx expo start --clear
 
 ### Hizli Baslangic
 
-| Dokuman | Aciklama |
-|---------|----------|
-| `docs/onboarding/ilk-30-dakika.md` | Ilk 30 dakikada calisir sistem gormek |
-| `docs/onboarding/rol-bazli-okuma-rehberi.md` | Rolunuze gore okuma sirasi |
-| `docs/onboarding/upstream-sync-rehberi.md` | Boilerplate guncellemelerini alma |
+| Dokuman                                      | Aciklama                              |
+| -------------------------------------------- | ------------------------------------- |
+| `docs/onboarding/ilk-30-dakika.md`           | Ilk 30 dakikada calisir sistem gormek |
+| `docs/onboarding/rol-bazli-okuma-rehberi.md` | Rolunuze gore okuma sirasi            |
+| `docs/onboarding/upstream-sync-rehberi.md`   | Boilerplate guncellemelerini alma     |
 
 ### Mimari ve Tasarim
 
-| Dokuman | Aciklama |
-|---------|----------|
-| `docs/architecture/06-application-architecture.md` | Katmanli mimari |
-| `docs/architecture/07-module-boundaries-and-code-organization.md` | Modul sinirlari |
-| `docs/design-system/04-design-system-architecture.md` | Design system mimarisi |
-| `docs/design-system/22-design-tokens-spec.md` | Token spec ve naming |
+| Dokuman                                                           | Aciklama               |
+| ----------------------------------------------------------------- | ---------------------- |
+| `docs/architecture/06-application-architecture.md`                | Katmanli mimari        |
+| `docs/architecture/07-module-boundaries-and-code-organization.md` | Modul sinirlari        |
+| `docs/design-system/04-design-system-architecture.md`             | Design system mimarisi |
+| `docs/design-system/22-design-tokens-spec.md`                     | Token spec ve naming   |
 
 ### Kalite ve Guvenlik
 
-| Dokuman | Aciklama |
-|---------|----------|
-| `docs/quality/12-accessibility-standard.md` | WCAG AA baseline |
-| `docs/quality/13-performance-standard.md` | Performans budgetlari |
-| `docs/quality/14-testing-strategy.md` | Test piramidi |
-| `docs/quality/27-security-and-secrets-baseline.md` | Guvenlik kurallari |
+| Dokuman                                            | Aciklama              |
+| -------------------------------------------------- | --------------------- |
+| `docs/quality/12-accessibility-standard.md`        | WCAG AA baseline      |
+| `docs/quality/13-performance-standard.md`          | Performans budgetlari |
+| `docs/quality/14-testing-strategy.md`              | Test piramidi         |
+| `docs/quality/27-security-and-secrets-baseline.md` | Guvenlik kurallari    |
 
 ### Governance
 
-| Dokuman | Aciklama |
-|---------|----------|
-| `docs/governance/36-canonical-stack-decision.md` | Kilitli teknoloji kararlari |
-| `docs/governance/37-dependency-policy.md` | Paket ekleme kurallari |
-| `docs/governance/45-boilerplate-project-boundary-contract.md` | Miras modeli |
-| `docs/governance/49-upstream-sync-strategy.md` | Upstream sync stratejisi |
-| `docs/checklists/32-definition-of-done.md` | Is tamamlama kriterleri |
+| Dokuman                                                       | Aciklama                    |
+| ------------------------------------------------------------- | --------------------------- |
+| `docs/governance/36-canonical-stack-decision.md`              | Kilitli teknoloji kararlari |
+| `docs/governance/37-dependency-policy.md`                     | Paket ekleme kurallari      |
+| `docs/governance/45-boilerplate-project-boundary-contract.md` | Miras modeli                |
+| `docs/governance/49-upstream-sync-strategy.md`                | Upstream sync stratejisi    |
+| `docs/checklists/32-definition-of-done.md`                    | Is tamamlama kriterleri     |
 
 ### Tam Dokuman Haritasi
 

@@ -1,0 +1,63 @@
+{
+  "system": {
+    "offline": {
+      "title": "Bağlantı Yok",
+      "description": "İnternet bağlantınızı kontrol edip tekrar deneyin.",
+      "action": "Yenile"
+    },
+    "maintenance": {
+      "title": "Bakım Modu",
+      "description": "Sistem bakım çalışması nedeniyle geçici olarak kullanılamaz."
+    },
+    "notFound": {
+      "title": "Sayfa Bulunamadı",
+      "description": "Aradığınız sayfa mevcut değil veya kaldırılmış olabilir."
+    },
+    "error": {
+      "title": "Beklenmeyen Bir Hata Oluştu",
+      "description": "Uygulama beklenmeyen bir durumla karşılaştı.",
+      "action": "Tekrar Dene"
+    },
+    "loading": {
+      "title": "Yükleniyor"
+    }
+  },
+  "sample": {
+    "list": {
+      "title": "Kayıtlar",
+      "addNew": "Yeni Ekle",
+      "loading": "Kayıtlar yükleniyor...",
+      "empty": {
+        "title": "Kayıt Bulunamadı",
+        "description": "Henüz kayıt eklenmemiş.",
+        "action": "Yeni Kayıt Ekle"
+      }
+    },
+    "detail": {
+      "back": "Geri",
+      "createdAt": "Oluşturulma Tarihi",
+      "status": "Durum",
+      "loading": "Kayıt yükleniyor...",
+      "notFound": "Kayıt bulunamadı",
+      "archivedStatus": "Arşivlenmiş"
+    },
+    "form": {
+      "title": "Yeni Kayıt Oluştur",
+      "fields": {
+        "title": "Başlık",
+        "description": "Açıklama",
+        "status": "Durum"
+      },
+      "placeholders": {
+        "title": "Kayıt başlığı",
+        "description": "Kayıt açıklaması"
+      },
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "statusOptions": {
+        "active": "Aktif",
+        "archived": "Arşiv"
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "Boilerplate",
+    "loading": "Yükleniyor...",
+    "retry": "Tekrar Dene",
+    "cancel": "İptal",
+    "confirm": "Onayla",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "İleri",
+    "yes": "Evet",
+    "no": "Hayır"
+  },
+  "status": {
+    "active": "Aktif",
+    "archived": "Arşiv",
+    "new": "Yeni"
+  },
+  "empty": {
+    "title": "Kayıt Bulunamadı",
+    "description": "Henüz kayıt eklenmemiş."
+  },
+  "error": {
+    "title": "Bir Hata Oluştu",
+    "generic": "Beklenmeyen bir durum oluştu.",
+    "network": "İnternet bağlantınızı kontrol edin."
+  },
+  "home": {
+    "title": "Boilerplate",
+    "description": "Uygulama başarıyla ayağa kalktı."
+  }
+}

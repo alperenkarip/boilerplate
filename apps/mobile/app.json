@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Boilerplate",
+    "slug": "boilerplate",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "boilerplate",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.project.boilerplate"
+    },
+    "android": {
+      "package": "com.project.boilerplate",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    }
+  }
+}

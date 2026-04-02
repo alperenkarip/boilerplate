@@ -1,0 +1,51 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+catalog:
+  # Core Runtime (ADR-001, ADR-002)
+
+  # Observability (ADR-009)
+  '@sentry/react': '^10.47.0'
+  '@sentry/react-native': '*'
+
+  # Data Fetching (ADR-005) — adopt/defer karari Faz E'de kesinlesir
+  '@tanstack/react-query': ^5.0.0
+
+  # i18n (ADR-011)
+  i18next: ^26.0.3
+  nativewind: ^5.0.0
+  playwright: ^1.58.0
+  react: ^19.2.4
+  react-dom: ^19.2.0
+
+  # Forms (ADR-006)
+  react-hook-form: ^7.72.0
+  react-i18next: ^17.0.2
+  react-native: ~0.83.0
+  react-native-gesture-handler: ^2.0.0
+
+  # Local Storage (ADR-019)
+  react-native-mmkv: ^3.3.3
+
+  # Animation (38-matrix)
+  react-native-reanimated: ^3.0.0
+
+  # Navigation (ADR-012)
+  react-router: ^7.0.0
+  react-router-dom: ^7.0.0
+
+  # Styling (ADR-007)
+  tailwindcss: ^4.2.2
+  typescript: ^5.9.3
+
+  # Build (ADR-001)
+  vite: ^8.0.0
+
+  # Testing (ADR-008)
+  vitest: ^4.1.2
+  zod: ^4.3.6
+
+  # State (ADR-004)
+  zustand: ^5.0.12
+minimumReleaseAge: 0

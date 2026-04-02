@@ -1,0 +1,10 @@
+{
+  "extends": "../../packages/config-typescript/tsconfig.mobile.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

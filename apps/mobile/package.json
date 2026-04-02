@@ -1,0 +1,37 @@
+{
+  "name": "@project/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/App.tsx",
+  "scripts": {
+    "dev": "expo start --dev-client",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "echo \"no tests yet\""
+  },
+  "dependencies": {
+    "@project/design-tokens": "workspace:*",
+    "@project/ui": "workspace:*",
+    "@react-navigation/native": "^7.2.2",
+    "@react-navigation/native-stack": "^7.14.10",
+    "@tanstack/react-query": "catalog:",
+    "expo": "~55.0.0",
+    "expo-local-authentication": "^55.0.11",
+    "expo-secure-store": "^55.0.11",
+    "expo-status-bar": "~2.2.0",
+    "react": "catalog:",
+    "react-native": "catalog:",
+    "react-native-mmkv": "catalog:",
+    "react-native-safe-area-context": "^5.7.0",
+    "react-native-screens": "^4.24.0",
+    "react-native-web": "^0.21.2",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react": "^19.2.14",
+    "jest": "^30.3.0",
+    "jest-expo": "^55.0.13",
+    "typescript": "catalog:"
+  }
+}

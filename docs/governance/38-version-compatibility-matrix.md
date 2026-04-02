@@ -87,9 +87,11 @@ Bu tez şu sonuçları doğurur:
 Bu doküman iki ayrı ama bağlı katman içerir:
 
 ## 4.1. Strategic version track
+
 Projede hangi **major/minor ailelerin** canonical kabul edildiğini tanımlar.
 
 Örnek:
+
 - React 19.2.x hattı
 - Expo SDK 55.x hattı
 - React Native 0.83.x hattı
@@ -97,11 +99,13 @@ Projede hangi **major/minor ailelerin** canonical kabul edildiğini tanımlar.
 - Tailwind 4.x hattı
 
 ## 4.2. Exact project pin
+
 Package.json ve lockfile içinde kullanılan kesin versiyonlardır.
 
 Örnek:
+
 - `react@19.2.4`
-- `vite@7.1.x`
+- `vite@8.1.x`
 - `@tanstack/react-query@5.95.x`
 
 Bu belge exact patch pin’i değil, **hangi exact pin’lerin meşru bant içinde olması gerektiğini** söyler.
@@ -162,11 +166,13 @@ Ama bu belge kabul edildiği sürece canonical compatibility hattıdır.
 ## 7.1. Kural
 
 Bu boilerplate’in default Node baseline’ı:
+
 - **20.19.x**
 
 ## 7.2. Neden?
 
 Çünkü çekirdek stack’in iki kritik ayağı bunu aynı anda karşılar:
+
 - Expo SDK 55 reference track
 - Vite 8 stable baseline track
 
@@ -174,10 +180,11 @@ Bu boilerplate’in default Node baseline’ı:
 
 Vite 8 Node 22.12+ hattını da destekler.  
 Ama canonical baseline olarak 20.19.x seçmek:
+
 - daha geniş ekosistem uyumu
 - Expo ile doğal hizalanma
 - daha kontrollü ekip standardı
-sağlar.
+  sağlar.
 
 ## 7.4. Kural
 
@@ -245,12 +252,13 @@ Daha eski major hatlara dönmek veya alternatif router eklemek baseline dışıd
 ## 10.2. Neden kritik?
 
 Tailwind major değişikliği ve NativeWind major değişikliği doğrudan:
+
 - token consumption
 - class support
 - theming flow
 - metro/babel/postcss integration
 - web/mobile parity
-alanlarını etkiler.
+  alanlarını etkiler.
 
 ## 10.3. Kural
 
@@ -310,12 +318,15 @@ Testing stack upgrade’i sadece test klasörünü etkilemez; CI, snapshots, moc
 # 13. Navigation Zinciri
 
 ## 13.1. Web
+
 - **React Router 7.x**
 
 ## 13.2. Mobile
+
 - **React Navigation 7.x stable baseline**
 
 ## 13.3. Watchlist
+
 - **React Navigation 8.x** şu aşamada izlenen ama canonical baseline’a alınmayan hattan sayılır
 
 ## 13.4. Neden 8.x değil?
@@ -338,11 +349,12 @@ React Navigation major yükseltmesi Expo / React / RN zinciri ve deep linking/st
 ## 14.2. Neden önemli?
 
 i18n runtime major değişiklikleri:
+
 - hook API’lerini
 - namespace behavior’ını
 - interpolation/formatting integration’ını
 - SSR/web behavior’ını
-etkileyebilir.
+  etkileyebilir.
 
 ## 14.3. Kural
 
@@ -366,10 +378,11 @@ Bu belge, TypeScript tarafında “en yeni npm sürümü” değil, **ekosistemc
 ## 15.3. Neden TS 6.x hemen baseline değil?
 
 TypeScript 6 npm’de görünse de, canonical baseline olarak erken almak:
+
 - ESLint tooling
 - React/RN template expectations
 - ecosystem plugin compatibility
-alanlarında ek doğrulama gerektirir.
+  alanlarında ek doğrulama gerektirir.
 
 ## 15.4. Kural
 
@@ -381,38 +394,39 @@ TS 6.x gibi major sıçramalar compatibility re-validation olmadan baseline’a 
 
 ## 16.1. Çekirdek Matrix
 
-| Alan | Canonical Track | Baseline Notu | Blocker/Uyarı |
-|---|---|---|---|
-| Node.js | 20.19.x | Repo ve CI default hattı | 20.19 altı baseline dışı |
-| pnpm | 10.x | Workspace standardı | 9.x ve altı yeni repo için tercih edilmez |
-| Turborepo | 2.x | Pipeline/orchestration hattı | Major değişim ADR etkisi yaratır |
-| TypeScript | 5.9.x | Stable baseline | 6.x upgrade re-validation ister |
-| React | 19.2.x | Web + Expo chain ile hizalı | Farklı minor hatlar kontrolsüz karıştırılmaz |
-| React DOM | 19.2.x | React ile aynı hatta | React minor ile mismatch yasak |
-| Vite | 8.x | Web build standardı | Node 20.19+/22.12+ ister |
-| React Router | 7.x | Web navigation baseline | 6.x geriye dönüş baseline dışı |
-| Expo SDK | 55.x | Mobile canonical shell | Expo major upgrade ayrı karar ister |
-| React Native | 0.83.x | Expo 55 ile bağlı | Expo’dan bağımsız sıçratılmaz |
-| React Native Web | 0.21.x | Expo track ile hizalı | Web parity etkisi düşünülmeli |
-| Tailwind CSS | 4.x | Web styling baseline | 3.x geri dönüş canonical dışı |
-| NativeWind | 5.x candidate track | Mobile styling için pre-release izleme hattı | GA olmadan bootstrap lock-in yasak; 4.x/5.x geçişi styling audit ister |
-| Zustand | 5.x | State management canonical | İkinci state library eklenmez |
-| TanStack Query | 5.x conditional track | Query/cache karmaşıklık eşiği aşılırsa canonical query layer | v4 hattı baseline dışı; her repo bootstrap'ında zorunlu değil |
-| React Hook Form | 7.x | Forms baseline | Alternative engine eklenmez |
-| Zod | 4.x | Schema baseline | v3 ile karışık kullanım yasak |
-| Vitest | 4.x | Web-side fast tests | Vite uyumu korunmalı |
-| Storybook | 10.x | Web component lab / docs / story-based browser testing | ESM-only; Vite builder ve Storybook Test/Vitest addon ile hizalanmalı |
-| Jest | 30.x | RN-side tests | Web-side default runner değildir |
-| Playwright | 1.58.x track | Web E2E baseline | CI/browser image uyumu korunmalı |
-| React Navigation | 7.x stable | Mobile navigation baseline | 8.x watchlist, baseline değil |
-| i18next | 26.x | i18n runtime baseline | Inline-string culture’ü çözmez |
-| react-i18next | 17.x | React binding baseline | i18next hattı ile birlikte düşünülmeli |
+| Alan             | Canonical Track       | Baseline Notu                                                | Blocker/Uyarı                                                          |
+| ---------------- | --------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Node.js          | 20.19.x               | Repo ve CI default hattı                                     | 20.19 altı baseline dışı                                               |
+| pnpm             | 10.x                  | Workspace standardı                                          | 9.x ve altı yeni repo için tercih edilmez                              |
+| Turborepo        | 2.x                   | Pipeline/orchestration hattı                                 | Major değişim ADR etkisi yaratır                                       |
+| TypeScript       | 5.9.x                 | Stable baseline                                              | 6.x upgrade re-validation ister                                        |
+| React            | 19.2.x                | Web + Expo chain ile hizalı                                  | Farklı minor hatlar kontrolsüz karıştırılmaz                           |
+| React DOM        | 19.2.x                | React ile aynı hatta                                         | React minor ile mismatch yasak                                         |
+| Vite             | 8.x                   | Web build standardı                                          | Node 20.19+/22.12+ ister                                               |
+| React Router     | 7.x                   | Web navigation baseline                                      | 6.x geriye dönüş baseline dışı                                         |
+| Expo SDK         | 55.x                  | Mobile canonical shell                                       | Expo major upgrade ayrı karar ister                                    |
+| React Native     | 0.83.x                | Expo 55 ile bağlı                                            | Expo’dan bağımsız sıçratılmaz                                          |
+| React Native Web | 0.21.x                | Expo track ile hizalı                                        | Web parity etkisi düşünülmeli                                          |
+| Tailwind CSS     | 4.x                   | Web styling baseline                                         | 3.x geri dönüş canonical dışı                                          |
+| NativeWind       | 5.x candidate track   | Mobile styling için pre-release izleme hattı                 | GA olmadan bootstrap lock-in yasak; 4.x/5.x geçişi styling audit ister |
+| Zustand          | 5.x                   | State management canonical                                   | İkinci state library eklenmez                                          |
+| TanStack Query   | 5.x conditional track | Query/cache karmaşıklık eşiği aşılırsa canonical query layer | v4 hattı baseline dışı; her repo bootstrap'ında zorunlu değil          |
+| React Hook Form  | 7.x                   | Forms baseline                                               | Alternative engine eklenmez                                            |
+| Zod              | 4.x                   | Schema baseline                                              | v3 ile karışık kullanım yasak                                          |
+| Vitest           | 4.x                   | Web-side fast tests                                          | Vite uyumu korunmalı                                                   |
+| Storybook        | 10.x                  | Web component lab / docs / story-based browser testing       | ESM-only; Vite builder ve Storybook Test/Vitest addon ile hizalanmalı  |
+| Jest             | 30.x                  | RN-side tests                                                | Web-side default runner değildir                                       |
+| Playwright       | 1.58.x track          | Web E2E baseline                                             | CI/browser image uyumu korunmalı                                       |
+| React Navigation | 7.x stable            | Mobile navigation baseline                                   | 8.x watchlist, baseline değil                                          |
+| i18next          | 26.x                  | i18n runtime baseline                                        | Inline-string culture’ü çözmez                                         |
+| react-i18next    | 17.x                  | React binding baseline                                       | i18next hattı ile birlikte düşünülmeli                                 |
 
 ### 16.1.1. React Native 0.84 Watch Notu
 
 React Native 0.84 Mart 2026'da yayımlanmıştır. Bu sürüm Hermes V1'i varsayılan engine olarak getirir, React 19.2 ile tam entegrasyon sağlar ve TurboModules performans iyileştirmeleri içerir. Ancak bu boilerplate'in canonical baseline'ı Expo SDK 55.x + React Native 0.83.x hattıdır. RN 0.84 hattı SDK 56 ile birlikte değerlendirilecek aday konumundadır.
 
 Bu sürümün getirdiği önemli değişiklikler:
+
 - Hermes V1 artık varsayılan ve tek desteklenen JS engine'dir (önceki sürümlerde bazı edge case'lerde JSC fallback mümkündü, 0.84'te bu imkan kaldırılmıştır)
 - React 19.2 entegrasyonu tamamlanmıştır (concurrent features, useTransition, useDeferredValue tam destekli)
 - TurboModules lazy-loading performansı iyileştirilmiştir
@@ -420,6 +434,7 @@ Bu sürümün getirdiği önemli değişiklikler:
 - setNativeProps ve findNodeHandle tamamen kaldırılmıştır
 
 Canonical track'e alınma koşulları:
+
 1. Expo SDK 56 veya sonrası bu RN hattını referans almalı
 2. Mevcut dependency zincirinde kırılma olmamalı
 3. Compatibility revalidation süreci tamamlanmalı
@@ -431,53 +446,54 @@ Aşağıdaki tablo, çekirdek omurganın üzerine eklenen yardımcı kütüphane
 
 ### Mobile Runtime Yardımcıları
 
-| Kütüphane | Canonical Track | Baseline Notu | Upgrade Politikası |
-|---|---|---|---|
-| react-native-reanimated | 3.x | Expo SDK 55 bundled | Strategic — Expo zinciri |
-| react-native-gesture-handler | 2.x | Expo SDK 55 bundled | Strategic — Expo zinciri |
-| react-native-safe-area-context | (Expo bundled) | Expo SDK 55 bundled | Strategic — Expo zinciri |
-| @gorhom/bottom-sheet | 5.x | Reanimated 3 + Gesture Handler 2 gerektirir | Strategic — reanimated zinciri |
-| react-native-keyboard-controller | (latest stable) | Reanimated 3 gerektirir | Patch — bağımsız |
-| react-native-svg | (Expo bundled) | Expo SDK 55 bundled | Strategic — Expo zinciri |
+| Kütüphane                        | Canonical Track | Baseline Notu                               | Upgrade Politikası             |
+| -------------------------------- | --------------- | ------------------------------------------- | ------------------------------ |
+| react-native-reanimated          | 3.x             | Expo SDK 55 bundled                         | Strategic — Expo zinciri       |
+| react-native-gesture-handler     | 2.x             | Expo SDK 55 bundled                         | Strategic — Expo zinciri       |
+| react-native-safe-area-context   | (Expo bundled)  | Expo SDK 55 bundled                         | Strategic — Expo zinciri       |
+| react-native-mmkv                | 3.x             | JSI tabanlı, ADR-019 canonical              | Strategic — ADR-019            |
+| @gorhom/bottom-sheet             | 5.x             | Reanimated 3 + Gesture Handler 2 gerektirir | Strategic — reanimated zinciri |
+| react-native-keyboard-controller | (latest stable) | Reanimated 3 gerektirir                     | Patch — bağımsız               |
+| react-native-svg                 | (Expo bundled)  | Expo SDK 55 bundled                         | Strategic — Expo zinciri       |
 
 ### Expo Modülleri
 
-| Kütüphane | Canonical Track | Baseline Notu | Upgrade Politikası |
-|---|---|---|---|
-| expo-haptics | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-local-authentication | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-secure-store | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-notifications | Expo SDK 55 bundled | Expo zinciri | Strategic |
-| expo-splash-screen | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-image | 2.x | Expo SDK 55 uyumlu | Strategic |
-| expo-font | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-clipboard | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-camera | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-location | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-image-picker | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-file-system | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-constants | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-linking | Expo SDK 55 bundled | Expo zinciri | Patch |
-| expo-updates | Expo SDK 55 bundled | Expo zinciri | Strategic |
-| expo-status-bar | Expo SDK 55 bundled | Expo zinciri | Patch |
+| Kütüphane                 | Canonical Track     | Baseline Notu      | Upgrade Politikası |
+| ------------------------- | ------------------- | ------------------ | ------------------ |
+| expo-haptics              | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-local-authentication | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-secure-store         | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-notifications        | Expo SDK 55 bundled | Expo zinciri       | Strategic          |
+| expo-splash-screen        | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-image                | 2.x                 | Expo SDK 55 uyumlu | Strategic          |
+| expo-font                 | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-clipboard            | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-camera               | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-location             | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-image-picker         | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-file-system          | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-constants            | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-linking              | Expo SDK 55 bundled | Expo zinciri       | Patch              |
+| expo-updates              | Expo SDK 55 bundled | Expo zinciri       | Strategic          |
+| expo-status-bar           | Expo SDK 55 bundled | Expo zinciri       | Patch              |
 
 ### Community Kütüphaneleri
 
-| Kütüphane | Canonical Track | Baseline Notu | Upgrade Politikası |
-|---|---|---|---|
-| @react-native-async-storage/async-storage | (latest stable) | RN 0.83 uyumlu | Patch |
-| @react-native-community/netinfo | (latest stable) | RN 0.83 uyumlu | Patch |
+| Kütüphane                                 | Canonical Track | Baseline Notu  | Upgrade Politikası |
+| ----------------------------------------- | --------------- | -------------- | ------------------ |
+| @react-native-async-storage/async-storage | (latest stable) | RN 0.83 uyumlu | Patch              |
+| @react-native-community/netinfo           | (latest stable) | RN 0.83 uyumlu | Patch              |
 
 ### Cross-Platform Kütüphaneleri
 
-| Kütüphane | Canonical Track | Baseline Notu | Upgrade Politikası |
-|---|---|---|---|
-| lucide-react / lucide-react-native | (latest stable) | Bağımsız | Patch |
-| date-fns | 4.x | Bağımsız | Patch |
-| react-error-boundary | 5.x | React 19 uyumlu | Patch |
-| sonner | 2.x | React 19 uyumlu, web-only | Patch |
-| clsx | (latest stable) | Bağımsız | Patch |
-| tailwind-merge | (latest stable) | Tailwind 4 uyumlu | Patch |
+| Kütüphane                          | Canonical Track | Baseline Notu             | Upgrade Politikası |
+| ---------------------------------- | --------------- | ------------------------- | ------------------ |
+| lucide-react / lucide-react-native | (latest stable) | Bağımsız                  | Patch              |
+| date-fns                           | 4.x             | Bağımsız                  | Patch              |
+| react-error-boundary               | 5.x             | React 19 uyumlu           | Patch              |
+| sonner                             | 2.x             | React 19 uyumlu, web-only | Patch              |
+| clsx                               | (latest stable) | Bağımsız                  | Patch              |
+| tailwind-merge                     | (latest stable) | Tailwind 4 uyumlu         | Patch              |
 
 ---
 
@@ -493,17 +509,19 @@ Aşağıdaki tablo, çekirdek omurganın üzerine eklenen yardımcı kütüphane
 ## 17.2. Sonuç
 
 Expo major yükseltmesi:
+
 - yalnızca `expo` paketini değiştirmek değildir
 - RN
 - React
 - Expo modules
 - native library compatibility
 - EAS/build matrix
-alanlarını birlikte etkiler
+  alanlarını birlikte etkiler
 
 ## 17.3. Kural
 
 Expo major/minor hattı değiştirildiğinde şu alanlar yeniden doğrulanmalıdır:
+
 - native dependencies
 - config plugins
 - new architecture readiness
@@ -522,21 +540,23 @@ Vite major değişikliği Vitest ve plugin ekosisteminden bağımsız değildir.
 ## 18.2. Neden?
 
 Vite:
+
 - dev server
 - build pipeline
 - plugin behavior
 - browser target
 - testing integration
-alanlarını etkiler.
+  alanlarını etkiler.
 
 ## 18.3. Sonuç
 
 Vite major upgrade yapılırsa:
+
 - Vitest minimum support line
 - Tailwind/Vite plugin uyumu
 - React plugin uyumu
 - CI Node version
-yeniden doğrulanmalıdır.
+  yeniden doğrulanmalıdır.
 
 ---
 
@@ -558,19 +578,22 @@ Styling stack major değişimleri visual system migration sayılır.
 ## 19.3. Sonuç
 
 Bu alandaki major değişiklikler:
+
 - visual regression
 - component audit
 - DS contract review
-gerektirir.
+  gerektirir.
 
 ---
 
 # 20. React Navigation Stable vs Watchlist Politikası
 
 ## 20.1. Stable baseline
+
 - React Navigation 7.x
 
 ## 20.2. Watchlist track
+
 - React Navigation 8.x
 
 ## 20.3. Neden iki ayrı kategori?
@@ -581,9 +604,10 @@ Bu, sürüm stratejisinde çok önemlidir.
 ## 20.4. Kural
 
 Watchlist teknolojisi:
+
 - denenebilir
 - ayrı spike olarak incelenebilir
-ama
+  ama
 - canonical baseline gibi davranılamaz
 
 ---
@@ -597,6 +621,7 @@ Exact patch/minor pin package manifest ve lockfile’da tutulur.
 ## 21.2. Bu dokümanın rolü
 
 Bu belge şunu der:
+
 - hangi major/minor hatlar meşru
 - hangi major/minor kombinasyonlar yasak
 - upgrade hangi sırayla olur
@@ -618,6 +643,7 @@ Bu görünmez yönetimdir ve reddedilir.
 ## 22.2. Canonical upgrade sırası mantığı
 
 ### Mobile çekirdek upgrade
+
 1. Node baseline kontrolü
 2. Expo SDK hattı
 3. React Native eşleşmesi
@@ -626,6 +652,7 @@ Bu görünmez yönetimdir ve reddedilir.
 6. test/build/observability doğrulaması
 
 ### Web çekirdek upgrade
+
 1. Node baseline kontrolü
 2. Vite hattı
 3. React / React DOM eşleşmesi
@@ -633,12 +660,14 @@ Bu görünmez yönetimdir ve reddedilir.
 5. test/build doğrulaması
 
 ### Styling upgrade
+
 1. Tailwind veya NativeWind hattı
 2. token pipeline
 3. component audit
 4. visual verification
 
 ### Form/data/state upgrade
+
 1. data/form/state core packages
 2. feature integration tests
 3. contract audit
@@ -691,12 +720,13 @@ Bunlar “yasak” değildir; ama canonical default değildir.
 ## 25.2. Neden?
 
 Çünkü sürüm artışı:
+
 - immediate runtime success verse bile
 - uzun tail bug’ları
 - CI flakiness
 - platform-specific regressions
 - DX bozulmaları
-üretebilir.
+  üretebilir.
 
 ## 25.3. Sonuç
 
@@ -804,20 +834,21 @@ Bu doküman yeterli kabul edilir eğer:
 
 Mart 2026 itibarıyla güncel uyumluluk bilgileri.
 
-| Bileşen | Versiyon | Notlar |
-|---------|---------|--------|
-| React Native | 0.79+ (SDK 55 ile gelen) | New Architecture varsayılan, bridge opsiyonel ama deprecated |
-| React | 19.1+ | Concurrent features aktif, use() hook mevcut |
-| Hermes | V1 | Bytecode precompilation, incremental GC, %15-20 startup iyileştirmesi |
-| Expo SDK | 55.x | New Architecture kapatılamaz, expo-dev-client canonical |
-| TypeScript | 5.8+ | Strict mode zorunlu, satisfies operatörü, const type parameters |
-| Metro | 0.82+ | Tree shaking desteği (beta), symlink desteği gelişmiş |
-| Gradle | 8.x | Android build, AGP 8.x ile uyumlu |
-| Xcode | 16+ | iOS build minimum, Swift 6 desteği |
-| Node.js | 22.x LTS | Runtime, ESM native desteği |
-| pnpm | 10.x | Package manager, workspace protocol, strict peer dependencies |
+| Bileşen      | Versiyon                 | Notlar                                                                |
+| ------------ | ------------------------ | --------------------------------------------------------------------- |
+| React Native | 0.79+ (SDK 55 ile gelen) | New Architecture varsayılan, bridge opsiyonel ama deprecated          |
+| React        | 19.1+                    | Concurrent features aktif, use() hook mevcut                          |
+| Hermes       | V1                       | Bytecode precompilation, incremental GC, %15-20 startup iyileştirmesi |
+| Expo SDK     | 55.x                     | New Architecture kapatılamaz, expo-dev-client canonical               |
+| TypeScript   | 5.8+                     | Strict mode zorunlu, satisfies operatörü, const type parameters       |
+| Metro        | 0.82+                    | Tree shaking desteği (beta), symlink desteği gelişmiş                 |
+| Gradle       | 8.x                      | Android build, AGP 8.x ile uyumlu                                     |
+| Xcode        | 16+                      | iOS build minimum, Swift 6 desteği                                    |
+| Node.js      | 22.x LTS                 | Runtime, ESM native desteği                                           |
+| pnpm         | 10.x                     | Package manager, workspace protocol, strict peer dependencies         |
 
 **Önemli notlar:**
+
 - RN 0.84 Mart 2026'da yayımlandı ve SDK 56 ile birlikte canonical track adayıdır. SDK 55 baseline'ında RN 0.79+ kullanılır.
 - Hermes V1, RN 0.84 ile varsayılan engine'dir. SDK 55'te Hermes güncel kararlı sürüm kullanılır.
 - New Architecture SDK 55'te varsayılan açıktır ve kapatılamaz. Tüm native modüller TurboModule/Fabric uyumlu olmalıdır.
