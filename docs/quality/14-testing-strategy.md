@@ -1134,7 +1134,124 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 37. Kısa Sonuç
+# 37. Snapshot Test Kullanım Sınırlaması
+
+Snapshot testlerin ne zaman kullanılıp ne zaman kaçınılacağı bu bölümde tanımlanır. Snapshot testler yanlış kullanıldığında bakım yükü oluşturur ve yanlış güven hissi verir.
+
+## 37.1. Kullanılacak Durumlar
+
+- **Static layout component'leri:** Header, Footer, EmptyState, ErrorBoundaryFallback gibi nadiren değişen component'lerin DOM/render yapısının beklenmedik değişimini yakalamak için.
+- **Konfigürasyon dosyaları:** Navigation route yapılandırması, theme token nesnesi gibi yapısal veri objelerinin değişmediğini doğrulamak için.
+- **Component render çıktısı doğrulama:** Yeni oluşturulan component'in ilk render çıktısını baseline olarak kaydetmek için (sonraki değişiklikleri yakalamak amacıyla).
+
+## 37.2. Kaçınılacak Durumlar
+
+- **Sık değişen component'ler:** Her sprint'te güncellenen component'ler için snapshot test, sürekli `--updateSnapshot` çalıştırma yorgunluğu yaratır. Davranış testi tercih edilmelidir.
+- **Data-driven component'ler:** Veriye göre farklı çıktı üreten component'ler (liste, tablo, grafik) için snapshot yerine assertion bazlı test yazılmalıdır.
+- **Büyük component ağaçları:** 100+ satırlık snapshot diff'leri okunmaz ve review edilemez. Bu durumda inline snapshot veya davranış testi tercih edilir.
+- **Styled component'ler:** Her style değişikliğinde snapshot break eder. Style testleri visual regression (Chromatic) ile yapılmalıdır.
+
+## 37.3. Snapshot Kuralları
+
+| Kural | Açıklama |
+|-------|---------|
+| Boyut limiti | Snapshot max 100 satır. Aşıyorsa inline snapshot + assertion tercih et |
+| Güncelleme politikası | Snapshot güncelleme commit'i ayrı olmalı (review kolaylığı; "snapshot update" commit mesajı) |
+| Review zorunluluğu | Snapshot değişikliği otomatik approve edilmez; reviewer diff'i incelemelidir |
+| Alternatif tercih | Component davranışını test et (render + query + assert), yapıyı değil |
+
+## 37.4. Inline Snapshot Örneği
+
+Büyük snapshot yerine kritik kısımları inline snapshot olarak test etmek daha sürdürülebilirdir:
+
+```typescript
+test('EmptyState doğru mesajı gösterir', () => {
+  const { getByText, getByRole } = render(
+    <EmptyState title="Veri bulunamadı" description="Filtrelerinizi değiştirin" />
+  );
+  expect(getByText('Veri bulunamadı')).toBeTruthy();
+  expect(getByRole('button', { name: /yeniden dene/i })).toBeTruthy();
+});
+```
+
+---
+
+# 38. Contract Testing Stratejisi
+
+Frontend-backend API uyumunu doğrulamak için contract testing yaklaşımı bu bölümde tanımlanır. API response formatının değişmesi durumunda hem frontend hem backend testleri erken uyarı verir.
+
+## 38.1. Yaklaşım
+
+- **Araçlar:** MSW (Mock Service Worker) + Zod schema bazlı contract validation.
+- **Prensip:** Frontend, API response'unun belirli bir şemaya uygun olduğunu varsayar. Bu şema Zod ile tanımlanır ve hem mock hem validasyon için kullanılır.
+
+## 38.2. Schema Kaynağı
+
+- Paylaşımlı schema paketi: `packages/schemas/` (ADR-006 ile uyumlu, Zod 4.x).
+- Her API endpoint'i için request ve response schema'ları tanımlanır.
+- Schema değişikliği hem frontend hem backend CI'da test fail'ine yol açar.
+
+```typescript
+// packages/schemas/src/user.ts
+import { z } from 'zod';
+
+export const UserResponseSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  displayName: z.string().min(1),
+  avatarUrl: z.string().url().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export type UserResponse = z.infer<typeof UserResponseSchema>;
+```
+
+## 38.3. Test Akışı
+
+1. **MSW handler tanımlama:** Test ortamında MSW, gerçek API response formatında mock sağlar.
+   ```typescript
+   // mocks/handlers/user.ts
+   import { http, HttpResponse } from 'msw';
+   import { UserResponseSchema } from '@boilerplate/schemas';
+
+   export const userHandlers = [
+     http.get('/api/user/:id', () => {
+       return HttpResponse.json({
+         id: '550e8400-e29b-41d4-a716-446655440000',
+         email: 'test@example.com',
+         displayName: 'Test User',
+         avatarUrl: null,
+         createdAt: '2026-04-02T10:00:00Z',
+       });
+     }),
+   ];
+   ```
+2. **Component/hook testi:** Mock response ile component doğru çalışıyor mu?
+3. **Contract assertion:** Response'un Zod schema'ya uyduğu ek assertion olarak eklenir.
+   ```typescript
+   test('user profil verisi schema uyumlu', async () => {
+     const response = await fetchUser('test-id');
+     const result = UserResponseSchema.safeParse(response);
+     expect(result.success).toBe(true);
+   });
+   ```
+4. **Schema değişikliği tespiti:** Schema güncellendiğinde, eski mock handler'lar ve consumer testleri fail eder → breaking change erken tespit edilir.
+
+## 38.4. CI Entegrasyonu
+
+- Contract testleri CI'da ayrı job olarak çalışır: `pnpm test:contracts`.
+- Schema değişikliği içeren PR'larda otomatik olarak ilgili consumer testleri de tetiklenir.
+- Fail eden contract test blocker olarak işaretlenir.
+
+## 38.5. Gelecek Yönelim
+
+- **Pact entegrasyonu:** Full provider-consumer contract testing aracına geçiş, derived project kararıdır.
+- **OpenAPI spec sync:** Backend OpenAPI spec'inden Zod schema otomatik üretimi değerlendirilebilir.
+- Boilerplate seviyesinde MSW + Zod yaklaşımı yeterlidir; daha kapsamlı araçlar ürün ölçeğine göre değerlendirilir.
+
+---
+
+# 39. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

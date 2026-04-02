@@ -1014,6 +1014,154 @@ Bir form tasarlanırken şu sorular sorulmalıdır:
 
 ---
 
+# 36.5. Multi-Step Form State Persistence
+
+## 36.5.1. Amac
+
+Uzun ve cok adimli formlarda kullanici, formun herhangi bir adiminda uygulamayi kapatabilir, arka plana alabilir veya beklenmedik bir kesinti yasayabilir. Bu durumda kullanicinin o ana kadar girdigi tum verilerin kaybolmasi kabul edilemez bir deneyimdir. Bu bolum, draft (taslak) kaydetme mekanizmasini, kullaniciya kaldigi adimdan devam imkani sunmayi ve hassas veriler icin privacy kurallarini tanimlar.
+
+## 36.5.2. Draft Kaydetme Mekanizmasi
+
+Her adim tamamlandiginda (kullanici "ileri" veya "sonraki" butonuna bastiginda), o adimin form degerleri MMKV'ye taslak olarak kaydedilir. Kaydetme islemi su bilgileri icerir:
+
+| Alan | Aciklama |
+|------|----------|
+| `formId` | Formun benzersiz tanimlayicisi (orn. `create-profile`, `onboarding-step`) |
+| `currentStep` | Kullanicinin son kaldigi adim numarasi |
+| `stepData` | Her adimin form degerleri (adim bazli ayrilmis) |
+| `savedAt` | Son kaydetme zamani (ISO 8601 timestamp) |
+| `userId` | Taslagi olusturan kullanicinin ID'si (yanlis kullaniciya taslak gostermeyi onlemek icin) |
+
+Kaydetme islemi her adim gecisinde otomatik olarak yapilir; kullanicinin "taslak kaydet" butonuna basmasina gerek yoktur. Bu, kullanicinin veri kaybetme riskini minimuma indirir.
+
+## 36.5.3. Taslak Geri Yukleme (Restore)
+
+Kullanici ayni formu tekrar actiginda, MMKV'den taslak verisi kontrol edilir. Taslak bulunursa kullaniciya su soru sorulur:
+
+> "Kaydedilmemis taslaginiz var. Kaldiginiz yerden devam etmek ister misiniz?"
+
+Kullanici "Devam Et" derse form son kaldigi adimdan ve son girilen degerlerle acilir. "Sifirdan Basla" derse taslak silinir ve form temiz baslar. Bu soru her durumda sorulmalidir; taslak sessizce yuklenip kullaniciyi sasirtmamalidir.
+
+## 36.5.4. Taslak TTL (Time-To-Live)
+
+Taslaklarin sinirsiz sure saklanmasi hem guvenlik hem de kullanici deneyimi acisindan sorunludur. Eski taslaklar guncelligini yitirir, form schema'si degismis olabilir ve hassas veriler gereksiz yere saklanmis olur. Bu nedenle taslak TTL'si **24 saat** olarak belirlenmistir.
+
+- 24 saatten eski taslaklar otomatik olarak silinir.
+- Silme islemi, form acilmaya calisildiginda veya uygulama baslatildiginda yapilir.
+- TTL suresi derived project tarafindan ihtiyaca gore ayarlanabilir (yapisal miras kapsaminda sikistirma mumkun ama gevseme mumkun degildir).
+
+## 36.5.5. Privacy: Hassas Veri Persist Etmeme
+
+Asagidaki form alanlari taslak olarak **ASLA persist edilmez**:
+
+| Alan Turu | Ornek | Gerekce |
+|-----------|-------|---------|
+| Sifre / PIN | `password`, `confirmPassword`, `pin` | Credential'larin yerel depoda acikcasi saklanmasi guvenlik ihlalidir |
+| Kredi karti bilgisi | `cardNumber`, `cvv`, `expiryDate` | PCI-DSS uyumluluğu gerektirir; client-side persist yasaklanmalidir |
+| Kimlik numarasi | `tcKimlikNo`, `socialSecurityNumber` | Kisisel veri koruma mevzuati (KVKK/GDPR) kapsaminda |
+| Biometric veri | Parmak izi sablonu, yuz verisi | Hassas biyometrik veri hicbir koşulda client-side saklanmaz |
+
+Bu alanlar form'da yer alsa bile, taslak kaydedilirken otomatik olarak filtrelenir ve persist edilen veriden cikarilir. Kullanici formu geri yukleyediginde bu alanlari tekrar doldurur.
+
+## 36.5.6. Form Abandon Tracking
+
+Kullanici formu tamamlamadan terk ettiginde (geri butonuna basma, farkli ekrana gitme, uygulamayi kapatma) `form_abandon` analytics event'i gonderilir. Bu event'in payload'unda su bilgiler bulunur:
+
+- `formId`: Hangi form terk edildi
+- `abandonedAtStep`: Hangi adimda terk edildi
+- `totalSteps`: Formun toplam adim sayisi
+- `timeSpent`: Formda gecirilen toplam sure (saniye)
+- `fieldsFilled`: Doldurulmus alan sayisi / toplam alan sayisi
+
+Bu veriler, hangi formlarin hangi adimlarinda kullanicilarin terk ettigini analiz etmek ve form UX'ini iyilestirmek icin kullanilir.
+
+---
+
+# 36.6. Server-Side Validation Error Mapping
+
+## 36.6.1. Amac
+
+Client-side validation (Zod schema ile) kullanici girisinin buyuk bolumunu yakalasa da, bazi dogrulama islemleri yalnizca sunucu tarafinda yapilabilir (orn. email benzersizligi, kullanici adi mevcut mu, kupon kodu gecerli mi). Backend'den donen bu hatalarin form field'larina dogru bir sekilde eslestirilmesi ve kullaniciya anlasilir bicimde gosterilmesi gerekir.
+
+## 36.6.2. Standart Error Response Formati
+
+Backend'den donen validation hatalari icin standart response formati asagidaki gibidir:
+
+```typescript
+// Standart backend validation error response
+interface ValidationErrorResponse {
+  errors: Array<{
+    field: string      // Hatanin ait oldugu form alani (orn. "email", "username")
+    code: string       // Makine-okunabilir hata kodu (orn. "ALREADY_EXISTS", "INVALID_FORMAT")
+    message: string    // Insan-okunabilir varsayilan hata mesaji (fallback olarak kullanilir)
+  }>
+}
+```
+
+Bu format, `10-data-fetching-cache-sync.md` Bolum 5.5'teki API Contract standardiyla uyumludur.
+
+## 36.6.3. Field Bazli Hata Eslemesi
+
+Backend'den donen her hata, React Hook Form'un `setError` fonksiyonu ile ilgili field'a eslenir:
+
+```typescript
+// Ornek error mapping
+const handleServerErrors = (errors: ValidationErrorResponse['errors']) => {
+  errors.forEach(error => {
+    if (error.field) {
+      // Field-bazli hata: ilgili alana set edilir
+      form.setError(error.field as keyof FormValues, {
+        type: 'server',
+        message: t(`validation.${error.code}`, { defaultValue: error.message }),
+      })
+    }
+  })
+
+  // Field'a eslenemeyen hatalar: form-level banner olarak gosterilir
+  const globalErrors = errors.filter(e => !e.field)
+  if (globalErrors.length > 0) {
+    setFormLevelError(globalErrors[0].message)
+  }
+}
+```
+
+## 36.6.4. Hata Kodu → i18n Key Mapping
+
+Backend'den gelen `code` alanı, i18n anahtarına dönüştürülerek yerelleştirilmiş hata mesajı gösterilir:
+
+| Backend Code | i18n Key | Turkce Mesaj | Ingilizce Mesaj |
+|-------------|----------|-------------|----------------|
+| `ALREADY_EXISTS` | `validation.already_exists` | "Bu deger zaten kullanimda" | "This value is already in use" |
+| `INVALID_FORMAT` | `validation.invalid_format` | "Gecersiz format" | "Invalid format" |
+| `TOO_SHORT` | `validation.too_short` | "Cok kisa" | "Too short" |
+| `TOO_LONG` | `validation.too_long` | "Cok uzun" | "Too long" |
+| `NOT_FOUND` | `validation.not_found` | "Bulunamadi" | "Not found" |
+| `EXPIRED` | `validation.expired` | "Suresi dolmus" | "Expired" |
+| `RATE_LIMITED` | `validation.rate_limited` | "Cok fazla deneme. Lutfen bekleyin." | "Too many attempts. Please wait." |
+
+i18n anahtarı bulunamazsa, backend'den gelen `message` alanı fallback olarak kullanılır.
+
+## 36.6.5. Global Error (Field'a Eslenemeyen Hatalar)
+
+Bazi backend hatalari belirli bir field'a ait degildir (orn. "Sunucu hatasi", "Yetkilendirme basarisiz", "Rate limit asildi"). Bu hatalar form'un ust kisminda bir banner/alert olarak gosterilir:
+
+- Banner, form container'in hemen ustunde, submit butonundan once gorulur.
+- Banner rengi error semantik token'i (`surface-error`) ile belirlenir.
+- Banner, dismiss edilebilir (kapatma butonu) veya otomatik kapanir (10 saniye sonra).
+- Banner icerigi i18n ile yerellestirilmis olmalidir.
+
+## 36.6.6. Debounced Async Validation
+
+Bazi alanlar (username, email) sunucu tarafinda benzersizlik kontrolu gerektirir. Bu kontrol, kullanici her karakter girdiginde degil, belirli bir gecikme (debounce) sonrasinda yapilmalidir:
+
+- **Debounce suresi:** 500ms (kullanici yazmayı durdurduktan 500ms sonra kontrol istegi gonderilir)
+- **Minimum karakter:** Async validation, alan minimum uzunluga ulasmadan tetiklenmez (orn. username icin minimum 3 karakter)
+- **Loading gostergesi:** Async validation sureken field'da kucuk bir loading indicator (spinner) gosterilir
+- **Basari gostergesi:** Deger benzersizse kucuk bir checkmark gosterilir
+- **Rate limiting:** Ardisik validation isteklerinde throttle uygulanir. Ayni alan icin saniyede en fazla 2 istek gonderilir. Rate limit asilirsa istek kuyruğa alinir.
+
+---
+
 # 37. Sonraki Dokümanlara Etkisi
 
 ## 37.1. Accessibility standard

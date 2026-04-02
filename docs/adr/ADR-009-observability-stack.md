@@ -944,7 +944,95 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 40. Kısa Sonuç
+# 40. Vendor-Agnostic Analytics Event Şeması
+
+Analytics abstraction’ın standart event kataloğu. Bu şema vendor’dan bağımsız olarak event semantiğini, payload yapısını ve isimlendirme kurallarını tanımlar.
+
+## 40.1. Canonical Event Kataloğu
+
+| Event Adı | Tetikleyici | Zorunlu Payload | Opsiyonel Payload |
+|-----------|------------|-----------------|-------------------|
+| `screen_view` | Ekran açılışı | `screen_name` | `previous_screen`, `duration_ms`, `navigation_type` |
+| `button_click` | Buton tıklama | `button_id`, `screen_name` | `context`, `position` |
+| `form_submit` | Form gönderimi | `form_name`, `success` | `field_count`, `duration_ms` |
+| `form_error` | Form validasyon hatası | `form_name`, `field_name`, `error_code` | `error_message` (sanitized) |
+| `search` | Arama yapma | `query_length`, `result_count` | `duration_ms`, `filters_applied` |
+| `item_view` | Liste öğesi görüntüleme | `item_id`, `item_type` | `position`, `list_name` |
+| `error` | Uygulama hatası | `error_code`, `screen_name` | `error_message` (sanitized), `severity` |
+| `app_open` | Uygulama açılışı | `source` | `is_cold_start`, `startup_time_ms`, `app_version` |
+| `auth_action` | Giriş/çıkış işlemi | `action` (login/logout/signup) | `method` (email/social/biometric), `success` |
+| `permission_response` | İzin yanıtı | `permission_type`, `granted` | `is_first_request` |
+| `purchase_action` | Satın alma aksiyonu | `product_id`, `action` (start/complete/cancel) | `price`, `currency` |
+
+## 40.2. Event İsimlendirme Kuralları
+
+- **Format:** snake_case (ör. `screen_view`, `form_submit`, `button_click`)
+- **Namespace yok:** Vendor-agnostic olduğu için vendor prefix kullanılmaz
+- **Maksimum uzunluk:** 40 karakter
+- **Anlam netliği:** Event adı tek başına ne olduğunu anlatmalı (ör. `search` doğru, `s` yanlış)
+- **Tutarlılık:** Aynı semantik farklı feature’larda aynı event adı ile raporlanır (ör. form submit her yerde `form_submit`)
+
+## 40.3. Payload Kuralları
+
+- **PII yasağı:** Payload’da kişisel veri (isim, email, telefon) bulunmaz
+- **Raw input yasağı:** Kullanıcı girdisi (arama terimi tam metin, form değerleri) payload’a konmaz; yalnızca `query_length`, `field_count` gibi aggregate değerler gönderilir
+- **Sanitized error:** Hata mesajları PII ve token içermeyecek şekilde sanitize edilir
+- **Minimal payload:** Her event yalnızca karar aldıracak bilgiyi taşır; "belki lazım olur" ile fazla alan eklenmez
+
+---
+
+# 41. Source Map Yönetimi
+
+Production source map’lerin güvenli yönetimi, debug kabiliyetini korurken güvenlik riskini minimize eder.
+
+## 41.1. Source Map Build Stratejisi
+
+- Source map’ler production bundle’a **dahil edilmez**
+- Vite konfigürasyonu: `build.sourcemap = ‘hidden’` — source map dosyaları üretilir ama bundle’dan referans kaldırılır
+- Son kullanıcı browser DevTools’ta orijinal kaynak kodu göremez; ancak Sentry source map’leri kullanarak orijinal stack trace gösterir
+
+## 41.2. Sentry’ye Upload
+
+CI pipeline’ında build adımından sonra source map’ler Sentry’ye otomatik yüklenir:
+
+```bash
+# CI build adımı sonrası
+npx sentry-cli sourcemaps upload \
+  --org <org-slug> \
+  --project <project-slug> \
+  --release <version>-<build-number> \
+  ./dist/assets/
+```
+
+- Upload tamamlandıktan sonra local source map dosyaları silinir (deploy artifact’ine dahil edilmez)
+- Upload token CI secret olarak saklanır, repo’ya yazılmaz
+
+## 41.3. Release Eşleme
+
+Sentry release = app version + build number formatında oluşturulur:
+
+- Web: `web@1.2.3+456` (version + CI build number)
+- Mobile: `mobile@1.2.3+789` (version + EAS build number)
+- Bu eşleme sayesinde Sentry’de bir crash görüldüğünde hangi release’de olduğu ve orijinal TypeScript satır numarası görünür
+
+## 41.4. Temizlik
+
+- Eski release’lerin source map’leri **90 gün** sonra Sentry’den otomatik silinir (Sentry retention policy)
+- Aktif olmayan release’ler (tüm kullanıcılar yeni sürüme geçmiş) source map’leri erken temizlenebilir
+- CI’da source map upload sonrası local dosyalar hemen silinir
+
+## 41.5. Debug Akışı
+
+Production’da bir crash raporu geldiğinde:
+1. Sentry crash’i yakalar ve minified stack trace üretir
+2. Release bilgisi ile eşleşen source map Sentry’den çekilir
+3. Stack trace orijinal TypeScript dosya adı ve satır numarasına çevrilir
+4. Breadcrumbs ile crash öncesi kullanıcı aksiyonları görünür
+5. Geliştirici orijinal kod üzerinden debug yapabilir
+
+---
+
+# 42. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

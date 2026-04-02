@@ -305,3 +305,101 @@ Bu ADR yeterli kabul edilir eğer:
 8. Alternatifler ve ret gerekçeleri dürüstçe yazılmışsa
 9. Riskler ve risk azaltma önlemleri somutsa
 10. Bu karar, implementation ekibine push notification altyapısını kuracak netlikte baseline sağlıyorsa
+
+---
+
+# 14. Notification Grouping / Threading
+
+Bildirim kategorilendirme ve gruplama stratejisi, kullanıcının bildirim merkezinde düzen ve kontrol sahibi olmasını sağlar.
+
+## 14.1. iOS Notification Groups (Thread Identifier)
+
+iOS'ta `threadIdentifier` ile aynı konudaki bildirimler gruplanır:
+- Aynı sohbetten gelen mesajlar tek grup altında görünür
+- Kullanıcı grubu genişleterek tüm bildirimleri görebilir
+- Grup 4+ bildirim içerdiğinde otomatik özet (summary) gösterilir
+- Summary format: "%u yeni mesaj" şeklinde özelleştirilebilir
+
+## 14.2. Android Notification Channels
+
+Android 8.0+ ile her bildirim bir kanala ait olmalıdır. Kullanıcı kanal bazında bildirim ayarlarını kontrol edebilir:
+
+| Kanal ID | Kanal Adı | Öncelik | Ses | Titreşim | Badge | Açıklama |
+|----------|-----------|---------|-----|----------|-------|----------|
+| `messages` | Mesajlar | HIGH | Varsayılan zil | Evet | Evet | Doğrudan mesajlar ve sohbet bildirimleri |
+| `updates` | Güncellemeler | DEFAULT | Yok | Hayır | Evet | Uygulama güncellemeleri, sistem bildirimleri |
+| `promotions` | Promosyonlar | LOW | Yok | Hayır | Hayır | Kampanya, indirim ve pazarlama bildirimleri |
+| `social` | Sosyal | DEFAULT | Kısa ton | Evet | Evet | Takip, beğeni, yorum bildirimleri |
+| `reminders` | Hatırlatıcılar | HIGH | Alarm tonu | Evet | Evet | Zamanlı hatırlatma bildirimleri |
+
+## 14.3. Kanal Konfigürasyonu
+
+```typescript
+// expo-notifications ile kanal oluşturma
+await Notifications.setNotificationChannelAsync('messages', {
+  name: 'Mesajlar',
+  importance: Notifications.AndroidImportance.HIGH,
+  vibrationPattern: [0, 250, 250, 250],
+  lightColor: '#2196F3',
+  sound: 'default',
+});
+```
+
+Kanallar uygulama ilk açılışında oluşturulur. Kanal bir kez oluşturulduktan sonra programatik olarak ayarları değiştirilemez (Android kısıtlaması); yalnızca kullanıcı cihaz ayarlarından değiştirebilir.
+
+## 14.4. Kullanıcı Tercihleri
+
+- Settings ekranında her kanal ayrı ayrı açılıp kapatılabilir
+- Tercih değişiklikleri backend'e sync edilir (push gönderimi sırasında filtre uygulanır)
+- iOS'ta kanal kavramı yoktur; bunun yerine bildirim kategorileri ve kullanıcı tercihleri app içi yönetilir
+
+## 14.5. Summary Notification
+
+Grup 4+ bildirim içerdiğinde platforma göre özet gösterilir:
+- **iOS:** Notification summary otomatik (threadIdentifier bazlı)
+- **Android:** InboxStyle veya BigTextStyle ile genişletilebilir özet
+
+---
+
+# 15. Rich Notification Pattern Kataloğu
+
+Zengin bildirim varyantları ve platform desteği.
+
+## 15.1. Görsel Bildirim (Image Attachment)
+
+Büyük resim attachment ile görsel bildirim:
+- **iOS:** UNNotificationAttachment ile resim, GIF veya video eklenir. Bildirim genişletildiğinde büyük resim gösterilir.
+- **Android:** BigPictureStyle ile büyük resim gösterilir
+- **expo-notifications:** `content.attachments` API'si ile platform-agnostic resim eklenir
+- **Kullanım alanı:** E-ticaret ürün görseli, sosyal medya paylaşım önizlemesi, haber görseli
+
+## 15.2. Inline Reply
+
+Mesajlaşma bildirimlerinde direkt yanıt:
+- **iOS:** `UNTextInputNotificationAction` ile bildirimden ayrılmadan yanıt yazılır
+- **Android:** `RemoteInput` ile inline yanıt desteği
+- **expo-notifications:** Notification actions ile `textInput` aksiyonu tanımlanır
+- **Kullanım alanı:** Chat uygulamaları, yorum yanıtları, hızlı mesaj
+- **Dikkat:** Inline reply yanıtı app'e `NotificationResponse` event olarak iletilir; bu event'in handle edilmesi ve backend'e gönderilmesi gerekir
+
+## 15.3. Action Butonları
+
+"Kabul Et / Reddet" gibi custom action butonları:
+- **iOS:** `UNNotificationAction` ile 2-4 action buton tanımlanır
+- **Android:** `Action` ile bildirimde butonlar gösterilir
+- **expo-notifications:** Notification categories ile action'lar önceden tanımlanır
+- **Kullanım alanı:** Arkadaşlık isteği (Kabul/Reddet), sipariş onayı (Onayla/İptal), toplantı daveti (Katıl/Reddet)
+
+## 15.4. Progress Notification (Android Only)
+
+İndirme/yükleme ilerlemesi gösteren bildirim:
+- **Android:** `setProgress(max, progress, indeterminate)` ile progress bar gösterilir
+- **iOS:** Doğrudan progress notification desteği yoktur; alternatif olarak dinamik bildirim güncelleme kullanılır
+- **Kullanım alanı:** Dosya indirme, medya yükleme, büyük veri senkronizasyonu
+
+## 15.5. Expandable Text (Big Text)
+
+Uzun bildirim metninin genişletilebilir gösterimi:
+- **iOS:** Otomatik — bildirim genişletildiğinde tam metin gösterilir
+- **Android:** `BigTextStyle` ile uzun metin genişletilebilir şekilde gösterilir
+- **Kullanım alanı:** Haber özeti, uzun mesaj, email önizlemesi

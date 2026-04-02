@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: önerilir
   stitch: —
   codex: önerilir
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-NOTIFICATION: Push Notification Geliştirme Guardrail
@@ -33,6 +33,18 @@ son-güncelleme: 2026-04-01
 7. Analytics event'leri ekle — received, opened, dismissed event'leri tanımla
 8. Test: notification mock ile test edilmeli — gerçek push gönderilmemeli
 
+## Notification A/B Test
+9. **Test değişkenleri:** Başlık, gövde metni, gönderim zamanı, rich media (resim/video) varlığı
+10. **Ölçüm metrikleri:**
+    - Open rate (bildirim açılma oranı)
+    - CTR (Click-Through Rate)
+    - Conversion (hedef aksiyona dönüşüm)
+    - Opt-out rate (bildirim kapatma oranı)
+11. **Split:** %50/%50 veya %10/%90 (küçük örnekle pilot)
+12. **Minimum süre:** 1 hafta — istatistiksel anlamlılık için yeterli veri toplanmalı
+13. **Araç:** RevenueCat experiments veya Firebase A/B Testing
+14. **Sonuç:** Winner variant production'a promote edilir, kaybeden kaldırılır
+
 ## DoD Ek Maddeleri
 - [ ] ADR-013 uyumu sağlanmış
 - [ ] Permission UX akışı var (pre-permission screen)
@@ -40,6 +52,7 @@ son-güncelleme: 2026-04-01
 - [ ] Notification → deep link routing çalışıyor
 - [ ] PII notification payload'da yok
 - [ ] Analytics event'leri tanımlı (received, opened, dismissed)
+- [ ] Notification A/B test metrikleri tanımlanmış (varsa)
 - [ ] Test ortamında mock kullanılıyor
 - [ ] D-SEC kontrol listesi geçmiş
 - [ ] D-PRI kontrol listesi geçmiş

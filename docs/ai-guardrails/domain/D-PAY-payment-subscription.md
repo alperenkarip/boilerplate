@@ -4,7 +4,7 @@ type: domain
 name: Payment/Subscription Yönetimi
 kaynak-dokümanlar: ADR-016, 27
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-PAY: Payment/Subscription Guardrail
@@ -71,6 +71,73 @@ son-güncelleme: 2026-04-01
 - Tek taraflı entitlement → server-side kontrol ekle
 - Store guideline ihlali → guideline'a uyacak şekilde düzelt
 - PII ödeme loglarında → maskeleme/filtreleme ekle
+
+---
+
+## Free Trial → Paid Conversion UX
+
+Ücretsiz deneme sürecinden ücretli aboneliğe geçiş akışı:
+
+### Akış Zaman Çizelgesi
+```
+Trial başlangıç → %50 noktası (soft reminder) → 3 gün kala (push notification)
+→ 1 gün kala (ödeme ekranı yönlendirme) → Trial bitti (plan seçim ekranı)
+```
+
+### Aşama Detayları
+
+| Aşama | Zamanlama | Eylem |
+|-------|-----------|-------|
+| Başlangıç | Trial ilk gün | Premium özellikleri keşfet CTA, trial süre göstergesi |
+| Soft reminder | Trial %50 noktası | In-app banner: "Trial sürenizin yarısı doldu" |
+| Push hatırlatma | 3 gün kala | Push notification: "Premium denemeniz yakında bitiyor" |
+| Ödeme yönlendirme | 1 gün kala | Ödeme ekranı göster, indirim teklifi (opsiyonel) |
+| Trial sonu | Süre bitimi | Plan seçim ekranı, free tier'a düşür |
+
+### Paywall Seçenekleri
+- **Hard paywall:** Trial bitince premium özellikler tamamen kilitlenir → plan seçimi zorunlu
+- **Soft paywall:** Bazı özellikler kısıtlı erişilebilir → yükseltme teşviki
+- [YAPILMALI] Paywall türünü feature önemine göre belirle — çekirdek değer hard, ek özellik soft
+
+### Tracking Event'leri
+- [ZORUNLU] Şu event'leri tanımla: `trial_started`, `trial_midpoint_reminder_shown`, `trial_expiry_reminder_sent`, `trial_expired`, `subscription_started`, `subscription_plan_selected`
+- [YAPILMALI] Conversion funnel'ı analiz et: Hangi aşamada kullanıcı kaybediliyor?
+
+### Kurallar
+- [YAPILMAMALI] Trial süresini kullanıcıdan gizleme — kalan süre her zaman görünür olmalı
+- [YAPILMAMALI] Trial bitmeden ödeme almaya çalışma
+- [YAPILMAMALI] Trial bitince uyarısız premium özellikleri kaldırma — geçiş bilgilendirmesi zorunlu
+
+---
+
+## Restore Purchases Akışı
+
+Kullanıcının mevcut satın alımlarını geri yüklemesi için zorunlu akış:
+
+### Erişim
+- [ZORUNLU] Settings/Ayarlar ekranında "Satın Alımları Geri Yükle" butonu her zaman görünür olmalı
+- [ZORUNLU] Paywall ekranında da "Satın alımları geri yükle" bağlantısı bulunmalı (Apple guideline zorunluluğu)
+- [YAPILMALI] İlk açılışta (yeni cihaz/yeniden kurulum) otomatik restore dene — kullanıcıyı bekletme
+
+### Implementasyon
+```
+RevenueCat.restorePurchases()
+  → Başarılı: entitlement güncelle, "Satın alımlarınız geri yüklendi" mesajı
+  → Bulunamadı: "Aktif satın alım bulunamadı" mesajı + destek yönlendirme
+  → Hata: "İşlem başarısız, lütfen tekrar deneyin" + retry butonu
+```
+
+### Kurallar
+1. [ZORUNLU] Restore sırasında loading indicator göster
+2. [ZORUNLU] Sonuç mesajı her zaman gösterilmeli — sessiz başarısızlık yasak
+3. [ZORUNLU] Receipt doğrulaması RevenueCat server tarafında yapılmalı — client-side doğrulama yasak
+4. [YAPILMALI] Restore sonrası entitlement state'ini hemen güncelle (UI refresh)
+5. [YAPILMAMALI] Restore butonunu gizleme veya zor erişilebilir yere koyma — Apple review red sebebi
+
+### Platform Notları
+- Apple: App Store receipt doğrulaması RevenueCat otomatik yapar
+- Google: Google Play billing library üzerinden doğrulama RevenueCat otomatik yapar
+- Cross-platform: Bir platformda satın alınan, diğerinde de geçerli olabilir (RevenueCat entitlement sync)
 
 ## Kaynak
 - Payment kararı → docs/adr/ADR-016-in-app-purchase-and-subscription.md

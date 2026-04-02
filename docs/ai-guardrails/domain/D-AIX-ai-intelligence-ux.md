@@ -177,6 +177,11 @@ son-güncelleme: 2026-04-01
 - [ ] AI hata durumunda fallback var mı?
 - [ ] Güven düzeyi iletişimi yapılıyor mu?
 - [ ] AI animasyonları reduced motion'a uyuyor mu?
+- [ ] On-device model boyutu bütçe içinde mi?
+- [ ] Inference ana thread'i blokluyor mu?
+- [ ] Model dosyası repo'da mı yoksa CDN'de mi?
+- [ ] Cihaz kapasitesi kontrolü var mı?
+- [ ] Model versiyonlama stratejisi tanımlı mı?
 
 ## İhlal Durumunda
 - Şeffaflık ihlali (etiketleme yok) → hemen düzelt (blocker)
@@ -185,6 +190,95 @@ son-güncelleme: 2026-04-01
 - Graceful fallback eksikliği → düzelt (major)
 - Erişilebilirlik eksikliği → düzelt (major)
 - Güven düzeyi iletişimi eksikliği → düzelt veya gerekçelendir
+
+---
+
+## 7. On-Device AI/ML Geliştirme Rehberi
+
+On-device AI, yapay zeka modellerinin sunucuya gönderilmeden doğrudan kullanıcının cihazında (telefon, tablet) çalıştırılması anlamına gelir. Bu yaklaşım gizlilik, gecikme (latency) ve çevrimdışı çalışabilirlik açısından sunucu tabanlı AI'a göre belirgin avantajlar sunar.
+
+### 7.1. Neden On-Device AI?
+
+1. **Gizlilik:** Kullanıcı verisi cihazdan çıkmaz. GDPR/KVKK uyumu açısından sunucu tarafı veri işleme riskini ortadan kaldırır.
+2. **Düşük gecikme:** Ağ round-trip süresi (genellikle 100-500ms) elimine edilir. Cihaz üzerinde inference genellikle 10-50ms arasında tamamlanır.
+3. **Çevrimdışı çalışma:** İnternet bağlantısı olmadan da AI özelliği kullanılabilir.
+4. **Maliyet:** Sunucu tarafı GPU/TPU maliyeti yoktur. Ölçeklendirme kullanıcı cihazlarına dağılır.
+5. **Apple HIG uyumu:** Apple, on-device ML'i açıkça tercih eder (Core ML, Create ML, Apple Intelligence).
+
+### 7.2. React Native'de On-Device AI Araçları
+
+#### 7.2.1. TensorFlow Lite (TFLite)
+- **Ne yapar:** Eğitilmiş TensorFlow modellerini mobil cihazlarda çalıştırır
+- **React Native entegrasyonu:** `react-native-tflite` veya `expo-tflite` kütüphanesi
+- **Desteklediği görevler:** Görüntü sınıflandırma, nesne algılama, metin sınıflandırma, poz tahmini
+- **Model boyutu:** Tipik olarak 1-50MB arası (quantized modeller daha küçük)
+- **New Architecture uyumu:** JSI tabanlı native modül ile uyumlu
+- **Performans:** GPU delegate ile donanım hızlandırma (iOS Metal, Android GPU)
+
+#### 7.2.2. PyTorch Mobile (ExecuTorch)
+- **Ne yapar:** PyTorch modellerini mobil cihazlarda çalıştırır
+- **React Native entegrasyonu:** `react-native-executorch` kütüphanesi
+- **Avantaj:** PyTorch ekosistemiyle doğal uyum — Python'da eğitilen model doğrudan mobile deploy edilebilir
+- **New Architecture uyumu:** TurboModule tabanlı
+
+#### 7.2.3. MLC LLM (Machine Learning Compilation)
+- **Ne yapar:** Büyük dil modellerini (LLM) doğrudan cihazda çalıştırır
+- **Desteklediği modeller:** Llama 2/3, Mistral, Phi, Gemma gibi açık kaynak LLM'ler
+- **React Native entegrasyonu:** `react-native-mlc-llm` (deneysel)
+- **Gereksinim:** Minimum 4GB RAM, tercihen 6-8GB+
+- **Kısıtlama:** Yalnızca yeni nesil cihazlarda (A15+ chip, Snapdragon 8 Gen 2+) kabul edilebilir performans
+
+#### 7.2.4. React Native AI
+- **Ne yapar:** Callstack tarafından geliştirilen, on-device AI entegrasyonunu kolaylaştıran çerçeve
+- **Kapsam:** Metin, görüntü ve ses AI görevleri için birleşik API
+- **Durum (2026):** Aktif geliştirme aşamasında, API değişebilir
+
+#### 7.2.5. Apple Core ML (iOS)
+- **Ne yapar:** Apple'ın native ML framework'ü, iOS cihazlarda optimize edilmiş inference
+- **React Native entegrasyonu:** Custom native module veya config plugin ile
+- **Avantaj:** Apple Neural Engine (ANE) donanım hızlandırması, en düşük güç tüketimi
+- **Kısıtlama:** Yalnızca iOS
+
+### 7.3. On-Device AI Guardrail Kuralları
+
+69. [ZORUNLU] Model boyutu uygulama boyutuna orantısız olmamalı — 50MB üzeri model ayrı indirme (on-demand download) ile sağlanmalı
+70. [ZORUNLU] On-device inference ana thread'i (UI thread) bloklamamalı — arka plan thread veya WorkManager kullanılmalı
+71. [ZORUNLU] Model dosyaları (.tflite, .mlmodel, .bin) git repo'ya commit edilmemeli — CDN veya asset server'dan indirilmeli
+72. [YAPILMALI] İlk kullanımda model indirme durumunda ilerleme göstergesi göster
+73. [YAPILMALI] Cihaz kapasitesini kontrol et (RAM, işlemci) — yetersizse fallback sağla (sunucu tarafı veya basit heuristik)
+74. [YAPILMALI] Model versiyonlama yap — yeni model sürümü OTA ile güncellenebilmeli
+75. [YAPILMALI] Inference sonuçlarını cache'le — aynı input için tekrar inference çalıştırma
+76. [YAPILMAMALI] Kullanıcıyı AI model indirmesine zorlamak — opsiyonel ve onay tabanlı olmalı
+77. [YAPILMAMALI] On-device model eğitimi (training) yapmak — yalnızca inference canonical
+78. [YAPILMAMALI] Model dosyasını uygulama binary'sine gömüp uygulama boyutunu şişirmek (50MB+ modeller için)
+
+### 7.4. Mimari Pattern: On-Device AI Servisi
+
+```
+┌──────────────────────┐
+│     UI Layer         │  → AI sonuçlarını gösterir
+│  (React Component)   │
+├──────────────────────┤
+│    AI Service        │  → Platform-agnostic API sunar
+│  (TypeScript)        │  → useAIClassification(), useAICompletion()
+├──────────────────────┤
+│  Platform Adapter    │  → iOS: Core ML, Android: TFLite
+│  (Native Module)     │  → Model yükleme, inference, lifecycle
+├──────────────────────┤
+│  Model Storage       │  → CDN'den indirilen model dosyaları
+│  (File System)       │  → Versiyonlama, cache, cleanup
+└──────────────────────┘
+```
+
+### 7.5. Performans Bütçesi
+
+- Model yükleme (ilk kez): < 2 saniye (cold load)
+- Model yükleme (cache'ten): < 200ms
+- Tek inference çağrısı: < 100ms (görüntü sınıflandırma), < 50ms (metin sınıflandırma)
+- Bellek kullanımı: Model boyutu + %20 overhead
+- Batarya etkisi: Sürekli inference (real-time kamera gibi) batarya tüketimini %15-30 artırabilir — kullanıcı bilgilendirilmeli
+
+---
 
 ## Kaynak
 - Apple HIG — Design for Intelligence → developer.apple.com/design/human-interface-guidelines/machine-learning

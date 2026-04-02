@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: ihtiyaca göre
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-NEW-API: Yeni API Entegrasyonu Guardrail
@@ -21,9 +21,25 @@ son-güncelleme: 2026-04-01
 6. Rate limiting düşün
 7. Custom hook ile sarma — component'ten doğrudan çağırma
 
+## API Timeout ve Retry Default'ları
+8. Tüm API çağrıları için varsayılan timeout ve retry konfigürasyonu:
+
+| Parametre | Varsayılan | Override Durumu |
+|-----------|-----------|----------------|
+| Timeout | 30s | Upload: 120s, Health check: 5s |
+| Retry sayısı | 3 | Non-idempotent POST: 0 |
+| Retry stratejisi | Exponential backoff (1s → 2s → 4s) | — |
+| Retry koşulu | Network error + 5xx | 4xx retry yapılmaz |
+
+9. **Circuit breaker:** 5 ardışık hata → 30s bekleme süresi (sonraki istekler anında fail)
+10. **AbortController:** Component unmount'ta bekleyen istekler iptal edilmeli — memory leak önlenir
+
 ## DoD Ek Maddeleri
 - [ ] ADR-005 kararı görünür (fetch-first veya TanStack Query)
 - [ ] Response type tanımlı (Zod/TS)
 - [ ] Error handling (network/server/timeout)
+- [ ] Timeout konfigürasyonu tanımlı
+- [ ] Retry stratejisi uygulanmış (non-idempotent POST: retry yok)
+- [ ] AbortController ile unmount cleanup var
 - [ ] Integration test yazılmış
 - [ ] Auth token yönetimi doğru

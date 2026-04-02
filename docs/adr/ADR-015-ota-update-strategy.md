@@ -346,3 +346,140 @@ Bu ADR yeterli kabul edilir eğer:
 9. Alternatifler ve ret gerekçeleri dürüstçe sunulmuşsa
 10. Riskler ve risk azaltma önlemleri somutsa
 11. Bu karar, implementation ekibine OTA update altyapısını kuracak netlikte baseline sağlıyorsa
+
+---
+
+# 14. Hermes Bytecode Diffing ile OTA Boyut Optimizasyonu
+
+SDK 55'in diff bazlı OTA güncelleme mekanizması ve Hermes V1 bytecode avantajı.
+
+## 14.1. Hermes V1 Bytecode Precompilation
+
+Hermes V1 (ADR-018) JavaScript kaynak kodunu build aşamasında bytecode'a derler. Bu, OTA update için şu avantajı sağlar:
+
+- **Daha küçük OTA bundle:** Bytecode formatı, minified JavaScript'ten daha kompakt olabilir ve diff mekanizması ile birleştiğinde dramatik boyut küçülmesi sağlar
+- **Daha hızlı parse:** Kullanıcı cihazında JS parse adımı atlanır; bytecode doğrudan yürütülür
+
+## 14.2. EAS Update Diff Mekanizması
+
+EAS Update her güncellemede tam bundle göndermez. Bunun yerine önceki sürüm ile yeni sürüm arasındaki farkı (diff) hesaplar ve yalnızca değişen kısımları gönderir:
+
+- **Tam bundle boyutu:** Tipik bir uygulama için 5-15MB
+- **Diff boyutu:** Küçük-orta değişiklikler için 200KB-2MB
+- **Bandwidth tasarrufu:** %70-95 arası tasarruf (değişiklik büyüklüğüne göre)
+
+## 14.3. Kullanıcı Etkisi
+
+- **İndirme süresi:** Tam bundle 3G'de 10-30 saniye → diff ile 1-5 saniye
+- **Veri kullanımı:** Özellikle sınırlı data planı olan kullanıcılar için kritik
+- **Background download:** Diff küçük olduğu için background'da fark edilmeden indirilebilir
+
+## 14.4. Koşul ve Sınırlamalar
+
+- **Yalnızca JavaScript değişiklikleri:** Native kod değişikliği (yeni native modül, Expo config plugin değişikliği) OTA ile gönderilemez; full binary store submission gerekir
+- **Asset değişiklikleri:** Yeni resim, font veya media dosyası eklendiğinde diff büyüyebilir; asset değişiklikleri dikkatli yönetilmelidir
+- **İlk yükleme:** Uygulamanın ilk kurulumunda diff mekanizması çalışmaz; embedded bundle kullanılır
+
+## 14.5. Monitoring
+
+EAS Update dashboard'dan aşağıdaki metrikler izlenir:
+- **İndirme boyutu:** Her update'in ortalama indirme boyutu
+- **Başarı oranı:** Update indirme ve uygulama başarı yüzdesi
+- **İndirme süresi:** Ortalama indirme süresi (ms)
+- **Rollback oranı:** Otomatik rollback tetiklenme yüzdesi
+
+---
+
+# 15. OTA Update Rollback Mekanizması
+
+Bozuk OTA güncellemesinin tespit edilmesi ve güvenli geri dönüş stratejisi.
+
+## 15.1. Otomatik Crash Tespiti
+
+Uygulama **3 ardışık crash** yaparsa (app launch → crash döngüsü) mevcut OTA bozuk kabul edilir:
+- React Native'in `ErrorUtils` veya Expo'nun error recovery mekanizması crash sayısını takip eder
+- Her başarılı app launch'ta crash counter sıfırlanır
+- 3. crash sonrasında rollback otomatik tetiklenir
+
+## 15.2. Rollback Mekanizması
+
+Otomatik rollback şu adımlarla gerçekleşir:
+1. Crash threshold aşıldığında mevcut OTA bundle devre dışı bırakılır
+2. Bir önceki bilinen kararlı sürüme (embedded bundle veya önceki başarılı OTA) geri dönülür
+3. Uygulama kararlı sürümle yeniden başlatılır
+4. Kullanıcıya bilgilendirilir: "Güncelleme geri alındı, önceki sürüme dönüldü" (non-blocking toast veya banner)
+
+## 15.3. Sentry Entegrasyonu
+
+OTA rollback event'i Sentry'ye raporlanır (ADR-009 uyumu):
+- Event tipi: `ota_rollback`
+- Payload: `update_id`, `previous_update_id`, `crash_count`, `rollback_reason`
+- Bu event critical severity ile raporlanır ve anında alert tetikler
+- Rollback sonrası crash rate izlenir; kararlı sürümde crash devam ediyorsa underlying bug araştırılır
+
+## 15.4. Canary Deployment
+
+Yeni OTA güncellemesi tüm kullanıcı tabanına birden yayılmaz:
+1. **%5 rollout:** İlk aşamada güncelleme yalnızca %5 kullanıcıya dağıtılır
+2. **Crash rate kontrolü:** 1-4 saat boyunca crash rate izlenir
+3. **Eşik değer:** Crash rate %2'yi aşarsa rollout durdurulur ve güncelleme geri çekilir
+4. **Kademeli genişleme:** Crash rate normal ise %25 → %50 → %100 kademeli genişleme
+5. **Tam rollout:** Tüm aşamalar temiz geçerse 24-48 saat içinde %100 rollout tamamlanır
+
+## 15.5. Kill Switch
+
+EAS Update dashboard'dan bozuk güncelleme anında devre dışı bırakılabilir:
+- Dashboard'da ilgili update seçilir ve "Rollback" aksiyonu tetiklenir
+- Tüm kullanıcılar bir sonraki app launch'ta önceki kararlı sürüme döner
+- Kill switch kullanımı Sentry alert ve Slack/email bildirim ile desteklenir
+
+## 15.6. Recovery Süreci
+
+Rollback sonrası fix süreci:
+1. Bozuk update'in crash logları Sentry'den analiz edilir
+2. Root cause tespit edilir ve düzeltme yapılır
+3. Düzeltme staging channel'da test edilir
+4. Yeni update canary deployment ile kademeli dağıtılır
+
+---
+
+# 16. Hermes Bytecode Diffing ve Bandwidth Optimizasyonu
+
+Bu bölüm, Expo SDK 55 ve Hermes V1 ile kullanılabilen bytecode diffing mekanizmasının OTA update stratejisi üzerindeki etkisini tanımlar.
+
+## 16.1. Hermes Bytecode Diffing Nedir?
+
+Geleneksel OTA güncellemelerinde, JavaScript bundle'ının tamamı (veya büyük bölümü) yeniden indirilir. Hermes bytecode diffing, bunun yerine yalnızca değişen bytecode segmentlerini göndererek güncelleme boyutunu dramatik şekilde düşürür.
+
+### Çalışma Prensibi
+
+1. **Build zamanı:** JavaScript kaynak kodu Hermes tarafından bytecode'a derlenir
+2. **Diff hesaplama:** EAS Update, önceki ve yeni bytecode arasındaki farkı (binary diff) hesaplar
+3. **İndirme:** Cihaz yalnızca diff paketini indirir (tam bundle yerine)
+4. **Uygulama:** Cihazda mevcut bytecode üzerine diff uygulanarak yeni versiyon oluşturulur
+
+### Beklenen Kazanımlar
+
+| Senaryo | Tam Bundle | Bytecode Diff | Tasarruf |
+|---------|-----------|---------------|----------|
+| Küçük bug fix (birkaç satır) | ~2-5 MB | ~50-200 KB | %90-95 |
+| Orta feature ekleme | ~2-5 MB | ~200-800 KB | %60-85 |
+| Büyük refactoring | ~2-5 MB | ~1-3 MB | %20-40 |
+
+## 16.2. EAS Update Entegrasyonu
+
+- Bytecode diffing EAS Update tarafından otomatik uygulanır; ek konfigürasyon gerekmez
+- `expo-updates` SDK'sı diff indirme ve uygulama mekanizmasını yönetir
+- Diff oluşturulamıyorsa (ör: ilk kurulum, runtimeVersion değişikliği) tam bundle indirilir
+
+## 16.3. runtimeVersion Politikası ile İlişki
+
+- **runtimeVersion değişmezse:** Bytecode diff uygulanabilir; OTA güncelleme sorunsuzdur
+- **runtimeVersion değişirse:** Diff hesaplanamaz; tam bundle + native rebuild gerekir
+- **Kural:** runtimeVersion değişikliği yalnızca native code değişikliğinde yapılır. JavaScript-only değişiklikler runtimeVersion'ı etkilememelidir
+
+## 16.4. Monitoring ve Doğrulama
+
+- EAS Update dashboard'unda diff boyutu vs tam bundle boyutu karşılaştırması izlenir
+- Diff uygulama başarı oranı izlenir (başarısız diff → tam bundle fallback)
+- Sentry'de OTA update sonrası crash rate izlenir (diff bozulması riski)

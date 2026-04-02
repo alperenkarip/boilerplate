@@ -737,7 +737,87 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 30. Kısa Sonuç
+# 30. Design-to-Code Pipeline Araç Değerlendirmesi
+
+Figma tasarımından production koda uzanan pipeline'da kullanılabilecek araçların karşılaştırması ve seçilen yaklaşım bu bölümde tanımlanır.
+
+## 30.1. Araç Karşılaştırma Tablosu
+
+| Araç | Avantaj | Dezavantaj | Durum |
+|------|---------|-----------|-------|
+| Stitch MCP | Figma'dan token/component çıkarımı, AI entegrasyonu, mevcut CLAUDE.md/DESIGN.md pipeline'ı ile uyumlu | Mevcut toolchain'e bağımlılık, Stitch güncellemelerine bağımlı | **Canonical** — birincil design-to-code aracı |
+| UXPilot | AI ile ekran tasarımı, hızlı prototyping, tasarım keşif aşamasında zaman kazandırır | Doğrudan production-ready kod üretimi sınırlı, token mapping otomasyonu zayıf | **Tamamlayıcı** — keşif ve prototyping aşamasında |
+| Figma Dev Mode | Native Figma inspect, CSS çıkarımı, resmi Figma entegrasyonu | Token mapping elle yapılır, design system semantiğini otomatik çıkarmaz | **Referans** — manual inspect ihtiyacında |
+| Manual (Pixel-Perfect) | Tam kontrol, pixel-perfect implementasyon, tasarım niyetinin tam anlaşılması | Yavaş süreç, insan hatası riski, ölçeklenemez | **Fallback** — araç başarısız olduğunda |
+
+## 30.2. Pipeline Akışı
+
+Figma tasarımından production koda uzanan standart akış:
+
+```
+Figma Tasarım
+    ↓ Stitch MCP ile token çıkarımı
+DESIGN.md (token + component tanımları)
+    ↓ Token eşleştirme (22-design-tokens-spec.md ile uyum kontrolü)
+packages/design-tokens/ (token dosyaları)
+    ↓ Storybook component geliştirme
+packages/ui/ (component implementasyonu)
+    ↓ Visual diff kontrolü (Chromatic)
+Production Kod (feature ekranlarında kullanım)
+```
+
+## 30.3. Doğrulama Noktaları
+
+Her pipeline adımında doğrulama yapılır:
+
+1. **Token çıkarımı sonrası:** DESIGN.md token'ları `22-design-tokens-spec.md` katman yapısına uyuyor mu? (raw → semantic → context)
+2. **Component geliştirme sonrası:** Storybook story'leri Figma tasarımıyla visual diff kontrolünden geçiyor mu?
+3. **Feature entegrasyonu sonrası:** Production ekranda tasarım niyeti korunuyor mu? (screenshot karşılaştırma)
+
+---
+
+# 31. Visual QA Checklist Otomasyonu
+
+Visual contract kurallarını CI'da otomatik kontrol etmek için Storybook + Chromatic entegrasyonu kullanılır.
+
+## 31.1. Chromatic Entegrasyonu
+
+- Her PR'da Storybook component'leri otomatik olarak render edilir ve önceki baseline ile karşılaştırılır.
+- Chromatic, her component varyantı (size, state, theme) için ayrı screenshot alır.
+- Visual diff tespit edildiğinde PR'a otomatik yorum eklenir.
+
+## 31.2. Kabul Eşikleri
+
+- **Piksel farkı toleransı:** %0.1 — anti-aliasing, font rendering farklılıkları ve subpixel rendering kaynaklı küçük farklar kabul edilir.
+- **Threshold aşımı:** %0.1 üzeri piksel farkı reviewer onayı gerektirir; otomatik approve yapılmaz.
+
+## 31.3. Kontrol Kapsamı
+
+Her shared component için aşağıdaki varyantlar kontrol edilir:
+
+| Varyant Ekseni | Kontrol Edilen Durumlar |
+|---------------|----------------------|
+| Size | small, medium, large (tanımlı tüm boyutlar) |
+| State | default, hover, focused, pressed, disabled, loading, error |
+| Theme | light, dark |
+| Content | Kısa metin, uzun metin, boş içerik |
+
+## 31.4. Platform Bazlı Kontrol
+
+- **Web:** Chromatic ile otomatik screenshot (Chrome rendering).
+- **Mobile:** Detox veya Maestro ile platform-specific screenshot (ayrı CI job).
+- Web ve mobile screenshot'ları ayrı baseline'larda tutulur; cross-platform visual diff zorunlu değildir (platform farkları beklenir).
+
+## 31.5. Onay Süreci
+
+1. Visual diff tespit edilir → PR'da Chromatic raporu otomatik yorum olarak eklenir.
+2. Kasıtlı değişiklik ise reviewer Chromatic'te "Accept" ile onaylar → yeni baseline oluşur.
+3. Kasıtlı olmayan değişiklik ise (regression) → düzeltme yapılır ve yeni commit ile tekrar kontrol edilir.
+4. Dark mode kontrolü: Her component hem light hem dark mode'da ayrı ayrı kontrol edilir.
+
+---
+
+# 32. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

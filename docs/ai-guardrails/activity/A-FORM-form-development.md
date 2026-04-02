@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: ihtiyaca göre
   stitch: önerilen
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-FORM: Form Geliştirme Guardrail
@@ -29,9 +29,19 @@ son-güncelleme: 2026-04-01
 4. Submit lifecycle: loading → success/error feedback
 5. Unsaved changes guard düşün
 
+## Form Performans Testi
+6. 20+ field içeren formlarda performans kontrolü zorunlu:
+   - Her field değişikliğinde tüm form re-render **olmamalı** — yalnızca değişen field güncellenmelidir
+   - RHF `Controller` / `useController` ile izole re-render sağlanmalı
+   - 60fps korunmalı, keyboard scroll akıcı olmalı
+7. **Benchmark:** reassure veya benzeri araçla ölçüm yapılmalı
+8. **Eşik:** Tek field re-render süresi < 16ms (60fps frame bütçesi)
+
 ## DoD Ek Maddeleri
 - [ ] Zod schema tanımlı
 - [ ] React Hook Form kullanılıyor
 - [ ] Her field'da visible label var
 - [ ] Submit lifecycle (loading/error/success) implement edilmiş
 - [ ] A11y: label ilişkisi, keyboard support
+- [ ] 20+ field formlarda izole re-render sağlanmış (Controller/useController)
+- [ ] Form performans eşiği karşılanmış (tek field re-render < 16ms)

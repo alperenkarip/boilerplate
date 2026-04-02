@@ -1147,3 +1147,548 @@ Bu bölüm, EAS Build konfigürasyonunu, Fastlane entegrasyonunu, code signing y
 - Fastlane `screengrab` (Android) ve `snapshot` (iOS) ile otomatik screenshot üretilmelidir.
 - Store metadata (başlık, açıklama, anahtar kelimeler, screenshot’lar) versiyon kontrolünde tutulmalıdır.
 - Çoklu dil desteği: i18n altyapısı ile uyumlu store listing sağlanmalıdır (ADR-011 referansı). Her desteklenen dil için ayrı metadata dosyası bulunmalıdır.
+
+---
+
+# 44. Bundle Size Budget CI Gate (2026-04-02 Eki)
+
+Bu bölüm, her PR'da bundle boyutu kontrolünün nasıl yapılacağını, web ve mobile platform bütçelerini, CI akışını ve araç seçeneklerini tanımlar.
+
+## 44.1. Web Bundle Bütçesi
+
+| Bundle | Limit | Ölçüm Aracı |
+|--------|-------|-------------|
+| Initial JS | 200KB (gzip) | vite-bundle-analyzer |
+| Total JS | 500KB (gzip) | build output |
+| CSS | 50KB (gzip) | build output |
+| Tek chunk | 100KB (gzip) | code splitting kontrolü |
+
+- Initial JS bütçesi, kullanıcının ilk sayfa yüklemesinde indirdiği toplam JavaScript boyutunu kapsar. Bu değerin aşılması, TTI ve LCP metriklerini doğrudan olumsuz etkiler.
+- Tek chunk limiti, code splitting'in doğru çalıştığını garanti altına alır. 100KB üstü chunk var ise lazy loading veya dynamic import değerlendirilmelidir.
+
+## 44.2. Mobile Bundle Bütçesi
+
+| Platform | Limit | Ölçüm Aracı |
+|----------|-------|-------------|
+| iOS JS bundle | 2MB (uncompressed) | metro bundler |
+| Android JS bundle | 2MB (uncompressed) | metro bundler |
+| APK/IPA boyutu | 30MB | EAS build output |
+
+- JS bundle boyutu Hermes bytecode precompilation sonrası ölçülür.
+- APK/IPA boyutu store submission öncesi final build üzerinden kontrol edilir.
+
+## 44.3. CI Akışı
+
+Bundle size kontrolü PR CI pipeline'ına aşağıdaki sırayla entegre edilir:
+
+1. **Base branch ölçümü:** `main` branch'teki son başarılı build'in bundle boyutu referans alınır (cache'lenir).
+2. **PR branch ölçümü:** PR branch build'inin bundle boyutu hesaplanır.
+3. **Fark raporu:** Base ve PR arasındaki fark (delta) hesaplanır ve PR comment olarak otomatik raporlanır.
+4. **Limit kontrolü:** Mutlak limit aşılırsa PR bloklanır. Delta %10'u aşarsa uyarı verilir.
+
+Rapor formatı:
+```
+Bundle Size Report
+──────────────────
+| Bundle     | Base   | PR     | Delta  | Durum |
+|------------|--------|--------|--------|-------|
+| Initial JS | 185KB  | 195KB  | +10KB  | ✅    |
+| Total JS   | 420KB  | 510KB  | +90KB  | ❌    |
+| CSS        | 35KB   | 36KB   | +1KB   | ✅    |
+```
+
+## 44.4. Araç Seçenekleri
+
+- **size-limit:** Hem web hem node paketleri için bundle size monitoring. CI entegrasyonu kolay, `.size-limit.json` ile konfigüre edilir.
+- **bundlesize:** GitHub status check entegrasyonu ile PR'da otomatik rapor.
+- **Custom script:** `vite-bundle-analyzer` çıktısını parse eden ve limitleri kontrol eden Turborepo task'ı.
+- Araç seçimi `16-tooling-and-governance.md` ve `37-dependency-policy.md` kurallarına tabidir.
+
+## 44.5. Exception Kuralı
+
+Büyük dependency eklenmesi gerektiğinde (ör. harita SDK, video player):
+- `37-dependency-policy.md`'ye göre dependency onayı alınmalıdır.
+- Bundle size bütçesinde geçici artış için `44-exception-and-exemption-policy.md`'ye göre exception kaydı açılmalıdır.
+- Exception'da yeni bütçe limiti, gerekçe ve beklenen optimizasyon planı belirtilmelidir.
+
+---
+
+# 45. Lighthouse / Web Vitals CI Entegrasyonu (2026-04-02 Eki)
+
+Bu bölüm, web build'leri için performans metriklerinin CI'da nasıl ölçüleceğini, eşik değerlerini, araç seçeneklerini ve PR bloklama kurallarını tanımlar.
+
+## 45.1. Ölçülen Metrikler ve Eşikler
+
+| Metrik | İyi | Kabul Edilebilir | Kötü |
+|--------|-----|-----------------|------|
+| LCP (Largest Contentful Paint) | <2.5s | 2.5-4s | >4s |
+| FID (First Input Delay) | <100ms | 100-300ms | >300ms |
+| CLS (Cumulative Layout Shift) | <0.1 | 0.1-0.25 | >0.25 |
+| INP (Interaction to Next Paint) | <200ms | 200-500ms | >500ms |
+| TTI (Time to Interactive) | <3.8s | 3.8-7.3s | >7.3s |
+
+- "İyi" kategorisi Google'ın Core Web Vitals eşikleriyle uyumludur.
+- "Kötü" kategorisinde herhangi bir metrik bulunması PR'ın bloklanmasına neden olur.
+- INP, FID'in yerini alan yeni metrik olarak birincil etkileşim göstergesidir.
+
+## 45.2. CI Araçları
+
+- **Lighthouse CI (lhci):** Google'ın resmi CI aracı. `lighthouserc.json` ile threshold tanımı yapılır.
+- **Unlighthouse:** Tüm sayfaları tarayarak toplu Lighthouse analizi. Büyük projelerde faydalıdır.
+- Araç tercihi: Lighthouse CI canonical varsayılandır. Unlighthouse opsiyonel ek tarama aracıdır.
+
+## 45.3. Konfigürasyon
+
+`lighthouserc.json` dosyası repo kökünde tutulur:
+
+```json
+{
+  "ci": {
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.7 }],
+        "categories:accessibility": ["warn", { "minScore": 0.9 }],
+        "categories:best-practices": ["warn", { "minScore": 0.9 }],
+        "first-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "interactive": ["error", { "maxNumericValue": 3800 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
+      }
+    }
+  }
+}
+```
+
+## 45.4. Raporlama
+
+- PR'da Lighthouse score karşılaştırması (before/after) otomatik olarak comment edilir.
+- Rapor formatı: Her kategori için skor, delta ve durum bilgisi içerir.
+- Trend takibi: Son 10 merge'in Lighthouse skorları loglanır, gerileme tespit edilir.
+
+## 45.5. Bloklama Kuralları
+
+| Koşul | Aksiyon |
+|-------|---------|
+| Performance score < 70 | PR bloklanır |
+| Accessibility score < 85 | PR uyarı alır (gelecekte bloklayıcı) |
+| Herhangi bir Core Web Vital "Kötü" kategorisinde | PR bloklanır |
+| Performance score 5+ puan düştü (regression) | PR uyarı alır, reviewer dikkat |
+
+- Bloklama kurallarının exception'ı `44-exception-and-exemption-policy.md`'ye tabidir.
+- Performance test CI'da headless Chrome üzerinde çalışır; sonuçlar gerçek cihaz performansından farklı olabilir, bu nedenle eşikler konservatif tutulur.
+
+---
+
+# 46. Build Profile ve Environment CI Gate (2026-04-02 Eki)
+
+Bu bölüm, build profili ve ortam değişkeni bütünlüğünü CI seviyesinde doğrulayan kalite kapılarını tanımlar. Ortam konfigürasyon hataları production'a ulaşmadan erken aşamada yakalanmalıdır.
+
+---
+
+## 46.1. Development Build Doğrulaması
+
+Her PR'da development build'in başarılı olduğu CI step olarak doğrulanır. Build başarısızlığı merge'i bloklar.
+
+**Kontrol Adımları:**
+- Web: `pnpm --filter web build` (veya `vite build --mode development`) başarılı tamamlanmalıdır.
+- Mobile: `eas build --profile development --platform all --non-interactive` dry-run doğrulaması veya `expo doctor` ile konfigürasyon sağlık kontrolü yapılmalıdır.
+- TypeScript: `pnpm typecheck` tüm workspace'lerde hatasız geçmelidir.
+
+---
+
+## 46.2. Env Var Integrity Kontrolü
+
+`.env.example` ile runtime ortam değişkenlerinin eşleşmesini kontrol eden CI script'i her PR'da çalışır.
+
+**Kontrol Mantığı:**
+
+```bash
+#!/bin/bash
+# scripts/check-env-integrity.sh
+# .env.example'daki tüm key'lerin CI ortamında tanımlı olup olmadığını kontrol eder
+
+ENV_EXAMPLE_FILE=$1  # ör. apps/web/.env.example veya apps/mobile/.env.example
+MISSING_VARS=()
+
+while IFS= read -r line; do
+  # Boş satır ve yorumları atla
+  [[ -z "$line" || "$line" =~ ^# ]] && continue
+  # Key adını çıkar (= öncesi)
+  KEY=$(echo "$line" | cut -d'=' -f1 | xargs)
+  # Ortamda tanımlı mı kontrol et
+  if [[ -z "${!KEY}" ]]; then
+    MISSING_VARS+=("$KEY")
+  fi
+done < "$ENV_EXAMPLE_FILE"
+
+if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
+  echo "HATA: Eksik ortam değişkenleri tespit edildi:"
+  for var in "${MISSING_VARS[@]}"; do
+    echo "  - $var"
+  done
+  exit 1
+fi
+
+echo "Tüm ortam değişkenleri mevcut."
+exit 0
+```
+
+**Kurallar:**
+- `.env.example` dosyasında bulunup CI ortamında tanımlı olmayan her değişken hata üretir.
+- Yeni env var eklendiğinde `.env.example` güncellenmezse CI fail eder.
+- Script hem `apps/web/.env.example` hem `apps/mobile/.env.example` için ayrı ayrı çalıştırılır.
+
+---
+
+## 46.3. Bundle ID Uyum Kontrolü
+
+Build profili ile bundle ID / package name eşleşmesinin doğruluğu kontrol edilir.
+
+**Kontrol Mantığı:**
+- `app.config.ts`'nin ürettiği `bundleIdentifier` (iOS) ve `package` (Android) değerleri, `eas.json`'daki profil ile uyumlu olmalıdır.
+- Development build'de `.dev` suffix'i olmalıdır.
+- Preview/staging build'de `.staging` suffix'i olmalıdır.
+- Production build'de suffix olmamalıdır.
+- Uyumsuzluk durumunda uyarı üretilir (gelecekte blocker'a yükseltilebilir).
+
+---
+
+## 46.4. .env.example Güncellik Kontrolü
+
+PR'da yeni bir ortam değişkeni eklendiyse veya mevcut bir değişken kaldırıldıysa, `.env.example` dosyasının buna uygun güncellenip güncellenmediği kontrol edilir.
+
+**Kontrol Mantığı:**
+- PR diff'inde `process.env.`, `import.meta.env.`, `Constants.expoConfig.extra.` gibi ortam değişkeni erişim pattern'leri taranır.
+- Yeni bir env var referansı tespit edilip `.env.example`'da karşılığı yoksa → CI fail.
+- Mevcut bir env var referansı kaldırılıp `.env.example`'da hâlâ varsa → uyarı.
+
+---
+
+## 46.5. Bloklama Kuralları
+
+| Kontrol | Başarısız Olursa | Severity |
+|---------|-----------------|----------|
+| Development build (web + mobile) | PR bloklanır | Blocker |
+| Env var integrity (eksik değişken) | PR bloklanır | Blocker |
+| .env.example güncelliği | PR bloklanır | Blocker |
+| Bundle ID / profil uyumu | Uyarı üretilir | Major (gelecekte Blocker) |
+| Production env var'da debug değeri | Uyarı üretilir | Major |
+
+**Exception Kuralı:**
+- Build profile ve env var kontrollerinde exception verilmesi `44-exception-and-exemption-policy.md`'ye tabidir.
+- Exception süresi maksimum 1 sprint (2 hafta); süre sonunda kontrol tekrar aktif edilir.
+
+---
+
+# 47. Accessibility Test Automation Pipeline (2026-04-02 Eki)
+
+Bu bölüm, erişilebilirlik (a11y) testlerinin CI pipeline'ına nasıl entegre edileceğini, araç seçimlerini, bloklama kurallarını ve regression tespit mekanizmasını tanımlar. A11y kalitesi manuel denetimle değil, otomatik ve sürekli test ile korunur.
+
+---
+
+## 47.1. axe-core CI Entegrasyonu
+
+axe-core, Deque Systems tarafından geliştirilen açık kaynak erişilebilirlik test motoru olup bu projede üç katmanda kullanılır:
+
+### 47.1.1. Development-Time: @axe-core/react
+
+- `@axe-core/react` development dependency olarak kurulur.
+- Yalnızca `__DEV__` modunda aktif olur; production bundle'a dahil edilmez.
+- Development server çalışırken browser konsolunda real-time a11y uyarıları gösterir.
+- Geliştirici, component üzerinde çalışırken a11y ihlallerini anında görür.
+- Konfigürasyon: `apps/web/src/main.tsx` içinde conditional import.
+
+### 47.1.2. Unit/Integration Test: jest-axe
+
+- `jest-axe` test dependency olarak kullanılır.
+- Her UI component test dosyasında `expect(container).toHaveNoViolations()` assertion'ı eklenir.
+- Bu assertion, render edilen HTML çıktısını axe-core motoru ile tarar.
+- Vitest uyumu: `vitest-axe` wrapper kullanılır (Vitest canonical test runner olduğu için).
+
+**Örnek test:**
+
+```typescript
+import { render } from "@testing-library/react";
+import { axe, toHaveNoViolations } from "jest-axe";
+import { LoginForm } from "./LoginForm";
+
+expect.extend(toHaveNoViolations);
+
+describe("LoginForm a11y", () => {
+  it("erişilebilirlik ihlali bulunmamalı", async () => {
+    const { container } = render(<LoginForm />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+});
+```
+
+### 47.1.3. E2E Test: Playwright + axe-core
+
+- `@axe-core/playwright` dependency olarak kullanılır.
+- E2E test senaryolarında her kritik sayfa için a11y taraması yapılır.
+- Playwright test runner içinde `AxeBuilder` API'si kullanılır.
+- CI'da her PR'da otomatik çalışır.
+
+**Örnek E2E a11y testi:**
+
+```typescript
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("ana sayfa erişilebilirlik kontrolü", async ({ page }) => {
+  await page.goto("/");
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+```
+
+### 47.1.4. Severity Mapping
+
+axe-core ihlalleri CI'da şu severity mapping ile değerlendirilir:
+
+| axe-core Severity | CI Severity | Aksiyon |
+|-------------------|-------------|---------|
+| `critical` | Blocker | PR bloklanır, merge yapılamaz |
+| `serious` | Blocker | PR bloklanır, merge yapılamaz |
+| `moderate` | Major | PR uyarı alır, reviewer dikkat eder |
+| `minor` | Warning | Bilgi amaçlı, bloklama yok |
+
+---
+
+## 47.2. @testing-library A11y Query Zorunluluğu
+
+Testing Library, erişilebilir query yöntemlerini teşvik eden bir test yaklaşımı sunar. Bu projede query öncelik sırası zorunlu olarak uygulanır.
+
+**Query Öncelik Sırası (Zorunlu):**
+
+1. `getByRole` — En yüksek öncelik; ARIA role ile sorgulama
+2. `getByLabelText` — Form elemanları için label ilişkisi
+3. `getByPlaceholderText` — Label yoksa placeholder ile sorgulama
+4. `getByText` — Görünür metin ile sorgulama
+5. `getByDisplayValue` — Input'un mevcut değeri ile sorgulama
+6. `getByAltText` — Görsel içerik için alt text
+7. `getByTitle` — Title attribute ile sorgulama
+8. `getByTestId` — En düşük öncelik; yalnızca son çare
+
+**ESLint Enforcement:**
+
+- `eslint-plugin-testing-library` aktif olmalıdır.
+- `testing-library/prefer-role-queries` kuralı `warn` seviyesinde aktiftir.
+- `testing-library/no-node-access` kuralı `error` seviyesinde aktiftir.
+- `getByTestId` tek başına kullanıldığında (üst sıradaki query'ler mümkünken) ESLint uyarısı üretilir.
+
+**Accessible Name Zorunluluğu:**
+- Interactive element (`button`, `input`, `select`, `textarea`, `a[href]`) accessible name olmadan render edilirse → test fail.
+- Accessible name: `aria-label`, `aria-labelledby`, `<label>` ilişkisi veya görünür metin içeriği ile sağlanır.
+- Bu kontrol axe-core `button-name`, `input-name`, `link-name` kuralları ile otomatik yapılır.
+
+---
+
+## 47.3. Contrast Ratio Otomatik Kontrol
+
+Renk kontrastı erişilebilirlik için temel gereksinimlerden biridir. Bu projede contrast ratio kontrolü çok katmanlı olarak uygulanır.
+
+**Katman 1 — axe-core `color-contrast` Kuralı:**
+- axe-core'un `color-contrast` kuralı tüm tarama seviyelerinde (unit, E2E) aktiftir.
+- Yetersiz kontrast → severity mapping'e göre değerlendirilir (genellikle `serious` = Blocker).
+
+**Katman 2 — Storybook A11y Addon:**
+- `@storybook/addon-a11y` her component story'sinde görsel contrast kontrolü sağlar.
+- Geliştirici Storybook'ta component'i incelerken a11y panelinde contrast sorunlarını anında görür.
+- CI'da Storybook test runner ile a11y addon sonuçları otomatik kontrol edilebilir.
+
+**Katman 3 — Token Sistemi ile Çift Koruma:**
+- Hardcoded renk kullanımı zaten `22-design-tokens-spec.md` ve `D-STY` guardrail ile yasaklıdır.
+- Semantic token'lar WCAG AA kontrastını sağlayacak şekilde tasarlanır.
+- Token güncellemesinde contrast regression riski vardır; token değişikliği PR'ında axe-core taraması zorunludur.
+
+**Minimum Contrast Gereksinimleri (WCAG 2.1 AA):**
+
+| Element Türü | Minimum Contrast Ratio | Standart |
+|-------------|----------------------|----------|
+| Normal metin (<18px veya <14px bold) | 4.5:1 | WCAG AA |
+| Büyük metin (≥18px veya ≥14px bold) | 3:1 | WCAG AA |
+| UI bileşeni ve grafik öğesi | 3:1 | WCAG AA |
+| Dekoratif/inaktif element | Muaf | WCAG AA |
+
+---
+
+## 47.4. A11y Score Regression Tespiti
+
+Erişilebilirlik kalitesinin zamanla gerilemesini tespit eden mekanizma.
+
+**Baseline Oluşturma:**
+- İlk kapsamlı a11y audit'inde mevcut ihlal sayısı ve türleri kaydedilir.
+- Baseline dosyası: `tooling/a11y-baseline.json` — ihlal sayısı, severity dağılımı, tarih.
+- Baseline CI artifact olarak saklanır.
+
+**PR Bazlı Regression Kontrolü:**
+- PR'da a11y test sonuçları baseline ile karşılaştırılır.
+- İhlal sayısı artarsa → uyarı üretilir (reviewer'a bildirim).
+- Yeni `critical` veya `serious` ihlal eklendiyse → PR bloklanır (net artış, önceden mevcut olanlar hariç).
+- İhlal sayısı azaldıysa → pozitif sinyal, baseline güncellenir.
+
+**Trend Takibi:**
+- Monthly a11y ihlal sayısı raporu üretilir (CI artifact veya dashboard).
+- Trend yönü: Azalma beklenir; artış durumunda teknik borç toplantısında değerlendirilir.
+- Hedef: 6 ay içinde tüm `critical` ve `serious` ihlallerin sıfırlanması.
+
+---
+
+## 47.5. Bloklama Kuralları
+
+| Kontrol | Başarısız Olursa | Severity |
+|---------|-----------------|----------|
+| axe-core `critical` ihlal | PR bloklanır | Blocker |
+| axe-core `serious` ihlal | PR bloklanır | Blocker |
+| Unlabeled interactive element (`button-name`, `input-name`, `link-name`) | PR bloklanır | Blocker |
+| Contrast ratio ihlali (WCAG AA altı) | PR bloklanır | Blocker |
+| `accessibilityRole` eksikliği (React Native) | Uyarı (gelecekte Blocker) | Major |
+| `getByTestId` tek başına kullanımı (üst sıra query mümkünken) | Uyarı | Minor |
+| A11y ihlal sayısı baseline'dan arttı (critical/serious dışı) | Uyarı | Major |
+| axe-core `moderate` ihlal | Uyarı, reviewer dikkat | Major |
+
+**React Native Spesifik Kurallar:**
+- `accessibilityLabel` prop'u tüm interactive element'lerde zorunludur (gelecekte Blocker).
+- `accessibilityRole` prop'u semantic anlam taşıyan element'lerde gereklidir.
+- `accessibilityState` prop'u toggle/checkbox/switch gibi durum taşıyan element'lerde zorunludur.
+- Bu kurallar şimdilik uyarı seviyesinde uygulanır; ekip olgunlaştıkça Blocker'a yükseltilir.
+
+**Exception Kuralı:**
+- A11y blocker ihlallerinde exception verilmesi `44-exception-and-exemption-policy.md`'ye tabidir.
+- Exception gerekçesi: Üçüncü parti component'in a11y desteği yetersiz (ör. custom chart library).
+- Exception süresi: Maksimum 2 sprint; süre sonunda alternatif çözüm veya upstream fix gerekir.
+
+---
+
+# 48. Build Caching ve CI Performans Optimizasyonu (2026-04-02 Eki)
+
+CI süresini minimize etmek geliştirici deneyiminin temelidir. Bu bölüm, monorepo build caching stratejisi ve CI performans hedeflerini tanımlar.
+
+## 48.1. Turborepo Remote Cache
+
+Turborepo 2.x (ADR-003) local cache varsayılan olarak aktiftir. Remote cache ile ekip genelinde cache paylaşımı sağlanır:
+
+- **Varsayılan:** Vercel Remote Cache (Turborepo native entegrasyon)
+- **Alternatif:** Self-hosted (ör: Ducktape, custom S3 backend) — enterprise projeler için
+- **Cache granularity:** Task-level (build, typecheck, lint, test ayrı cache'lenir)
+- **Cache invalidation:** `turbo.json` pipeline tanımı veya input dosyaları değiştiğinde otomatik
+- **CI'da aktivasyon:** `TURBO_TOKEN` ve `TURBO_TEAM` environment variable'ları CI secret olarak tanımlanır
+
+### Cache Hit Hedefleri
+
+| Senaryo | Beklenen Cache Hit Oranı |
+|---------|--------------------------|
+| Aynı branch, değişiklik yok | %100 |
+| Farklı branch, ortak base | > %70 |
+| Dependency değişikliği sonrası | %0 (beklenen, rebuild gerekli) |
+| Yalnızca docs değişikliği | > %90 (kod task'ları cache'den gelir) |
+
+## 48.2. EAS Build Caching
+
+Expo EAS Build (SDK 55+) cache mekanizması, native build süresini dramatik şekilde düşürür:
+
+- **iOS:** CocoaPods cache, Xcode derived data cache
+- **Android:** Gradle cache, native dependency cache
+- **Beklenen hızlanma:** İlk build sonrası sonraki build'lerde %20-30 süre azalması
+- **Cache temizleme:** `eas build --clear-cache` ile zorunlu tam rebuild (debug amaçlı)
+- **Konfigürasyon:** `eas.json`'da profile bazlı cache stratejisi tanımlanabilir
+
+## 48.3. GitHub Actions Cache Stratejisi
+
+```yaml
+# .github/workflows/ci.yml cache örneği
+- name: pnpm store cache
+  uses: actions/cache@v4
+  with:
+    path: ~/.pnpm-store
+    key: pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+    restore-keys: pnpm-
+
+- name: Turborepo cache
+  uses: actions/cache@v4
+  with:
+    path: .turbo
+    key: turbo-${{ github.ref }}-${{ github.sha }}
+    restore-keys: |
+      turbo-${{ github.ref }}-
+      turbo-main-
+
+- name: CocoaPods cache (iOS build)
+  uses: actions/cache@v4
+  with:
+    path: apps/mobile/ios/Pods
+    key: pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+```
+
+### Cache Boyut Yönetimi
+
+- GitHub Actions cache limiti: 10 GB per repo
+- Eski cache'ler 7 gün sonra otomatik silinir (GitHub default)
+- Ana branch cache'i öncelikli korunur
+- Feature branch cache'leri kısa ömürlüdür
+
+## 48.4. CI Süresi Bütçesi
+
+| CI Türü | Hedef | Uyarı | Blocker |
+|---------|-------|-------|---------|
+| PR CI (lint + typecheck + test) | < 5 dk | 5-8 dk | > 10 dk |
+| Full CI (build + E2E dahil) | < 15 dk | 15-20 dk | > 25 dk |
+| EAS Build (iOS) | < 20 dk | 20-30 dk | > 40 dk |
+| EAS Build (Android) | < 15 dk | 15-25 dk | > 35 dk |
+
+CI süreleri haftalık olarak izlenir. Blocker eşiğine yaklaşıldığında optimizasyon sprint'i planlanır.
+
+---
+
+# 49. Accessibility Otomatik Test CI Gate (2026-04-02 Eki)
+
+Manuel accessibility testi önemlidir ancak yeterli değildir. Bu bölüm, CI pipeline'da otomatik erişilebilirlik testi gereksinimlerini tanımlar.
+
+## 49.1. Test Araçları
+
+| Araç | Kapsam | Entegrasyon |
+|------|--------|-------------|
+| jest-axe | Component-level a11y kuralları | Unit test (Vitest/Jest) |
+| @storybook/addon-a11y | Storybook'ta görsel a11y kontrolü | Storybook 10.x |
+| axe-core (Playwright) | E2E seviyesinde sayfa bazlı a11y | Playwright test suite |
+
+## 49.2. jest-axe Entegrasyonu
+
+Her reusable component'in test dosyasında a11y kontrolü yapılmalıdır:
+
+```typescript
+// Button.test.tsx
+import { render } from '@testing-library/react-native';
+import { axe, toHaveNoViolations } from 'jest-axe';
+
+expect.extend(toHaveNoViolations);
+
+test('Button a11y ihlali içermez', async () => {
+  const { container } = render(<Button label="Kaydet" onPress={() => {}} />);
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+});
+```
+
+## 49.3. Storybook A11y Addon
+
+- Storybook 10.x (canonical) ile `@storybook/addon-a11y` varsayılan aktiftir
+- Her story'de a11y paneli otomatik çalışır
+- Violation count > 0 olan story'ler Chromatic visual review'da işaretlenir
+
+## 49.4. Coverage Hedefi
+
+| Katman | Hedef | Zorunluluk |
+|--------|-------|------------|
+| Reusable component (packages/ui) | %100 a11y test | Zorunlu — PR merge şartı |
+| Feature component (apps/*/features) | > %80 a11y test | Hedef — izleme |
+| E2E kritik akışlar (login, onboarding, checkout) | Axe scan | Zorunlu — E2E suite'te |
+
+## 49.5. CI Gate Kuralları
+
+- **Phase 1:** jest-axe testleri CI'da çalışır, failure uyarı üretir (non-blocking)
+- **Phase 2:** Reusable component'lerde jest-axe failure PR merge'i bloklar
+- **Phase 3:** E2E axe-core scan tüm kritik akışlarda zorunlu
+
+Detaylı a11y standartları ve WCAG uyum gereksinimleri: `12-accessibility-standard.md`

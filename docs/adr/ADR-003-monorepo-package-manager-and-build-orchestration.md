@@ -677,7 +677,131 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 29. Kısa Sonuç
+# 29. pnpm Catalogs ile Tek Versiyon Yönetimi
+
+pnpm 10.x’in catalog özelliği, monorepo genelinde dependency versiyonlarını tek bir noktadan yönetmeyi sağlar. Bu özellik version drift riskini ortadan kaldırır ve upgrade sürecini dramatik biçimde basitleştirir.
+
+## 29.1. Catalog Tanımı
+
+`pnpm-workspace.yaml` dosyasında catalog bloğu tanımlanır. Bu blok monorepo genelinde kullanılacak dependency versiyonlarının tek kaynağıdır:
+
+```yaml
+packages:
+  - ‘apps/*’
+  - ‘packages/*’
+
+catalog:
+  react: ^19.1.0
+  react-dom: ^19.1.0
+  react-native: ~0.83.0
+  typescript: ^5.8.0
+  zod: ^4.0.0
+  zustand: ^5.0.0
+  ‘@tanstack/react-query’: ^5.0.0
+  i18next: ^26.0.0
+  react-hook-form: ^7.0.0
+  expo: ~55.0.0
+```
+
+## 29.2. Package’larda Kullanımı
+
+Her workspace package’ında `package.json`’da doğrudan versiyon yazmak yerine `catalog:` prefix’i kullanılır:
+
+```json
+{
+  “dependencies”: {
+    “react”: “catalog:”,
+    “zustand”: “catalog:”,
+    “zod”: “catalog:”
+  }
+}
+```
+
+Bu sayede versiyon bilgisi tek bir yerde yaşar; package’lar yalnızca “catalog’daki versiyonu kullan” der.
+
+## 29.3. Avantajlar
+
+- **Versiyon tutarsızlığı riski sıfırlanır:** Aynı dependency’nin farklı workspace’lerde farklı versiyonlarla kullanılması imkansız hale gelir
+- **Upgrade tek noktadan yapılır:** `pnpm-workspace.yaml`’daki catalog güncellenince tüm workspace’ler yeni versiyonu alır
+- **Review kolaylığı:** Versiyon değişikliği tek dosyada görünür; PR review’da tüm etki anında anlaşılır
+- **Compatibility matrix (38) ile doğal uyum:** Catalog tanımı ile compatibility matrix aynı versiyonları referans alır
+
+## 29.4. Migration Stratejisi
+
+Mevcut direkt versiyonlar catalog referansına dönüştürülür:
+
+1. `pnpm-workspace.yaml`’a canonical dependency’lerin versiyonları catalog bloğuna yazılır
+2. Her `package.json`’daki direkt versiyon `catalog:` ile değiştirilir
+3. `pnpm install` çalıştırılarak lockfile güncellenir
+4. CI’da catalog sync kontrolü eklenir: Direkt versiyon kullanan paket varsa uyarı üretilir
+
+## 29.5. CI Kontrolü
+
+CI pipeline’ına catalog uyum kontrolü eklenir. Bu kontrol:
+- `package.json` dosyalarında catalog’da tanımlı bir dependency’nin direkt versiyon ile kullanılıp kullanılmadığını kontrol eder
+- Catalog’da olmayan yeni dependency eklendiğinde uyarı üretir (catalog’a eklenmeli mi sorusu sorulur)
+- `pnpm install --frozen-lockfile` ile lockfile tutarlılığı doğrulanır
+
+---
+
+# 30. Turborepo Remote Cache Stratejisi
+
+CI build sürelerini optimize eden remote cache, monorepo’nun ölçeklenebilirliği için kritik bir bileşendir.
+
+## 30.1. Remote Cache Nedir?
+
+Turborepo’nun local cache’i varsayılan olarak `.turbo/` dizininde yaşar. Remote cache, bu cache artifact’lerini merkezi bir storage’a taşıyarak farklı CI runner’lar ve geliştiriciler arasında paylaşıma açar. Bir geliştirici veya CI runner daha önce aynı input hash’i ile çalıştırılmış bir task’ı tekrar çalıştırmak istediğinde, remote cache’den sonucu alır ve task’ı atlar.
+
+## 30.2. Seçenekler
+
+### Vercel Remote Cache (Hosted)
+
+- Turborepo’nun birinci sınıf remote cache entegrasyonu
+- Sıfır konfigürasyon: `npx turbo login` ve `npx turbo link` ile aktifleşir
+- Vercel free tier: Hobi projeler için yeterli (aylık 500 saatlik cache hit)
+- Avantaj: Bakım gerektirmez, Vercel CDN üzerinden düşük latency
+
+### Self-Hosted Remote Cache
+
+- `turborepo-remote-cache` veya `turbo-remote-cache-rs` gibi açık kaynak çözümler
+- S3, GCS, Azure Blob veya MinIO üzerinde çalışır
+- Avantaj: Tam kontrol, maliyet optimizasyonu, veri lokasyonu kontrolü
+- Dezavantaj: Altyapı bakım yükü
+
+## 30.3. Beklenen Kazanım
+
+Remote cache ile CI build sürelerinde **%40-60 iyileşme** beklenir. Bu iyileşme şu senaryolarda ortaya çıkar:
+
+- PR’da yalnızca `apps/web` değiştiğinde `packages/*` testleri cache’den gelir
+- Ardışık CI run’larda değişmeyen paketlerin build/test/lint’i atlanır
+- Geliştiricinin local’inde başka bir geliştiricinin zaten çalıştırdığı task’lar cache’den çözülür
+
+## 30.4. Güvenlik
+
+- **Cache artifact imzalama:** `TURBO_REMOTE_CACHE_SIGNATURE_KEY` environment variable’ı ile artifact’ler imzalanır. Bu, cache poisoning saldırılarını önler.
+- **Erişim kontrolü:** Remote cache token’ı CI secret olarak saklanır, repo’ya yazılmaz
+- **Cache isolation:** Farklı branch’lerin cache’leri izole tutulabilir (isteğe bağlı)
+
+## 30.5. Invalidation ve Temizlik
+
+- `turbo prune` ile gereksiz cache artifact’leri temizlenir
+- Periyodik cache cleanup (ör. 30 günden eski artifact’ler) CI cron job ile yapılır
+- Major dependency upgrade sonrası cache invalidation yapılır (hash değişeceği için otomatik olur)
+
+## 30.6. Maliyet Değerlendirmesi
+
+| Seçenek | Maliyet | Bakım Yükü | Uygunluk |
+|---------|---------|------------|----------|
+| Vercel Free | $0 (500 saat/ay) | Sıfır | Küçük-orta projeler |
+| Vercel Pro | $20/ay/kullanıcı | Düşük | Orta-büyük projeler |
+| Self-hosted (S3) | ~$5-20/ay (storage) | Orta | Büyük projeler, veri kontrolü gerekli |
+| Self-hosted (MinIO) | Sunucu maliyeti | Yüksek | Enterprise, air-gapped ortamlar |
+
+Bu boilerplate için başlangıçta **Vercel Remote Cache free tier** değerlendirilir; ölçek büyüdükçe self-hosted’a geçiş planlanabilir.
+
+---
+
+# 31. Kısa Sonuç
 
 Bu boilerplate için repo ve build workflow omurgası artık açıktır:
 

@@ -89,6 +89,59 @@ Developer Fast Track sonrası, mobile özelinde:
 
 ---
 
+## AI Agent Rolü
+
+AI agent'ların (Claude Code, Codex CLI vb.) projeye katılımında okuması gereken dokümanlar:
+
+| Öncelik | Doküman | Gerekçe |
+|---------|--------|---------|
+| 🔴 Zorunlu | `CLAUDE.md` | Proje talimat sözleşmesi, canonical kararlar, kodlama standartları |
+| 🔴 Zorunlu | `AGENTS.md` | Agent-spesifik talimatlar, review guidelines |
+| 🔴 Zorunlu | `47-ai-guardrail-governance.md` | Guardrail protokolü, skill/hook entegrasyonu, ihlal yönetimi |
+| 🟠 Yüksek | `36-canonical-stack-decision.md` | Teknoloji kararları, kilitli kütüphaneler |
+| 🟠 Yüksek | `37-dependency-policy.md` | Bağımlılık kuralları, yeni paket ekleme süreci |
+| 🟠 Yüksek | `38-version-compatibility-matrix.md` | Versiyon uyumluluğu, SDK eşleşmeleri |
+| 🟡 Orta | İlgili ADR (ADR-001 → ADR-019) | Karar bağlamı, neden bu teknoloji seçildi |
+| 🟡 Orta | `40-ai-workflow-and-tooling.md` | AI workflow kuralları, token bütçesi |
+| 🟡 Orta | `41-ai-instruction-standards.md` | Talimat dosyası standartları, context bütçesi |
+| 🟢 Düşük | `44-exception-and-exemption-policy.md` | İhlal düzeltilemediğinde exception süreci |
+
+**Not:** AI agent'lar CLAUDE.md ve AGENTS.md'yi her oturumda otomatik olarak okur. Diğer dokümanlar iş türüne göre guardrail skill'leri tarafından yüklenir.
+
+---
+
+## Tahmini Okuma Süreleri
+
+Doküman aileleri ve tahmini okuma süreleri:
+
+| Doküman Ailesi | Doküman Sayısı | Tahmini Süre | İçerik |
+|---------------|---------------|-------------|--------|
+| Foundation (00-02) | 3 | ~30 dakika | Charter, ilkeler, UI/UX kalite standardı |
+| Architecture (03-10) | 8 | ~2 saat | Mimari, design system, state, data fetching |
+| Standards (11-14) | 4 | ~1 saat | Forms, a11y, performance, testing |
+| Governance (15-17) | 3 | ~45 dakika | CI rules, tooling, decision framework |
+| ADR (ADR-001 → ADR-019) | 19 | ~3 saat | Tüm canonical kararlar |
+| Design System (22-26) | 5 | ~1.5 saat | Tokens, components, motion, platform |
+| Quality (27-28) | 2 | ~1 saat | Security, observability |
+| Operations (29-34) | 6 | ~1.5 saat | Release, contribution, audit, DoD |
+| Governance (36-48) | 13 | ~2.5 saat | Stack, dependency, branching, AI, guardrail |
+| AI Guardrails | ~26 domain + ~30 aktivite | ~2 saat | Domain ve aktivite kuralları |
+| Onboarding | 2 | ~30 dakika | İlk adımlar, okuma rehberi |
+
+### Hedef Okuma Süreleri
+
+| Profil | Minimum (çalışmaya başlamak için) | Tam Resim |
+|--------|----------------------------------|-----------|
+| Developer | ~2 saat (Fast Track) | ~6-8 saat |
+| Frontend Developer | ~4 saat (Fast Track + Deep Dive) | ~8-10 saat |
+| Mobile Developer | ~3 saat (Fast Track + Mobile) | ~8-10 saat |
+| Designer | ~1.5 saat | ~4-6 saat |
+| Tech Lead | ~2.5 saat | ~10-12 saat |
+| QA Mühendisi | ~1.5 saat | ~6-8 saat |
+| AI Agent | ~10 dakika (CLAUDE.md + AGENTS.md) | Guardrail skill'ler ile on-demand |
+
+---
+
 ## Tam Belge Seti
 
 Tüm belgelerin tam listesi ve otorite sırası için: `35-document-map.md`

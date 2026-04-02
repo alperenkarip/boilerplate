@@ -506,3 +506,93 @@ Bu belge asagidaki kosullar saglandiginda uygulamaya hazir kabul edilir:
 - [ ] `31-audit-checklist.md`'ye ek denetim katmanlari olarak entegre edilebilir niteliktedir
 - [ ] `35-document-map.md`'de bu belgenin yeri isaretlenmistir
 - [ ] `43-derived-project-creation-guide.md` ile uyumlu ve referans verilebilir yapidadir
+
+---
+
+# 15. BOUNDARY.md Otomatik Güncelleme (2026-04-02 Eki)
+
+Bu bölüm, derived project'lerdeki BOUNDARY.md dosyasının güncelliğini sağlayan otomatik kontrol mekanizmasını tanımlar.
+
+## 15.1. Haftalık CI Job
+
+Haftalık çalışan CI job aşağıdaki kontrolleri yapar:
+
+| Kontrol | Açıklama | Başarısızlık Aksiyonu |
+|---------|----------|----------------------|
+| BOUNDARY.md mevcut mu | Derived project kökünde dosya varlığı | P0 uyarı issue aç |
+| Zorunlu kurallar geçerli mi | Zorunlu miras kurallarının BOUNDARY.md'de listelendiği | P0 uyarı issue aç |
+| Son güncelleme tarihi | BOUNDARY.md'nin son güncelleme tarihi | 90 gün aşıldıysa uyarı issue aç |
+| Upstream hash karşılaştırma | Boilerplate'in güncel commit hash'i ile BOUNDARY.md'deki hash | Farklılık varsa "boundary-sync" etiketli issue aç |
+
+## 15.2. Upstream Hash Karşılaştırma
+
+- BOUNDARY.md dosyasında `boilerplate_upstream_hash` alanı tutulur.
+- Bu alan, derived project'in en son senkronize olduğu boilerplate commit hash'idir.
+- CI job, boilerplate'in güncel main hash'i ile bu değeri karşılaştırır.
+- Farklılık varsa:
+  - Uyarı seviyeli issue açılır.
+  - Issue, değişen dosyaların listesini ve etki analizini içerir.
+  - Zorunlu miras kuralı değişikliği varsa severity P0, yapısal miras ise P1.
+
+## 15.3. BOUNDARY.md Minimum İçeriği
+
+```markdown
+# BOUNDARY.md
+<!-- boilerplate_upstream_hash: abc123def456 -->
+<!-- last_sync_date: 2026-04-02 -->
+
+## Zorunlu Miras Kuralları
+- [ ] TypeScript strict mode aktif
+- [ ] ESLint canonical rules uygulanıyor
+- [ ] Canonical stack kullanılıyor
+- [ ] Import yönü kuralları korunuyor
+
+## Yapısal Miras Kuralları
+- [ ] Test coverage eşiği: ...%
+- [ ] Design token kullanımı: semantic-only
+
+## Override Kayıtları
+(Override ADR referansları)
+```
+
+---
+
+# 16. Boundary İhlal Raporu (2026-04-02 Eki)
+
+Bu bölüm, derived project'lerdeki boundary ihlallerinin tespiti ve raporlanması için kontrol matrisini tanımlar.
+
+## 16.1. Kontrol Matrisi
+
+| Alan | Kontrol | İhlal Tipi | Severity | Kontrol Yöntemi |
+|------|---------|-----------|----------|----------------|
+| TS strict | `tsconfig.json` strict:true | Zorunlu | P0 — Blocker | CI: tsconfig parse |
+| Lint | ESLint canonical rules aktif | Zorunlu | P0 — Blocker | CI: eslint config doğrulama |
+| Coverage eşik | Minimum test coverage karşılanıyor | Yapısal | P1 — Major | CI: coverage raporu |
+| Yasaklı dep | dependency policy ihlali | Zorunlu | P0 — Blocker | CI: dependency scan |
+| Dizin yapısı | Canonical dizin yapısına uyum | Yapısal | P1 — Major | CI: dizin yapısı kontrolü |
+| Token kullanım | Hardcoded değer yok, semantic token zorunlu | Yapısal | P1 — Major | CI: grep/lint |
+| Import yönü | packages → apps import yok | Zorunlu | P0 — Blocker | CI: import analizi |
+| i18n | Inline user-facing string yok | Yapısal | P1 — Major | CI: lint rule |
+
+## 16.2. Severity Kuralları
+
+- **Zorunlu miras ihlali = P0 (Blocker):** CI'ı bloklar, merge yapılamaz. Düzeltme veya onaylı override gerekir.
+- **Yapısal miras ihlali = P1 (Major):** CI uyarı verir, sprint içinde çözülmelidir. Override ile gevşetilemez, yalnızca sıkılaştırılabilir.
+
+## 16.3. Rapor Formatı
+
+CI çıktısında boundary ihlal raporu aşağıdaki formatta sunulur:
+
+```
+=== BOUNDARY İHLAL RAPORU ===
+Tarih: 2026-04-02
+Proje: derived-project-x
+
+[P0] TS strict: tsconfig.json strict:false → ZOR UNLU
+[P1] Coverage: %62 (minimum %70) → YAPISAL
+[PASS] Lint: ESLint canonical rules aktif
+[PASS] Import yönü: İhlal yok
+===
+Toplam: 1 P0, 1 P1, 2 PASS
+Sonuç: BLOK — P0 ihlal mevcut
+```

@@ -1093,7 +1093,115 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 32. Kısa Sonuç
+# 32. Component Versiyonlama Stratejisi
+
+Design system component'lerinde breaking change gerektiren güncellemeler kontrollü bir süreçle yönetilmelidir. Bu bölüm, component versiyonlama kurallarını ve deprecation sürecini tanımlar.
+
+## 32.1. Deprecation Süreci
+
+Breaking change içeren component güncellemelerinde aşağıdaki adımlar sırasıyla uygulanır:
+
+1. **Deprecated işaretleme (Sprint N):** Eski component `@deprecated` JSDoc etiketi ile işaretlenir. Deprecation sebebi ve alternatif component referansı JSDoc açıklamasına yazılır.
+   ```typescript
+   /**
+    * @deprecated v2.0.0 itibarıyla kullanımdan kaldırılacaktır.
+    * Yerine `ButtonV2` kullanın. Migration rehberi: docs/migration/button-v2.md
+    */
+   export function Button(props: ButtonProps) { ... }
+   ```
+2. **Warning dönemi (Sprint N+1 → N+2):** Eski component render edildiğinde `console.warn` ile kullanım uyarısı verilir. Bu uyarı yalnızca development ortamında aktiftir, production'da gösterilmez. Uyarı süresi en az 2 sprint (yaklaşık 4 hafta) boyunca devam eder.
+3. **Migration rehberi:** Yeni component'e geçiş için adım adım migration dokümanı hazırlanır. Rehber, prop mapping tablosu, import değişiklikleri ve davranış farklarını içerir.
+4. **Removal (Sprint N+3+):** Warning dönemi sonunda ve tüm kullanım yerleri migrate edildikten sonra eski component koddan kaldırılır.
+
+## 32.2. Versiyon Bump Kuralları
+
+Component değişikliklerinde semantic versioning kuralları uygulanır:
+
+| Değişiklik Türü | Versiyon Bump | Örnek |
+|----------------|--------------|-------|
+| Yeni opsiyonel prop ekleme | Minor (1.x.0) | `Button`'a `loading` prop'u ekleme |
+| Prop kaldırma veya rename | Major (x.0.0) | `onPress` → `onTap` rename |
+| Zorunlu prop ekleme | Major (x.0.0) | `variant` prop'unu required yapma |
+| Görsel değişiklik (breaking) | Major (x.0.0) | Varsayılan padding değişimi |
+| Bug fix | Patch (1.0.x) | Focus ring'in doğru render edilmesi |
+| İç implementasyon değişikliği | Patch (1.0.x) | Animasyon engine değişimi (API aynı) |
+
+## 32.3. Codemod Desteği
+
+Major component değişikliklerinde otomatik migration codemod'u sağlanır:
+
+- Araç: `jscodeshift` ile AST bazlı transform
+- Codemod kapsamı: Import yolu değişikliği, prop rename, prop değer dönüşümü
+- Çalıştırma: `pnpm codemod:run <transform-name>` komutu ile tüm codebase'de toplu uygulama
+- Test: Her codemod kendi test dosyasıyla birlikte gelir (input → expected output)
+
+## 32.4. CHANGELOG
+
+Her component değişikliği `packages/ui/CHANGELOG.md` dosyasında belgelenir. CHANGELOG formatı:
+
+```markdown
+## [2.0.0] - 2026-04-15
+### Breaking Changes
+- `Button`: `onPress` prop'u `onTap` olarak yeniden adlandırıldı
+### Deprecated
+- `Card`: v3.0.0'da kaldırılacak, yerine `SurfaceCard` kullanın
+### Added
+- `Button`: `loading` prop'u eklendi
+### Fixed
+- `Input`: Focus ring dark mode'da görünmeme hatası düzeltildi
+```
+
+---
+
+# 33. Expo UI Native Component Bridge Pozisyonu
+
+`@expo/ui` paketi ile sunulan native bileşenlerin design system hiyerarşisindeki yeri ve kullanım politikası bu bölümde tanımlanır.
+
+## 33.1. Kategori Tanımı
+
+`@expo/ui` bileşenleri design system'da **"Native Adapter"** kategorisinde yer alır. Bu bileşenler atom, molecule veya pattern değildir; platform-specific native UI bileşenlerinin design system prop interface'ine sarılmış adaptörleridir.
+
+## 33.2. Kullanım Alanı
+
+Native adapter yalnızca, native UX'in cross-platform custom eşdeğerinden **belirgin şekilde üstün** olduğu durumlarda kullanılır:
+
+| Bileşen | Native Üstünlük Gerekçesi | iOS Karşılığı | Android Karşılığı |
+|---------|--------------------------|---------------|-------------------|
+| DatePicker | Her iki platformda native picker, kullanıcıya tanıdık UX sunar | UIDatePicker | MaterialDatePicker |
+| SegmentedControl | iOS'ta UISegmentedControl donanım entegrasyonlu haptic feedback sağlar | UISegmentedControl | Material SegmentedButton |
+| ContextMenu | iOS'ta native context menu, haptic feedback ve blur backdrop ile premium his verir | UIContextMenuInteraction | PopupMenu |
+| BottomSheet | Platform-native sheet presentation, gesture ve animation kalitesi yüksek | UISheetPresentationController | BottomSheetDialog |
+
+## 33.3. Wrapper Pattern
+
+Her native adapter, design system'ın standart prop interface'ini uygular:
+
+- Props, design system'ın semantic token ve variant sistemine uygun olmalıdır.
+- Platform-specific native prop'lar wrapper içinde kapsüllenir, dışa açılmaz.
+- Wrapper, `Platform.select` veya conditional import ile doğru native bileşeni seçer.
+
+## 33.4. Fallback Stratejisi
+
+Native adapter kullanılamayan platformlarda (özellikle web) custom cross-platform bileşen fallback olarak kullanılır:
+
+```typescript
+// Örnek: DatePicker adaptörü
+const DatePicker = Platform.select({
+  ios: NativeDatePicker,      // @expo/ui veya native modül
+  android: NativeDatePicker,  // @expo/ui veya native modül
+  web: CustomDatePicker,      // Cross-platform custom bileşen
+});
+```
+
+## 33.5. Karar ve Zaman Çizelgesi
+
+- **Mevcut durum (Nisan 2026):** `@expo/ui` henüz stable değildir. Tüm bileşenler cross-platform custom olarak geliştirilir.
+- **Geçiş koşulu:** `@expo/ui` stable release ve Expo SDK 55.x ile tam uyumluluk sağlandığında native adapter'lara geçiş değerlendirilir.
+- **Geçiş süreci:** Custom bileşenler deprecation pipeline'ına alınır, native adapter'lar aynı prop interface ile tanıtılır.
+
+---
+
+# 34. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

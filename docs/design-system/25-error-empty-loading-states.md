@@ -1512,7 +1512,101 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 51. Kısa Sonuç
+# 51. Global Error Boundary Katmanı
+
+Uygulama seviyesinde yakalanmamış hataların yönetimi, kullanıcı deneyiminin korunması ve hata raporlamasının sağlanması için çok katmanlı error boundary sistemi kullanılır.
+
+## 51.1. Error Boundary Hiyerarşisi
+
+Uygulama üç katmanlı error boundary hiyerarşisi ile sarılır:
+
+1. **App-Level Error Boundary:** Tüm uygulama ağacını sarar. Fatal crash'leri ve öngörülemeyen hataları yakalar. En üst düzey savunma hattıdır.
+2. **Screen-Level Error Boundary:** Her ekranı (route/screen component) ayrı ayrı sarar. Bir ekrandaki hata diğer ekranları etkilemez; hata izolasyonu sağlar.
+3. **Feature-Level Error Boundary:** Kritik feature modüllerini (ödeme formu, chat modülü, medya oynatıcı vb.) sarar. Feature içi hata, ekranın geri kalanını etkilemez.
+
+## 51.2. App-Level Boundary Davranışı
+
+App-level error boundary tetiklendiğinde:
+
+- **Crash ekranı gösterilir:** "Beklenmeyen bir hata oluştu" başlığı, açıklayıcı alt metin ve aksiyon butonları içerir.
+- **"Yeniden Dene" butonu:** Navigation state'ini sıfırlar ve uygulamayı initial route'a yönlendirir. `navigation.reset({ index: 0, routes: [{ name: 'Home' }] })` pattern'i kullanılır.
+- **"Hata Bildir" butonu:** Sentry'ye kullanıcı feedback'i gönderir. `Sentry.showReportDialog()` veya custom feedback form ile kullanıcıdan bağlam bilgisi alınır.
+- **Otomatik Sentry raporu:** Error boundary'de yakalanan hata otomatik olarak Sentry'ye stack trace, component ağacı bilgisi ve breadcrumb'lar ile raporlanır.
+- **Loglama:** Hata detayları structured log formatında kaydedilir (bkz. `28-observability-and-debugging.md`).
+
+## 51.3. Screen-Level Boundary Davranışı
+
+Screen-level error boundary tetiklendiğinde:
+
+- **Sadece hatalı ekran etkilenir:** Diğer ekranlar (tab bar'daki diğer tab'lar, stack'teki önceki ekranlar) çalışmaya devam eder.
+- **Hata yüzeyi:** Ekran içeriği yerine "Bu ekranda bir sorun oluştu" mesajı ve "Yeniden Yükle" butonu gösterilir.
+- **"Yeniden Yükle" butonu:** Ekran component'ini unmount → remount ederek sıfırdan yükler. State ve data fresh olarak çekilir.
+- **Sentry raporu:** Screen-level hata da Sentry'ye otomatik raporlanır; raporda hangi ekranda hata oluştuğu bilgisi yer alır.
+
+## 51.4. React Native Spesifik Davranışlar
+
+- **ErrorUtils.setGlobalHandler:** React component ağacı dışında kalan native crash'leri (unhandled promise rejection, native modül hatası) yakalamak için `ErrorUtils.setGlobalHandler` kullanılır.
+- **Development ortamı:** LogBox (error overlay) aktif kalır; geliştirici hatayı detaylı görebilir.
+- **Production ortamı:** LogBox devre dışıdır; kullanıcıya yalnızca tasarlanmış hata yüzeyleri gösterilir.
+
+## 51.5. Error Boundary İç İçe Geçme Kuralı
+
+- En spesifik boundary hata yakalar: Feature boundary → Screen boundary → App boundary sıralaması ile en yakın boundary tetiklenir.
+- Boundary kendi içinde hata üretirse bir üst katman devreye girer.
+- App-level boundary'de hata oluşursa son çare olarak native crash handler (Sentry native SDK) raporu oluşturulur.
+
+---
+
+# 52. Offline Fallback State
+
+Ağ bağlantısı olmadığında gösterilecek UI davranışları bu bölümde tanımlanır. Offline state, kullanıcının mevcut verilerle çalışmaya devam etmesini ve bağlantı geldiğinde kesintisiz geçiş yapmasını sağlar.
+
+## 52.1. Bağlantı Durumu İzleme
+
+- `@react-native-community/netinfo` ile ağ bağlantısı durumu sürekli izlenir.
+- Web'de `navigator.onLine` ve `online`/`offline` event'leri ile izleme yapılır.
+- Bağlantı durumu global state'te (Zustand store) tutulur ve tüm component'lere dağıtılır.
+
+## 52.2. Bağlantı Kesildiğinde UI Davranışları
+
+### 52.2.1. Global Offline Banner
+- Ekranın üst kısmında (SafeArea altında) kalıcı banner gösterilir.
+- Metin: "Cevrimdisi calisiyorsunuz — bazi ozellikler sinirli olabilir"
+- Arka plan: `surface-warning-soft` token, ikon: WiFi-off.
+- Banner animasyonu: Yukarıdan aşağı slide-in (200ms, `easing-enter`).
+
+### 52.2.2. Cache'ten Veri Gösterimi
+- Son başarılı API response'u TanStack Query cache'inden gösterilir.
+- Stale data gösterimi: İçerik üzerinde "Son guncelleme: 5 dk once" badge'i eklenir.
+- Cache'te veri yoksa: İlgili bölümde "Baglanti gerekli — cevrimdisi veri mevcut degil" empty state gösterilir.
+
+### 52.2.3. Offline-Only UI Kısıtlamaları
+- Mutation butonları (submit, kaydet, sil) `disabled` yapılır.
+- Disabled buton üzerinde tooltip: "Bu islem icin internet baglantisi gerekli".
+- Sadece okuma işlemleri cache'ten çalışmaya devam eder.
+
+### 52.2.4. Offline Mutation Queue Göstergesi
+- Bekleyen mutation sayısı ekranın alt kısmında badge ile gösterilir: "2 islem bekleniyor".
+- Kullanıcı bu badge'e tıklayarak bekleyen işlemlerin listesini görebilir.
+
+## 52.3. Bağlantı Geldiğinde UI Davranışları
+
+1. **Banner geçişi:** Turuncu "Cevrimdisi" banner yeşile döner: "Baglanti saglandi". 3 saniye sonra slide-out ile kaybolur.
+2. **Mutation replay:** Offline queue'daki bekleyen mutation'lar otomatik olarak sırayla replay edilir. Her başarılı replay'de badge sayısı güncellenir.
+3. **Cache refresh:** Stale durumda gösterilen cache verileri arka planda yenilenir. Stale badge'i kaldırılır.
+4. **Hata durumu:** Replay edilen mutation başarısız olursa, kullanıcıya hata bildirimi gösterilir ve işlem retry seçeneği sunulur.
+
+## 52.4. Offline-First Ekranlar
+
+Bazı ekranlar tasarım gereği tamamen offline çalışabilir:
+- Cached data üzerinden tam okuma desteği
+- Local mutation (MMKV/SQLite) desteği ile offline yazma
+- Bağlantı geldiğinde sync mekanizması
+- Bu ekranlar ADR-019 (Local Storage ve Offline-First Strategy) ile uyumlu tasarlanır.
+
+---
+
+# 53. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

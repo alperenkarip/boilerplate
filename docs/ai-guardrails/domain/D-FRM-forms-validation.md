@@ -4,7 +4,7 @@ type: domain
 name: Forms, Validation, Input UX
 kaynak-dokümanlar: 11, ADR-006
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-FRM: Forms & Validation Guardrail
@@ -68,6 +68,40 @@ son-güncelleme: 2026-04-01
 35. [YAPILMALI] Başarılı doğrulama da gösterilebilir (yeşil onay işareti)
 36. [YAPILMAMALI] Gönderme butonunu form dolmadan etkinleştirip sonra hata verme
 
+### Form Analytics Event Standardı
+37. [YAPILMALI] Form yaşam döngüsü boyunca aşağıdaki analytics event'leri gönderilmeli:
+
+| Event | Tetikleyici | Payload |
+|---|---|---|
+| `form_start` | Form ilk kez render olduğunda | `{ form_name, screen, timestamp }` |
+| `form_field_error` | Field-level validation hatası oluştuğunda | `{ form_name, field_name, error_type, timestamp }` |
+| `form_submit` | Submit butonuna basıldığında | `{ form_name, field_count, filled_count, timestamp }` |
+| `form_success` | Submit başarılı olduğunda | `{ form_name, duration_ms, timestamp }` |
+| `form_error` | Submit sunucu hatası döndürdüğünde | `{ form_name, error_type, error_code, timestamp }` |
+| `form_abandon` | Kullanıcı formu terk ettiğinde (dirty form) | `{ form_name, filled_fields, last_field, timestamp }` |
+
+38. [YAPILMALI] `form_abandon` event'i şu durumlarda tetiklenmeli: navigation away (geri butonu, tab değişikliği), app background'a geçiş (dirty form varsa)
+39. [YAPILMAMALI] Analytics payload'ında kullanıcının girdiği veriyi (şifre, e-posta, telefon vb.) göndermek — sadece meta veri
+
+### Autofill Uyumluluğu
+40. [ZORUNLU] Login ve kayıt formlarında autofill desteği zorunlu
+41. [YAPILMALI] `textContentType` (iOS) ve `autoComplete` (Android/web) mapping'i doğru uygulanmalı:
+
+| Veri Türü | iOS textContentType | Android/Web autoComplete |
+|---|---|---|
+| E-posta | `emailAddress` | `email` |
+| Mevcut şifre | `password` | `current-password` |
+| Yeni şifre | `newPassword` | `new-password` |
+| Ad-soyad | `name` | `name` |
+| Telefon | `telephoneNumber` | `tel` |
+| Adres | `fullStreetAddress` | `street-address` |
+| Kredi kartı | `creditCardNumber` | `cc-number` |
+| Tek kullanımlık kod (OTP) | `oneTimeCode` | `one-time-code` |
+
+42. [YAPILMALI] iOS Simulator'da Password AutoFill testi yapılmalı
+43. [YAPILMALI] Android Autofill Framework ile test yapılmalı
+44. [YAPILMAMALI] `autoComplete="off"` ile autofill'i devre dışı bırakmak (güvenlik gerekçesi yoksa)
+
 ## Kalite Eşikleri
 - [MİNİMUM] Zod schema-first validation
 - [MİNİMUM] Label her field'da görünür
@@ -87,6 +121,11 @@ son-güncelleme: 2026-04-01
 8. [ZAYIF] Seçim kontrolü uyumsuz — 10 seçenek için Segmented Control
 9. [ZAYIF] Çok adımlı form'da ilerleme göstergesi yok
 10. [ZAYIF] Hata düzeltildiğinde hata mesajı hala görünüyor
+11. [ZAYIF] Form analytics event'leri hiç gönderilmiyor — form performansı ölçülemiyor
+12. [ZAYIF] `form_abandon` event'i tanımsız — terk edilen formlar izlenmiyor
+13. [ZAYIF] Analytics payload'ında kullanıcı şifresi/e-postası gönderiliyor — privacy ihlali
+14. [ZAYIF] `autoComplete="off"` gereksiz yere kullanılıyor — autofill devre dışı
+15. [ZAYIF] textContentType ile autoComplete mapping'i uyumsuz — autofill düzgün çalışmıyor
 
 ## Kontrol Listesi
 - [ ] Zod schema tanımlandı mı?
@@ -97,12 +136,17 @@ son-güncelleme: 2026-04-01
 - [ ] Submit lifecycle (loading, error, success) tanımlı mı?
 - [ ] Keyboard ve a11y uyumu sağlandı mı?
 - [ ] textContentType doğru tanımlı mı?
+- [ ] autoComplete (Android/web) mapping'i doğru mu?
 - [ ] AutoFill / Passkey desteği çalışıyor mu?
+- [ ] iOS Simulator'da AutoFill testi yapıldı mı?
 - [ ] Doğru keyboard tipi açılıyor mu (email, numeric vb.)?
 - [ ] Seçim kontrolleri uygun türde mi (toggle, segmented, picker)?
 - [ ] Çok adımlı form'da ilerleme göstergesi var mı?
 - [ ] Kaydedilmemiş değişiklik uyarısı var mı?
 - [ ] Hata düzeltildiğinde otomatik temizleme var mı?
+- [ ] Form analytics event'leri tanımlı mı (start, submit, success, error, abandon)?
+- [ ] form_abandon dirty form terk durumunda tetikleniyor mu?
+- [ ] Analytics payload'ında kişisel veri yok mu?
 
 ## İhlal Durumunda
 - Schema eksikliği → Zod schema oluştur

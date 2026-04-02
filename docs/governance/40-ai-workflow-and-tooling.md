@@ -998,3 +998,72 @@ Her kod üretiminde Claude Code şu süreci izler:
 - Guardrail governance: `docs/governance/47-ai-guardrail-governance.md`
 - Skill dosyaları: `.claude/skills/{skill-adi}/SKILL.md`
 - Hook konfigürasyonu: `.claude/settings.json`
+
+---
+
+# 21. Multi-Agent Token Bütçesi Yönetimi (2026-04-02 Eki)
+
+Bu bölüm, AI agent oturumlarında token tüketiminin iş türüne göre bütçelenmesini ve optimizasyon stratejilerini tanımlar.
+
+## 21.1. İş Türü Bazlı Token Bütçesi
+
+| İş Türü | Max Token / Oturum | Gerekçe |
+|---------|-------------------|---------|
+| Küçük bug fix | 50K | Tek dosya düzenleme, dar kapsam, hızlı çözüm |
+| Feature geliştirme | 200K | Çoklu dosya, test yazımı, guardrail kontrolü |
+| Kapsamlı refactoring | 500K | Geniş kapsam, çok sayıda dosya, etki analizi |
+| Doküman iyileştirme | 300K | Çoklu doküman okuma ve düzenleme, tutarlılık kontrolü |
+| SPEC yazımı | 100K | Doküman referansı, EARS format, kabul kriterleri |
+| Code review | 150K | Dosya okuma, kural karşılaştırma, yorum yazma |
+| Test yazımı | 150K | Kaynak kod okuma, test senaryosu üretimi |
+
+## 21.2. Token Optimizasyon Stratejileri
+
+| Strateji | Açıklama | Tasarruf |
+|----------|----------|---------|
+| CLAUDE.md kısa tut | ≤4000 token; her oturumda yüklenir | Yüksek |
+| Agent'lara spesifik görev ver | Geniş talimat yerine dar kapsamlı talimat | Orta |
+| Gereksiz dosya okumalarından kaçın | Yalnızca ilgili dosyaları oku, tüm dizini tarama | Orta |
+| Referans path ver, içerik verme | Büyük dokümanı okutmak yerine ilgili bölüm numarasını belirt | Yüksek |
+| Batch işlem kullan | Aynı türdeki işleri tek oturumda topla | Düşük |
+| Subagent kullan | Bağımsız görevleri paralel subagent'lara delege et | Orta |
+
+## 21.3. Bütçe Aşımı Yönetimi
+
+- Token bütçesi bir tavsiyedir, hard limit değildir. Ancak sistematik aşım, görev tanımının veya CLAUDE.md'nin optimize edilmesi gerektiğinin işaretidir.
+- Bütçe aşımı durumunda oturum özetlenerek yeni oturumda devam edilir.
+- Aşım oranı %50'yi geçen görevler için görev tanımı ve context optimizasyonu yapılır.
+
+---
+
+# 22. AI Agent Çıktı Kalite Metrikleri (2026-04-02 Eki)
+
+Bu bölüm, AI agent'ların ürettiği çıktıların kalitesini ölçen metrikleri ve hedeflerini tanımlar.
+
+## 22.1. Temel Kalite Metrikleri
+
+| Metrik | Tanım | Hedef | Ölçüm Yöntemi |
+|--------|-------|-------|---------------|
+| First-pass success rate | İlk denemede CI geçen PR oranı | >%70 | CI pipeline sonucu / toplam AI PR |
+| Rework rate | Review sonrası değişiklik gerektiren PR oranı | <%30 | Review round sayısı / toplam AI PR |
+| Guardrail ihlal oranı | Pre-PR kontrolünde yakalanan ihlal oranı | <%10 | Guardrail fail sayısı / toplam kontrol |
+| Test coverage delta | AI değişikliğinin coverage etkisi | ≥%0 (düşürmez) | Coverage diff raporu |
+| Build break rate | AI değişikliğinin build kırma oranı | <%5 | Build fail / toplam AI commit |
+| DoD compliance | DoD maddelerinin karşılanma oranı | >%90 | DoD checklist / toplam madde |
+
+## 22.2. İzleme ve Raporlama
+
+- Metrikler aylık olarak raporlanır.
+- Trend analizi ile kötüleşen metrikler tespit edilir.
+- First-pass success rate düşüşü → CLAUDE.md veya guardrail güncelleme ihtiyacı.
+- Rework rate artışı → Review guidelines veya talimat netliği iyileştirme ihtiyacı.
+- Guardrail ihlal oranı artışı → Guardrail kurallarının gözden geçirilme ihtiyacı (çok katı mı, anlaşılmaz mı).
+
+## 22.3. Kalite Hedefi Skalası
+
+| Seviye | First-pass | Rework | Guardrail İhlal | Durum |
+|--------|-----------|--------|----------------|-------|
+| Mükemmel | >%85 | <%15 | <%5 | Sürdür |
+| İyi | %70-85 | %15-30 | %5-10 | Kabul edilebilir |
+| Düşük | %50-70 | %30-50 | %10-20 | İyileştirme planla |
+| Kritik | <%50 | >%50 | >%20 | Acil müdahale |

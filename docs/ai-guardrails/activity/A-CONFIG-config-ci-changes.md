@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-CONFIG: Config/CI Değişikliği Guardrail
@@ -27,9 +27,29 @@ son-güncelleme: 2026-04-01
 5. Repo yapısı değişikliği → 21-repo-structure-spec.md ile uyumlu mu?
 6. Secret'ı CI log'a yazdırma — maskeleme kontrol et
 
+## Config Değişiklik Blast Radius Analizi
+7. Her config değişikliğinde etki alanı belirlenmelidir:
+
+| Değişen Config | Etki Alanı |
+|----------------|-----------|
+| `tsconfig.json` | Tüm TypeScript dosyaları |
+| ESLint config | Tüm lint kapsamındaki dosyalar |
+| `app.json` / `app.config.ts` | Native build (iOS + Android) |
+| CI workflow dosyaları | Tüm pipeline |
+| `turbo.json` | Cache invalidation, tüm task'lar |
+
+8. PR description'da **"Bu değişiklik şunları etkiler: ..."** ifadesi zorunlu
+9. Risk seviyesi belirlenmeli:
+   - **Low:** Tek workspace etkisi
+   - **Medium:** Monorepo geneli etkisi
+   - **High:** CI + native build etkisi
+
 ## DoD Ek Maddeleri
 - [ ] Pipeline kırılma riski değerlendirilmiş
 - [ ] Secret exposure riski yok
 - [ ] Build başarılı
 - [ ] .env.example güncel
 - [ ] Quality gate gevşetilmemiş
+- [ ] Blast radius analizi yapılmış
+- [ ] PR description'da etki alanı belirtilmiş
+- [ ] Risk seviyesi (Low/Medium/High) belirlenmiş

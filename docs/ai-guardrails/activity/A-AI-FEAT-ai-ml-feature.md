@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: zorunlu
   stitch: ihtiyaca göre
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-AI-FEAT: AI/ML Feature Guardrail
@@ -30,10 +30,20 @@ son-güncelleme: 2026-04-01
 8. Analytics yalnızca izinli, minimize edilmiş ve privacy uyumlu sinyal göndermeli
 9. Model/vendor lock-in yaratacak doğrudan kullanım yerine abstraction katmanı tercih edilmeli
 
+## Model Versioning ve A/B Test
+10. **Model identifier formatı:** `model_name@version` (ör: `sentiment@v2.1`) — her model sürümü benzersiz tanımlayıcıya sahip olmalı
+11. **Feature flag entegrasyonu:** `ai_model_variant` flag'i ile A/B split yönetimi
+12. **Ölçüm metrikleri:** accuracy, latency, user satisfaction — her variant için ayrı takip
+13. **Rollout stratejisi:** Winner variant %100'e çıkarılır, kaybeden variant kaldırılır
+14. **Fallback mekanizması:** Performans düşükse önceki versiyona instant revert — otomatik veya manuel tetikleme
+
 ## DoD Ek Maddeleri
 - [ ] SPEC yazılmış ve ölçülebilir kabul kriterleri tanımlanmış
 - [ ] İlgili domain guardrail'leri okunmuş ve checklist'e işlenmiş
 - [ ] Privacy/compliance etkisi değerlendirilmiş (ADR-017 uyumu)
 - [ ] Failure/fallback akışı tasarlanmış ve test edilmiş
 - [ ] Log/telemetry redaction kontrolü yapılmış
+- [ ] Model identifier formatı uygulanmış (model_name@version)
+- [ ] A/B test metrikleri tanımlanmış
+- [ ] Fallback/revert mekanizması hazır
 - [ ] Codex review geçmiş

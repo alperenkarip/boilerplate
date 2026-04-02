@@ -1023,8 +1023,118 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 44. Kısa Sonuç
+# 44. TanStack Query Prefetching Stratejisi
+
+Kullanıcı deneyimini iyileştirmek için veri önceden yükleme (prefetching) pattern’leri:
+
+## 44.1. Web Prefetching
+
+### Route Loader’da Prefetch
+React Router loader fonksiyonu içinde `queryClient.prefetchQuery()` çağrılarak route render edilmeden önce veri hazır hale getirilir. Kullanıcı sayfaya geldiğinde veri zaten cache’dedir; loading state gösterilmez veya çok kısa sürer.
+
+### Hover/Focus Prefetch
+Link üzerine hover veya focus olduğunda `queryClient.prefetchQuery()` tetiklenir. Kullanıcı tıklamadan önce veri indirilmeye başlar. Bu pattern özellikle navigation menüleri ve liste öğeleri için etkilidir.
+
+## 44.2. Mobile Prefetching
+
+### Tab Geçişinde Prefetch
+`onTabPress` handler’ında hedef tab’ın ana verisi prefetch edilir. Kullanıcı tab’a geçtiğinde veri hazırdır.
+
+### Screen Focus’ta Prefetch
+`useFocusEffect` hook’u içinde ekranın ihtiyaç duyduğu veri prefetch edilir. Bu pattern özellikle stack navigation’da geri dönüş (back) senaryosunda veri tazeliğini garanti eder.
+
+## 44.3. Prefetch Kuralları
+
+- **Stale prefetch:** Prefetch edilen veri `staleTime` süresi içindeyse tekrar fetch edilmez; cache’deki veri kullanılır
+- **Öncelik sırası:** Kritik veri (user profile, permissions) > İkincil veri (notifications, feed) > Opsiyonel veri (recommendations, suggestions)
+- **Bandwidth bilinçliliği:** Mobile’da aggressive prefetch yerine kullanıcı aksiyonuna bağlı selective prefetch tercih edilir
+- **Gereksiz prefetch yasağı:** Kullanıcının hiçbir zaman ziyaret etmeyeceği ekranların verisi prefetch edilmez
+
+---
+
+# 45. Canonical staleTime Default’ları
+
+Veri tipine göre staleTime ve gcTime (garbage collection time) default değerleri:
+
+| Veri Tipi | staleTime | gcTime | Gerekçe |
+|-----------|-----------|--------|---------|
+| Kullanıcı profili | 5 dakika | 30 dakika | Nadir değişir, her ekranda kritik |
+| Feed / Liste | 30 saniye | 5 dakika | Sık değişir, güncellik önemli |
+| Static config (feature flags, app config) | 1 saat | 24 saat | Çok nadir değişir, deployment ile güncellenir |
+| Bildirimler | 1 dakika | 10 dakika | Güncellik önemli, badge count ile ilişkili |
+| Arama sonuçları | 0 (her zaman fresh) | 5 dakika | Her aramada yeni sonuç gerekli, cache yalnızca back navigation için |
+| Dashboard metrikleri | 2 dakika | 15 dakika | Yaklaşık güncellik yeterli, exact real-time gerekmez |
+| Referans verisi (ülke listesi, kategoriler) | 24 saat | 7 gün | Çok nadir değişir, app lifecycle boyunca sabit kalabilir |
+| Form dropdown seçenekleri | 10 dakika | 1 saat | Nadir değişir, form açıldığında güncel olması yeterli |
+
+## 45.1. Kullanım Kuralları
+
+- Bu değerler **canonical default**’tır. Derived project ihtiyaca göre override edebilir, ancak override gerekçesi belgelenmelidir.
+- `staleTime: 0` demek "her render’da refetch" demek değildir; yalnızca veri her zaman stale kabul edilir ve uygun koşullarda (window focus, component mount) refetch tetiklenir.
+- `gcTime` her zaman `staleTime`’dan büyük olmalıdır. Cache’deki veri stale olsa bile gcTime süresi dolana kadar fiziksel olarak tutulur ve tekrar kullanılabilir.
+- Infinite query’lerde (sayfalama) `staleTime` daha kısa tutulmalıdır çünkü yeni sayfa eklenmiş olabilir.
+
+## 45.2. Query Key Convention ile Birlikte
+
+staleTime ve gcTime değerleri query factory veya query options factory pattern’inde merkezi olarak tanımlanır. Feature’lar bu factory’den okur; her yerde ayrı ayrı yazılmaz.
+
+---
+
+# 46. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 
-> Bu boilerplate’te server state generic app state değildir. Async veri davranışı fetch-first veya query-layer üzerinden yönetilebilir; fakat complexity threshold aşıldığında canonical yön TanStack Query'dir. Query cache, stale data, invalidation, retry ve mutation correctness bu katmanın resmi sorumluluğu olur; UI ve store bu veriyi duplicate ederek değil, doğru katmandan tüketerek çalışır.
+> Bu boilerplate’te server state generic app state değildir. Async veri davranışı fetch-first veya query-layer üzerinden yönetilebilir; fakat complexity threshold aşıldığında canonical yön TanStack Query’dir. Query cache, stale data, invalidation, retry ve mutation correctness bu katmanın resmi sorumluluğu olur; UI ve store bu veriyi duplicate ederek değil, doğru katmandan tüketerek çalışır.
+
+---
+
+# 47. React 19 Data API’leri ile İlişki
+
+Bu bölüm, React 19.2 ile gelen veri ile ilgili API’lerin bu boilerplate’teki konumunu açıkça kaydeder.
+
+## 47.1. React.use()
+
+React 19 `use()` API’si, render sırasında Promise veya Context okumayı sağlar. Bir component içinde `const data = use(promise)` yazılarak Suspense ile entegre veri okuma yapılabilir.
+
+**Bu boilerplate’teki pozisyonu:** Koşullu kabul.
+
+TanStack Query’nin `useSuspenseQuery` hook’u zaten Suspense entegrasyonu sağlamaktadır ve bu boilerplate’te canonical yoldur (ADR-005 §22). Ancak `use()` aşağıdaki sınırlı senaryolarda kabul edilebilir:
+
+- TanStack Query kapsamı dışında kalan basit, tek seferlik asenkron veri okumaları (ör: lazy-loaded konfigürasyon)
+- Context okuma kısa yazımı: `use(MyContext)` yerine `useContext(MyContext)` — semantik fark yoktur, convenience syntax’tır
+
+**Yasak kullanım:** `use()` ile doğrudan fetch çağrısı yapıp TanStack Query’yi bypass etmek. Server state ownership TanStack Query’dedir (ADR-005 §8); `use(fetch(...))` pattern’i cache, retry, invalidation ve deduplication mekanizmalarını kaybettirir.
+
+## 47.2. React.cache()
+
+React 19 `cache()` fonksiyonu, request-level memoization sağlar. Aynı argümanlarla çağrılan bir fonksiyonun sonucu tek bir render tree’de tekrar hesaplanmaz.
+
+**Bu boilerplate’teki pozisyonu:** Sınırlı uygulama alanı.
+
+`React.cache()` öncelikli olarak Server Components mimarisinde (RSC) request bazlı veri çoğaltmayı önlemek için tasarlanmıştır. SPA-first mimaride (ADR-001) Server Components kullanılmadığından, `cache()` fonksiyonunun ana kullanım senaryosu bu boilerplate’te geçerli değildir.
+
+**Kabul edilebilir kullanım:** CPU-intensive saf hesaplamaların (ör: karmaşık veri dönüşümü, ağır filtreleme) render içinde memoize edilmesi. Ancak bu senaryolar çoğu zaman `useMemo` ile daha idiomatik şekilde çözülebilir.
+
+## 47.3. useOptimistic
+
+React 19 `useOptimistic` hook’u, bir state değerinin asenkron operasyon tamamlanmadan önce geçici olarak güncellenmesini sağlar.
+
+**Bu boilerplate’teki pozisyonu:** Tamamlayıcı araç, alternatif değil.
+
+TanStack Query’nin optimistic update mekanizması (ADR-005 §22) canonical yoldur. `onMutate` callback’inde cache snapshot alınır, optimistic veri yazılır, hata durumunda rollback yapılır. Bu mekanizma server state ile cache tutarlılığını garanti eder.
+
+`useOptimistic` ise farklı bir katmanda çalışır: UI-local optimistic state yönetimi. Örneğin bir "beğen" butonunun anında görsel tepki vermesi gibi, cache güncellemesinden bağımsız, tamamen UI katmanında yaşayan geçici state’ler için kullanılabilir.
+
+**Kural:** Server state’i etkileyen optimistic update → TanStack Query `onMutate`. Yalnızca UI feedback amaçlı geçici state → `useOptimistic` kabul edilebilir.
+
+## 47.4. Suspense Stratejisi
+
+React 19 ile Suspense olgunlaşmıştır. Bu boilerplate’te Suspense kullanımı şu şekildedir:
+
+- **Data fetching Suspense:** `useSuspenseQuery` (TanStack Query) ile kullanılabilir ancak her query için zorunlu değildir. Progressive adoption önerilir.
+- **Lazy loading Suspense:** `React.lazy()` ile code splitting zaten desteklenir ve önerilir.
+- **Suspense boundary stratejisi:** Her route’un kendi `<Suspense fallback>` boundary’si olmalıdır. Nested boundary’ler dikkatli kullanılmalıdır — aşırı granüler Suspense "popcorn loading" efekti yaratır.
+
+## 47.5. Bilinçli Karar Kaydı
+
+> TanStack Query 5.x bu boilerplate’in canonical server state yönetim aracıdır. React 19’un `use()`, `cache()` ve `useOptimistic` API’leri TanStack Query’yi değiştirmez; sınırlı ve tamamlayıcı senaryolarda kullanılabilir. Server state ownership, cache yönetimi ve mutation lifecycle TanStack Query’nin sorumluluğundadır.

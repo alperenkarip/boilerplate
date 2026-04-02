@@ -4,7 +4,7 @@ type: domain
 name: Testing Stratejisi & Kalite
 kaynak-dokümanlar: 14, ADR-008
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-TST: Testing Guardrail
@@ -55,6 +55,77 @@ son-güncelleme: 2026-04-01
 - [ ] Test dosyası kaynak yanında mı?
 - [ ] Test davranışı mı test ediyor (implementasyon değil)?
 - [ ] skip/only bırakılmamış mı?
+
+---
+
+## Test Data Factory
+
+Test verisi üretimi için factory pattern rehberi:
+
+### Yapı
+- Dizin: `packages/test-utils/factories/`
+- Kütüphane: `fishery` (factory tanımı) + `@faker-js/faker` (rastgele veri)
+- Zod schema uyumu: Factory çıktısı ilgili Zod schema'ya uymalı
+
+### Kullanım Örnekleri
+```typescript
+// Temel kullanım
+const user = UserFactory.build(); // Varsayılan değerlerle
+const customUser = UserFactory.build({ name: 'Test Kullanıcı' }); // Override
+
+// Toplu üretim
+const users = UserFactory.buildList(10); // 10 kullanıcı
+
+// Trait desteği
+const adminUser = UserFactory.build({}, { transient: { role: 'admin' } });
+```
+
+### Kurallar
+1. [ZORUNLU] Her entity için bir factory tanımlanmalı — test'te hardcoded veri yasak
+2. [ZORUNLU] Factory çıktısı ilgili Zod schema validasyonundan geçmeli
+3. [YAPILMALI] Factory dosyaları `packages/test-utils/factories/{entity}.factory.ts` konumunda olmalı
+4. [YAPILMALI] Trait desteği ile farklı senaryolar modellenebilmeli (admin, inactive, verified vb.)
+5. [YAPILMAMALI] Test içinde `{ id: 1, name: 'test', email: 'test@test.com' }` gibi inline veri oluşturma
+6. [YAPILMAMALI] Factory'de gerçek kullanıcı verisi (gerçek email, telefon) kullanma — faker kullan
+
+---
+
+## API Mock Stratejisi (MSW)
+
+Test ve geliştirme ortamlarında API mock altyapısı:
+
+### Yapı
+
+| Ortam | Yöntem | Açıklama |
+|-------|--------|----------|
+| Unit/Integration test | `setupServer()` | Node.js ortamında mock server |
+| Browser / Storybook | `setupWorker()` | Service Worker ile tarayıcıda mock |
+| E2E (Playwright) | Playwright route interception | Test bazlı mock tanımı |
+
+### Handler Organizasyonu
+- Paylaşımlı handler dizini: `packages/test-utils/mocks/handlers/`
+- REST handler: `handlers/auth.ts`, `handlers/users.ts` (feature bazlı)
+- GraphQL handler (varsa): `handlers/graphql/`
+
+### Factory Entegrasyonu
+```typescript
+// Handler'da factory kullanımı — tutarlı response verisi
+http.get('/api/users', () => {
+  return HttpResponse.json(UserFactory.buildList(5));
+});
+```
+
+### Hata Simülasyonu
+- [ZORUNLU] Network error senaryosu tanımla: `http.get('/api/users', () => HttpResponse.error())`
+- [ZORUNLU] HTTP 500 senaryosu: `HttpResponse.json({ error: 'Server Error' }, { status: 500 })`
+- [ZORUNLU] HTTP 401 senaryosu: Unauthorized, token expire — auth flow testi
+- [YAPILMALI] Gecikmeli response: `delay(2000)` ile loading state testi
+- [YAPILMALI] Boş response: `[]` veya `null` ile empty state testi
+
+### Storybook Entegrasyonu
+- [YAPILMALI] MSW Storybook addon kullan — story bazlı mock tanımı
+- [YAPILMALI] Her story'de ilgili API handler'ını tanımla — gerçek API çağrısı yapma
+- [YAPILMAMALI] Storybook'ta gerçek API endpoint'ine istek atma
 
 ## Kaynak
 - Test stratejisi → docs/quality/14-testing-strategy.md

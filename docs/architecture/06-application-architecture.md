@@ -1101,7 +1101,120 @@ Aşağıdaki davranışlar bu proje kapsamında zayıf kabul edilir:
 
 ---
 
-# 29. Sonraki Dokümanlara Etkisi
+# 29. New Architecture (Fabric / JSI / TurboModules) Katmanı
+
+## 29.1. Bağlam
+
+Expo SDK 55 ile birlikte React Native New Architecture artık varsayılan olarak etkinleştirilmiştir ve kapatılması desteklenmemektedir. Bu durum, boilerplate'in mimari katmanlarını doğrudan etkiler. New Architecture'ın beş temel bileşeni ve mimari katmanlardaki konumları aşağıda detaylandırılmıştır.
+
+## 29.2. JSI (JavaScript Interface)
+
+JSI, eski Bridge mekanizmasının yerini alan yeni iletişim katmanıdır. Eski mimaride JavaScript ve native taraf arasındaki her iletişim JSON serializasyonu üzerinden asenkron olarak Bridge üzerinden geçiyordu. JSI bu ara katmanı kaldırır ve JavaScript'in doğrudan C++ host object'lerine erişmesini sağlar.
+
+**Mimari etkisi:** JSI, Platform/Infrastructure Layer'da konumlanır. Data Access Layer ve Feature Orchestration Layer'ın native modüllerle olan iletişimini doğrudan etkiler. Senkron çağrı desteği sayesinde, eski mimaride asenkron olmak zorunda olan bazı native erişimler (ör. MMKV okuma/yazma, Reanimated shared values) artık senkron olarak gerçekleştirilebilir. Bu, özellikle performans kritik alanlarda (animasyon, gesture handling, secure storage okuma) mimari tasarımı etkiler.
+
+**Pratikte ne değişir:** JSI tabanlı kütüphaneler (react-native-reanimated, react-native-mmkv, @shopify/flash-list vb.) eski Bridge tabanlı alternatiflere göre tercih edilir. `38-version-compatibility-matrix.md`'de JSI uyumu zorunlu kontrol kriteri olarak yer alır.
+
+## 29.3. Fabric
+
+Fabric, React Native'in yeni render sistemidir. Eski render sistemi shadow tree'yi JavaScript tarafında oluşturup asenkron olarak native'e gönderirken, Fabric bu süreci C++ üzerinden senkron ve concurrent olarak yürütür.
+
+**Mimari etkisi:** Fabric, Presentation Layer'ı doğrudan etkiler. Concurrent rendering desteği sayesinde, uzun render işlemleri ana thread'i bloklamadan gerçekleştirilebilir. Shadow tree optimizasyonları, özellikle uzun listeler ve karmaşık layout'larda performans artışı sağlar. React 18+ concurrent feature'ları (Suspense, useTransition, useDeferredValue) Fabric ile birlikte tam kapasiteyle çalışır.
+
+**Third-party uyum riski:** Fabric uyumu olmayan third-party bileşenler (ör. eski native view manager tabanlı bileşenler) çalışma zamanı hatası üretebilir. `20-initial-implementation-checklist.md`'de Fabric uyumsuz bileşen tespiti zorunlu adım olarak yer almalıdır. Alternatif planlanmadan Fabric uyumsuz bileşen kullanılmamalıdır.
+
+## 29.4. TurboModules
+
+TurboModules, native modüllerin lazy-loading (geç yükleme) ile başlatılmasını sağlayan yeni modül sistemidir. Eski mimaride tüm native modüller uygulama başlatılırken tek seferde yüklenirken, TurboModules ile modüller yalnızca ilk kullanıldıklarında yüklenir.
+
+**Mimari etkisi:** TurboModules, Platform/Infrastructure Layer ve App Shell Layer'ı etkiler. Uygulama startup süresi doğrudan iyileşir çünkü kullanılmayan modüller başlangıçta yüklenmez. Bu, özellikle çok sayıda native modül kullanan uygulamalarda belirgin performans artışı sağlar. `13-performance-standard.md`'deki startup süresi hedefleri bu iyileşmeyi dikkate almalıdır.
+
+**Pratikte ne değişir:** Yeni native modüller TurboModule spec'i ile yazılmalıdır. Legacy native modüller backward compatibility katmanı üzerinden çalışır ancak performans avantajından faydalanamaz.
+
+## 29.5. Codegen
+
+Codegen, TypeScript tip tanımlarından native kod (C++, Java/Kotlin, Objective-C/Swift) otomatik üretimi sağlayan araçtır. Native modüllerin ve native bileşenlerin JavaScript arayüzü, TypeScript spec dosyaları üzerinden tanımlanır ve build sırasında native binding kodu otomatik üretilir.
+
+**Mimari etkisi:** Codegen, Domain Layer ile Platform Layer arasındaki type safety'yi compile-time'a taşır. Runtime'da Bridge üzerinden geçen verinin tipini kontrol etmek yerine, compile-time'da tip uyumsuzluğu tespit edilir. Bu, özellikle custom native modül geliştirilmesi gerektiğinde önemli bir güvenlik katmanı sağlar.
+
+## 29.6. Hermes V1
+
+Hermes, React Native için optimize edilmiş JavaScript motorudur. SDK 55 ile birlikte Hermes varsayılan ve tek desteklenen JS motorudur. Bytecode precompilation sayesinde JavaScript kodu, uygulama build sırasında bytecode'a derlenir ve runtime'da parse maliyeti ortadan kalkar. Garbage collector iyileştirmeleri, memory kullanımını azaltır ve GC pause sürelerini kısaltır.
+
+**Mimari etkisi:** Hermes, tüm katmanları etkileyecek şekilde runtime temeline oturur. Startup süresi ve memory kullanımı doğrudan iyileşir. Ancak Hermes'in desteklemediği bazı JavaScript özellikleri (ör. bazı Intl API'leri, bazı Proxy kullanım senaryoları) mevcuttur ve bu sınırlamalar dependency seçimlerini etkileyebilir. `37-dependency-policy.md` Hermes uyumluluğunu zorunlu değerlendirme kriteri olarak tanımlamalıdır.
+
+## 29.7. Mimari Diyagramda Konumlandırma
+
+```
+┌──────────────────────────────────────────────┐
+│                App Shell Layer               │
+│  (Providers, Navigation Root, Auth Gate)     │
+├──────────────────────────────────────────────┤
+│             Presentation Layer               │
+│  (Screens, Components, DS Consumption)       │
+│  ← Fabric: concurrent rendering, shadow tree │
+├──────────────────────────────────────────────┤
+│        Feature Orchestration Layer           │
+│  (State orchestration, intent mapping)       │
+├──────────────────────────────────────────────┤
+│              Domain Layer                    │
+│  (Business rules, validation, computation)   │
+│  ← Codegen: compile-time type safety         │
+├──────────────────────────────────────────────┤
+│           Data Access Layer                  │
+│  (Query, cache, mapping, mutation)           │
+│  ← JSI: senkron native data erişimi          │
+├──────────────────────────────────────────────┤
+│     Platform / Infrastructure Layer          │
+│  (Storage, sensors, permissions, bridges)    │
+│  ← TurboModules: lazy-loading native modüller│
+│  ← Hermes: bytecode precompilation           │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+# 30. Micro-Frontend / Module Federation Değerlendirmesi
+
+## 30.1. Mevcut Karar: Şu An Gerek Yok
+
+Bu boilerplate, monorepo + Turborepo mimarisi ile çalışır (ADR-003). Tüm feature modülleri aynı repo içinde yaşar, aynı build pipeline'ından geçer ve aynı deploy süreci ile dağıtılır. Bu yapı, başlangıç ve orta ölçekli projeler için yeterli esnekliği ve performansı sağlar.
+
+Micro-frontend (bağımsız deploy edilebilen frontend modülleri) veya Module Federation (runtime'da farklı build'lerden modül paylaşımı) yaklaşımları, bu boilerplate'in mevcut ölçeği ve kullanım senaryosu için aşırı mühendislik (over-engineering) teşkil eder.
+
+## 30.2. Neden Şu An Gerek Yok?
+
+Monorepo + Turborepo yaklaşımının sağladığı avantajlar mevcut ihtiyaçları karşılamaktadır:
+
+- **Tek build pipeline:** Tüm paketler ve uygulamalar tutarlı biçimde derlenir, test edilir ve deploy edilir.
+- **Compile-time type safety:** Paketler arası tip uyumu build sırasında doğrulanır. Module Federation'da bu garanti runtime'a kayar ve hata riski artar.
+- **Basit dependency yönetimi:** Tüm dependency'ler tek lockfile'da yönetilir. Sürüm çatışmaları ve duplicate dependency sorunları minimize edilir.
+- **CI/CD basitliği:** Tek repo, tek pipeline, tek deploy. Micro-frontend'de her modülün bağımsız CI/CD pipeline'ı gerekir.
+- **Geliştirici deneyimi:** Monorepo içinde cross-reference, refactoring ve debugging doğrudan çalışır. Micro-frontend'de modüller arası debugging zorlaşır.
+
+## 30.3. Değerlendirme Koşulu
+
+Micro-frontend veya Module Federation yaklaşımının değerlendirilmesi için aşağıdaki tetikleyicilerden en az biri oluşmalıdır:
+
+1. **10+ feature modülü:** Monorepo'daki feature modülü sayısı 10'u aşıp build süreleri kabul edilemez seviyeye ulaştığında (ör. CI build > 20 dakika), bağımsız build ihtiyacı doğar.
+2. **Bağımsız takım deploy ihtiyacı:** Farklı takımların farklı feature'ları bağımsız olarak, birbirlerinin deploy sürecini bloklamadan deploy etmesi gerektiğinde.
+3. **Farklı release cadence'leri:** Bazı feature modüllerinin haftalık, bazılarının aylık release döngüsüne ihtiyaç duyması durumunda.
+4. **Runtime dinamik modül yükleme:** Belirli feature'ların kullanıcı rolüne veya abonelik düzeyine göre runtime'da dinamik olarak yüklenmesi gerektiğinde.
+
+## 30.4. Risk Değerlendirmesi
+
+Micro-frontend yaklaşımının oluşturacağı riskler:
+
+- **Karmaşıklık artışı:** Runtime module resolution, shared dependency yönetimi, version mismatch hataları, CORS yapılandırması ve routing çatışmaları.
+- **Performans overhead:** Runtime'da modül yükleme gecikmeleri, duplicate dependency riski ve bundle boyutu artışı.
+- **Test zorluğu:** Entegrasyon testlerinin modüller arası runtime uyumunu doğrulaması gerekir; bu, monorepo'daki compile-time doğrulamadan çok daha zordur.
+- **Mobile platform uyumu:** Module Federation web tarafında olgunlaşmış olsa da, React Native tarafında Re.Pack gibi araçlar henüz aynı olgunluk seviyesinde değildir.
+
+Bu riskler, küçük-orta projeler için micro-frontend'in getireceği faydayı aşmaktadır. Bu nedenle tetikleyiciler oluşmadıkça monorepo yaklaşımı korunur.
+
+---
+
+# 31. Sonraki Dokümanlara Etkisi
 
 ## 29.1. Module boundaries and code organization
 `07-module-boundaries-and-code-organization.md`, burada tanımlanan mantıksal katmanları fiziksel modül ve import kurallarına çevirmelidir.
@@ -1140,3 +1253,118 @@ Bu doküman yeterli kabul edilir eğer:
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate kapsamında uygulama mimarisi; app shell, presentation, feature orchestration, domain, data access ve platform/infrastructure katmanlarını net ayıran; iş kuralını UI’dan, platform bağımlılığını domain’den, veri erişimini ekranlardan ve feature mantığını app shell’den ayrı tutan; cross-platform paylaşımı kalite ve ergonomi temelli yapan sistem omurgasıdır.
+
+---
+
+# 32. App Bootstrap ve Initialization Sequence
+
+## 32.1. Amaç
+
+Uygulamanın başlatılmasından ilk kullanıcı etkileşimine kadar olan deterministik sıranın tanımlanması. Bootstrap sırası, kullanıcının ilk izlenimini doğrudan etkiler; bu nedenle sıranın tutarlı, hızlı ve hata dayanıklı olması kritiktir. Bu sıra tüm derived project’ler için canonical’dır — override değil, genişletme (extension) ile özelleştirilir.
+
+## 32.2. Canonical Bootstrap Sırası (Mobile)
+
+```
+1. Native Splash Screen (expo-splash-screen)
+   └─ SplashScreen.preventAutoHideAsync()
+      Uygulama yüklenene kadar native splash gösterilir.
+      Bu çağrı App component’inin en üstünde, mount öncesinde yapılır.
+
+2. Root Component Mount
+   ├─ 2a. Font & Asset Yükleme (paralel)
+   │   ├─ expo-font: Marka fontları yüklenir (useFonts hook)
+   │   └─ expo-asset: Kritik görseller (logo, onboarding illüstrasyonları)
+   │       önceden yüklenir — runtime’da görselsiz ekran önlenir
+   │
+   ├─ 2b. Store Hydration (paralel, 2a ile eşzamanlı)
+   │   ├─ Auth Store: SecureStore’dan token okunur, session doğrulanır
+   │   │   (ADR-010 — Expo SecureStore + Biometric)
+   │   ├─ Config Store: MMKV’den feature flag ve remote config okunur
+   │   └─ User Preferences: MMKV’den tema, dil, bildirim tercihleri
+   │       okunur (i18next language, color scheme)
+   │
+   └─ 2c. i18n Initialization
+       ├─ Cihaz dili tespit edilir (expo-localization)
+       ├─ Kullanıcı tercihi MMKV’de varsa override edilir
+       └─ İlgili namespace yüklenir (başlangıçta yalnızca
+           common + auth namespace; geri kalanı lazy)
+
+3. Bootstrap Tamamlanma Kontrolü
+   ├─ Tüm kritik yüklemeler (font + auth) tamamlandı mı?
+   ├─ Minimum splash süresi (1.5s) geçti mi?
+   └─ Her iki koşul da sağlanınca → adım 4’e geç
+
+4. Auth Durumuna Göre Yönlendirme
+   ├─ Token geçerli → Main Stack (Ana ekran)
+   ├─ Token yok veya expired → Auth Stack (Login ekranı)
+   └─ İlk açılış (onboarding flag yok) → Onboarding Stack
+
+5. Splash Gizleme
+   └─ SplashScreen.hideAsync() + fade-out animasyonu (200ms)
+       Splash, route kararı verildikten SONRA gizlenir —
+       böylece yanlış ekranın kısa süre gösterilmesi (flash) önlenir.
+```
+
+## 32.3. Canonical Bootstrap Sırası (Web)
+
+Web tarafında splash screen yerine farklı mekanizmalar kullanılır, ancak bootstrap prensibi aynıdır:
+
+- **Loading skeleton:** `index.html` içinde inline CSS ile tanımlanan minimal loading skeleton gösterilir. Bu skeleton JavaScript parse edilmeden önce görünür olur; böylece beyaz ekran (white flash) önlenir.
+- **Auth kontrolü:** HttpOnly cookie varlığı kontrol edilir → `/api/me` endpoint’ine istek gönderilerek session doğrulanır. Cookie yoksa doğrudan login ekranına yönlendirilir.
+- **Font yükleme:** `@fontsource` paketi veya `<link rel="preload" as="font">` ile font’lar önceden yüklenir. `font-display: swap` kullanılarak font yüklenene kadar fallback font gösterilir.
+- **Ortam değişkenleri:** `import.meta.env.VITE_*` prefix’i ile Vite build-time env resolution uygulanır.
+- **Hydration:** `React.createRoot` (SPA) veya `React.hydrateRoot` (SSR senaryosunda) sonrası loading skeleton kaldırılır ve React uygulaması DOM’u devralır.
+
+## 32.4. Bootstrap Sırasında Error Handling
+
+Bootstrap aşaması, uygulamanın en kırılgan anıdır. Hata durumlarının her biri için açık bir fallback tanımlanmalıdır:
+
+| Hata | Davranış | Fallback |
+|------|---------|---------|
+| Font yükleme hatası | Uyarı logla (Sentry breadcrumb) | Sistem fontuna geçiş, uygulama çalışmaya devam eder |
+| Auth hydrate hatası | Token sıfırla, Sentry’ye bildir | Unauthenticated state → login ekranına yönlendir |
+| Remote config hatası | Cache’ten oku, Sentry’ye bildir | Varsayılan config değerleri kullanılır |
+| i18n yükleme hatası | Uyarı logla | Varsayılan dil (tr) ile devam et |
+| Network tamamen yok | Offline banner göster | Cache’li veriyle başla (offline-first — ADR-019 ile uyumlu) |
+
+- Bootstrap sırasında **critical hata** (crash, unhandled exception): App-level Error Boundary devreye girer. Bu boundary, kullanıcıya "Uygulama başlatılamadı" mesajı gösterir ve "Yeniden Dene" butonu sunar.
+- Non-critical hatalar (font, config) uygulamayı durdurmaz; degraded mode ile devam edilir.
+
+## 32.5. Minimum Splash Display Time
+
+Hızlı cihazlarda bootstrap milisaniyeler içinde tamamlanabilir. Bu durumda splash screen’in anlık görünüp kaybolması (flash) kötü kullanıcı deneyimi yaratır. Bu nedenle minimum gösterim süresi uygulanır:
+
+- **Minimum:** 1.5 saniye — hızlı cihazlarda flash önleme
+- **Maximum:** 10 saniye — bootstrap takılırsa timeout ile varsayılan değerlerle devam
+- **Süre kontrolü:** `Promise.all([bootstrapPromise, delay(1500)])` pattern’i ile hem bootstrap’ın tamamlanması hem minimum sürenin geçmesi beklenir.
+- Maximum süre aşımında: Bootstrap tamamlanmamış olsa bile mevcut state ile devam edilir, hata Sentry’ye raporlanır.
+
+## 32.6. Bootstrap Dependency Grafiği
+
+Bootstrap adımlarının hangileri paralel, hangileri sıralı çalıştığını anlamak performans optimizasyonu ve hata izolasyonu için kritiktir:
+
+**Paralel çalışabilenler (birbirini beklemez):**
+- Font yükleme ∥ Auth hydrate ∥ Remote config ∥ i18n dil tespiti
+
+**Sıralı bağımlılıklar (önceki adım tamamlanmadan başlayamaz):**
+1. Auth hydrate tamamlanmalı → Route kararı (Main/Auth/Onboarding) verilebilir
+2. Route kararı verilmeli → Navigation stack mount edilebilir
+3. Navigation mount edilmeli → Splash gizlenebilir
+
+**i18n namespace yükleme stratejisi:**
+- Dil tespiti paralel yapılır (hızlı, ağ gerektirmez)
+- Namespace yükleme route kararından sonra yapılır (lazy) — yalnızca aktif route’un ihtiyaç duyduğu namespace yüklenir
+- Tüm namespace’lerin başlangıçta yüklenmesi **YASAK** (bundle bloat ve gereksiz ağ trafiği)
+
+## 32.7. Bootstrap Anti-Pattern Listesi
+
+| # | Anti-pattern | Doğru Yaklaşım |
+|---|-------------|----------------|
+| 1 | HomeScreen component’inde bootstrap mantığı barındırmak | Bootstrap root component’te veya dedicated bootstrap modülünde yapılır |
+| 2 | Splash screen’i gizlemeyi unutmak (sonsuz splash) | Bootstrap completion callback’inde `SplashScreen.hideAsync()` çağrılır |
+| 3 | Bootstrap sırasında kullanıcı etkileşimi beklemek | Bootstrap tamamen otomatik ve kullanıcıdan bağımsız olmalıdır |
+| 4 | Auth kontrolünü navigation mount’tan sonra yapmak | Auth kontrolü route kararından ÖNCE tamamlanmalıdır (flash of wrong screen önlenir) |
+| 5 | Tüm i18n namespace’leri başlangıçta yüklemek | Yalnızca aktif route’un namespace’i yüklenir, geri kalanı lazy |
+| 6 | Bootstrap hatasını sessizce yutmak | Her hata loglanır (Sentry), kritik hatalar Error Boundary’ye düşer |
+| 7 | Minimum splash süresi uygulamamak | `Promise.all([bootstrap, delay(1500)])` pattern’i kullanılır |
+| 8 | Bootstrap timeout’u koymamak | 10 saniye timeout ile varsayılan değerlerle devam edilir |

@@ -4,7 +4,7 @@ type: domain
 name: Motion, Interaction, Animation
 kaynak-dokümanlar: 24
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-MOT: Motion & Interaction Guardrail
@@ -82,6 +82,49 @@ son-güncelleme: 2026-04-01
 - [ ] Haptic + görsel geri bildirim eşleşiyor mu?
 - [ ] Reduced motion'da alternatif (crossfade) tanımlı mı?
 - [ ] Animasyon sırasında kullanıcı girişi engellenmemiş mi?
+
+---
+
+## Gesture Conflict Resolution
+
+Mobil uygulamada birden fazla gesture aynı anda aktif olduğunda çakışma riski oluşur. Aşağıdaki tablo çözüm stratejilerini tanımlar:
+
+| Çakışma | Çözüm | Implementasyon |
+|---------|-------|----------------|
+| Scroll + Swipe | Scroll öncelikli, swipe bekler | `waitFor`, `simultaneousHandlers` ile gesture zinciri |
+| Pan + Tap | Eşik değeri ile ayrıştır | `threshold: 10px`, `activeOffsetX` / `activeOffsetY` tanımla |
+| Pinch + Pan | Eşzamanlı çalıştır | `simultaneousWithExternalGesture` kullan |
+| Sheet drag + Scroll | Koşullu scroll | Sheet expanded değilse `scrollEnabled={false}`, expanded'da scroll aktif |
+| Swipe-to-delete + Scroll | Dikey hareket iptal eder | `failOffsetY` ile dikey hareket algılandığında swipe iptal |
+
+### Ek Ayarlar
+- [YAPILMALI] `hitSlop` ile küçük öğelerin gesture alanını genişlet — dokunma hassasiyeti artır
+- [YAPILMALI] `minPointers` / `maxPointers` ile tek parmak ve çoklu parmak gestürlerini ayır
+- [YAPILMAMALI] Gesture handler'ları iç içe geçirmeden test etmeden bırakma — cihazda doğrula
+- [YAPILMAMALI] Birden fazla gesture'ı aynı öğeye conflictsız bağlama — her zaman öncelik belirle
+
+---
+
+## Shared Element Transition Pattern
+
+Liste → detay ekranı geçişlerinde resim veya başlık öğesinin animasyonlu aktarımını sağlar:
+
+### Implementasyon (Reanimated 3)
+1. Kaynak öğeye `sharedTransitionTag="item-image-{id}"` ekle
+2. Hedef ekranda aynı `sharedTransitionTag` ile öğeyi eşle
+3. Transition config: `SharedTransition.timing({ duration: 300 })` veya `SharedTransition.spring()`
+4. JSI thread üzerinde çalışır — JS thread bloke etmez, 60fps garanti
+
+### Kısıtlamalar ve Fallback
+- [ZORUNLU] Shared transition yalnızca aynı navigator içindeki ekranlar arasında çalışır
+- [YAPILMALI] Desteklenmeyen ortamlarda (eski Reanimated, web) standart push transition'a fallback tanımla
+- [YAPILMALI] Transition sırasında kullanıcı girişi engellenmemeli — `pointerEvents` dikkatli yönetilmeli
+- [YAPILMAMALI] Aynı `sharedTransitionTag` değerini birden fazla görünür öğeye verme — benzersiz olmalı
+
+### Kullanım Alanları
+- Ürün listesi → ürün detay (ürün görseli geçişi)
+- Kart listesi → tam ekran görünüm (kart genişlemesi)
+- Galeri → tam ekran fotoğraf (zoom geçişi)
 
 ## Kaynak
 - Motion standardı → docs/design-system/24-motion-and-interaction-standard.md

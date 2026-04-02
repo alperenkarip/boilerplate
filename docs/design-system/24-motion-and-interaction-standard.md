@@ -1640,3 +1640,123 @@ Aşağıdaki haptic kullanımları bu projede zayıf kabul edilir:
 3. **Haptic’i tek geri bildirim kanalı olarak kullanma:** Haptic olmadan bilgi iletilemeyen durumlar accessibility ihlalidir. Haptic her zaman görsel feedback’in tamamlayıcısı olmalıdır.
 4. **Platform farkını görmezden gelme:** iOS ve Android’de aynı haptic kodunu çalıştırıp sonucu test etmemek, platformların birinde kötü deneyime yol açar.
 5. **Gesture ile senkronize olmayan haptic:** Gesture animasyonundan bağımsız, gecikmeli veya yanlış zamanlı haptic tetikleme, kullanıcıda kopukluk hissi yaratır.
+
+---
+
+# 35. Reanimated 3 + JSI Performance Pattern Kataloğu
+
+New Architecture ile JSI (JavaScript Interface) üzerinden çalışan animasyon pattern’leri, JS bridge’i atlayarak doğrudan native modüllerle iletişim kurar. Bu bölüm, yüksek performanslı animasyon pattern’lerini ve implementasyon kurallarını tanımlar.
+
+## 35.1. Gesture-Driven Animation
+
+`react-native-gesture-handler` v2+ ve Reanimated 3 worklet entegrasyonu ile gesture bazlı animasyonlar:
+
+### 35.1.1. Drag-to-Dismiss (Kart Sürükleme)
+
+- **Kullanım:** Bottom sheet, kart detay ekranı, medya görüntüleyici kapatma
+- **Gesture:** Pan gesture ile dikey sürükleme
+- **Animasyon:** `translateY` shared value + opacity azalma + backdrop fade
+- **Threshold:** 150px sürükleme veya hız > 500px/s → dismiss tetiklenir
+- **Snap-back:** Threshold’a ulaşılmadıysa spring animasyon ile başlangıç konumuna dönüş
+- **Performans:** Tüm hesaplamalar worklet içinde, JS thread’e düşmez
+
+### 35.1.2. Pinch-to-Zoom (Resim Galeri)
+
+- **Kullanım:** Fotoğraf galeri, resim detay ekranı
+- **Gesture:** Pinch gesture + pan gesture simultaneous
+- **Animasyon:** `scale` + `translateX/Y` shared value’lar ile transform
+- **Sınırlar:** Min scale 1.0 (orijinal boyut), max scale 5.0
+- **Double-tap:** Tek parmak double-tap ile 1.0 ↔ 2.5x zoom toggle
+- **Reset:** Zoom seviyesi 1.0’ın altına düştüğünde spring ile 1.0’a snap
+
+### 35.1.3. Gesture + Shared Value Performans Garantisi
+
+- Tüm gesture callback’leri `’worklet’` directive ile işaretlenir.
+- `useSharedValue` ile animasyon değerleri JS thread’den bağımsız saklanır.
+- `useAnimatedStyle` ile style güncellemeleri UI thread’de gerçekleşir.
+- `runOnJS` yalnızca side-effect gerektiğinde kullanılır (ör. state güncellemesi, navigation), animasyon hesaplamasında kullanılmaz.
+- Hedef: 60fps (120fps ProMotion cihazlarda) garanti.
+
+## 35.2. Layout Animation
+
+Reanimated 3 layout animation API’si ile element giriş/çıkış ve düzen değişikliği animasyonları:
+
+### 35.2.1. Entering Animasyonları
+
+| Animasyon | Kullanım | Konfigürasyon |
+|----------|---------|---------------|
+| `FadeIn` | Genel element girişi | `FadeIn.duration(200)` |
+| `SlideInRight` | Liste item ekleme, navigation push | `SlideInRight.duration(300)` |
+| `BounceIn` | Başarı ikonu, rozet, ödül | `BounceIn.duration(400)` |
+| `ZoomIn` | Modal, popover açılış | `ZoomIn.duration(250)` |
+
+### 35.2.2. Exiting Animasyonları
+
+| Animasyon | Kullanım | Konfigürasyon |
+|----------|---------|---------------|
+| `FadeOut` | Genel element çıkışı | `FadeOut.duration(200)` |
+| `SlideOutLeft` | Liste item silme, navigation pop | `SlideOutLeft.duration(250)` |
+| `ZoomOut` | Modal kapanış | `ZoomOut.duration(200)` |
+
+### 35.2.3. Layout Transition
+
+- `LinearTransition`: Liste sıralaması değiştiğinde item’ların yeni pozisyonlarına kayması.
+- Konfigürasyon: `LinearTransition.duration(300).easing(Easing.bezier(0.2, 0, 0, 1))`
+- Kullanım: Drag-to-reorder, filtre sonrası liste güncelleme, item silme sonrası boşluk kapama.
+
+## 35.3. Shared Element Transition
+
+Navigation geçişlerinde paylaşılan element animasyonu ile bağlam sürekliliği sağlanır:
+
+### 35.3.1. Kullanım Senaryosu
+- **Liste → Detay geçişi:** Liste’deki küçük resim, detay ekranında büyük resme animasyonla dönüşür.
+- **Grid → Fullscreen:** Kart grid’deki öğe, tam ekran görünüme geçerken shared transition uygular.
+
+### 35.3.2. Implementasyon
+- `sharedTransitionTag` prop’u ile kaynak ve hedef element eşleştirilir.
+- Aynı `tag` değerine sahip iki element arasında otomatik animasyon oluşturulur.
+- Desteklenen property’ler: `width`, `height`, `transform`, `borderRadius`, `opacity`.
+
+### 35.3.3. Performans
+- Shared element transition JSI thread üzerinde çalışır, JS thread bloke etmez.
+- Navigation library (React Navigation 7.x) ile entegre: `sharedTransitionTag` stack navigator’da otomatik tanınır.
+- Fallback: Shared transition desteklenmeyen durumlarda (ör. web) standart fade geçişi uygulanır.
+
+---
+
+# 36. Haptic Feedback Kataloğu
+
+`expo-haptics` ile standart etkileşim-haptic eşleştirmesi bu bölümde tanımlanır. Her etkileşim türü için hangi haptic tipi kullanılacağı sabitlenmiştir.
+
+## 36.1. Etkileşim-Haptic Eşleştirme Tablosu
+
+| Etkileşim | Haptic Tipi | expo-haptics API | Kullanım Bağlamı |
+|-----------|------------|-----------------|-----------------|
+| Buton basımı | Light Impact | `Haptics.impactAsync(ImpactFeedbackStyle.Light)` | Standart buton etkileşimi |
+| Toggle switch | Medium Impact | `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` | ON/OFF geçişi |
+| Silme onayı | Heavy Impact + Warning | `Haptics.notificationAsync(NotificationFeedbackType.Warning)` | Destructive aksiyon onayı |
+| Başarılı işlem | Success Notification | `Haptics.notificationAsync(NotificationFeedbackType.Success)` | Form submit, ödeme tamamlama |
+| Hata | Error Notification | `Haptics.notificationAsync(NotificationFeedbackType.Error)` | Validation hatası, API hatası |
+| Slider snap | Selection | `Haptics.selectionAsync()` | Slider değer adımı, picker seçimi |
+| Pull-to-refresh tetik | Medium Impact | `Haptics.impactAsync(ImpactFeedbackStyle.Medium)` | Refresh threshold’a ulaşıldığında |
+| Long press menu | Heavy Impact | `Haptics.impactAsync(ImpactFeedbackStyle.Heavy)` | Context menu açılması |
+
+## 36.2. Platform Farkları
+
+- **iOS:** Full Taptic Engine desteği. Light, Medium, Heavy impact ve Success, Warning, Error notification tipleri donanım seviyesinde desteklenir. Selection feedback picker ve segmented control için optimize edilmiştir.
+- **Android:** Vibration API üzerinden çalışır. Haptic kalitesi cihazdan cihaza değişir. expo-haptics, Android’de en yakın vibration pattern’i ile fallback sağlar. Best-effort yaklaşımı uygulanır.
+- **Web:** `navigator.vibrate()` sınırlı destek sunar. Haptic web’de güvenilir değildir; web’de haptic yerine visual ve audio feedback tercih edilir.
+
+## 36.3. Kullanıcı Tercihi
+
+- Haptic feedback uygulama ayarlarından kapatılabilir olmalıdır.
+- Tercih key’i: `settings_haptic_enabled` (MMKV/AsyncStorage).
+- Varsayılan: Açık (iOS), açık (Android).
+- Haptic çağrıları merkezi bir `useHaptic()` hook’u üzerinden yapılır; bu hook tercih durumunu kontrol eder.
+
+## 36.4. Accessibility Entegrasyonu
+
+- `prefers-reduced-motion` aktifse haptic feedback azaltılır:
+  - Selection ve light impact feedback’ler devre dışı bırakılır.
+  - Yalnızca kritik bildirimler (success, error, warning) korunur.
+- Haptic hiçbir zaman tek başına bilgi taşımamalıdır; her zaman görsel feedback eşlikçisi olmalıdır.

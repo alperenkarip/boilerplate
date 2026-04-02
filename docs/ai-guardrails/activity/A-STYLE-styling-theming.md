@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: önerilen
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-STYLE: Styling/Theme Değişikliği Guardrail
@@ -23,8 +23,22 @@ son-güncelleme: 2026-04-01
 4. Token hiyerarşisini (raw→semantic→component) bozma
 5. Visual regression riski varsa screenshot proof al
 
+## Dark Mode Visual QA
+6. Her styling PR'ında dark mode screenshot zorunlu — hem light hem dark mode ekran görüntüsü PR'a eklenmeli
+7. Dark mode'da kontrol edilmesi gereken 6 alan:
+   1. **Metin okunabilirlik** — Metin arka plan üzerinde yeterli kontrastta mı?
+   2. **Arka plan uyumu** — Arka plan renkleri dark mode token'larıyla uyumlu mu?
+   3. **Border görünürlük** — Border'lar dark arka planda görünür mü?
+   4. **İkon renkleri** — İkonlar dark mode'da doğru renkte mi?
+   5. **Placeholder/disabled ayrımı** — Placeholder ve disabled state'ler birbirinden ayırt edilebiliyor mu?
+   6. **Gölge görünürlük** — Box shadow / elevation dark arka planda görünür mü?
+8. **Storybook:** Dark mode story otomatik oluşturulmalı (color mode decorator)
+9. **CI:** Chromatic'te hem light hem dark mode snapshot karşılaştırması
+
 ## DoD Ek Maddeleri
 - [ ] Semantic token kullanılıyor
 - [ ] Dark mode kırılmamış
+- [ ] Dark mode screenshot PR'da mevcut (6 kontrol noktası)
 - [ ] Token hiyerarşisi korunmuş
+- [ ] Storybook dark mode story var
 - [ ] Visual proof PR'da mevcut

@@ -415,7 +415,161 @@ Proje ihtiyacına göre `docs/ai-guardrails/project/GP-XXX-*.md` formatında ek 
 
 ---
 
-# 9. Onay Kriterleri
+# 9. Tek Komut Fork + Customize Stratejisi
+
+## 9.1. Amac
+
+Derived project olusturma surecini mumkun oldugunca otomatize etmek, insan hatasini azaltmak ve her derived project'in tutarli bir baslangic noktasindan baslamasini garanti etmek. Bu bolum, tek komut ile boilerplate'ten derived project olusturma otomasyon stratejisini tanimlar.
+
+## 9.2. Otomasyon Yaklasimi
+
+Iki ana otomasyon secenegi degerlendirilir:
+
+**Secenek 1: `degit` + Custom Script**
+`degit` araci, boilerplate repo'sunu git history olmadan (shallow clone) indirir. Ardindan custom bir setup script calistirilarak proje-ozel yapilandirma yapilir.
+
+```bash
+# Ornek kullanim
+npx degit <org>/boilerplate <yeni-proje-adi>
+cd <yeni-proje-adi>
+node scripts/setup-derived.js
+```
+
+**Secenek 2: Custom CLI (`create-derived-project`)**
+Boilerplate ekibi tarafindan gelistirilmis bir CLI araci ile interaktif proje olusturma:
+
+```bash
+# Ornek kullanim
+npx create-derived-project
+```
+
+## 9.3. Otomasyon Adimlari
+
+Otomatize edilen islem akisi su adimlari kapsar:
+
+| Adim | Aciklama | Otomasyon |
+|------|----------|-----------|
+| 1. Clone | Boilerplate repo'su indirilir (git history olmadan) | `degit` veya custom downloader |
+| 2. Rename | Root `package.json`'da proje adi, description ve tum alt paketlerde scope guncellenir | Script: `find & replace` |
+| 3. Brand Config | Renk paleti, font ailesi, uygulama ikonu ve splash screen template'leri icin sorular sorulur | Interaktif prompt (inquirer/prompts) |
+| 4. Bundle ID | iOS bundle identifier ve Android application ID belirlenir | Script: `app.json` / `app.config.ts` guncelleme |
+| 5. Desteklenen Diller | Varsayilan locale ve desteklenen diller sorulur, i18n namespace dosyalari olusturulur | Script: locale dosyalari uretimi |
+| 6. Dependency Install | `pnpm install` calistirilir | Otomatik |
+| 7. CI Setup | `.github/workflows/` icindeki workflow dosyalarinda proje adlari guncellenir | Script: sed/replace |
+| 8. BOUNDARY.md | Boilerplate surumu, tarih ve proje adi ile `BOUNDARY.md` otomatik olusturulur | Template dosyasi + degisken injection |
+| 9. Git Init | Temiz git gecmisi baslatilir ve ilk commit olusturulur | `git init && git add . && git commit` |
+
+## 9.4. Interaktif Konfigurasyon Sorulari
+
+Setup script'i calistirildiginda asagidaki sorular sorulur:
+
+```
+? Proje adi (kebab-case): my-awesome-app
+? Organizasyon scope (@org): @myapp
+? Uygulama goruntuleme adi: My Awesome App
+? iOS Bundle Identifier: com.myapp.awesome
+? Android Application ID: com.myapp.awesome
+? Varsayilan dil: tr
+? Ek desteklenen diller (virgul ile): en,de
+? Birincil marka rengi (hex): #2563EB
+? Sentry DSN (bos birakilabilir):
+```
+
+Bu bilgiler toplanarak tum ilgili dosyalara (package.json, app.json, design-tokens, i18n, .env.example) yansitilir.
+
+## 9.5. Git History Temizleme
+
+Boilerplate'in commit gecmisi derived project'e tasinmaz. Bunun nedenleri:
+
+- Boilerplate commit'leri derived project baglami icin anlamsizdır.
+- Git blame ve log sonuclari yaniltici olur.
+- Derived project kendi commit gecmisini temiz baslatmalidir.
+
+Temizleme islemi `rm -rf .git && git init` ile yapilir. Ilk commit mesaji "Boilerplate v<sürüm>'den derived project olusturuldu" formatinda olur.
+
+## 9.6. BOUNDARY.md Otomatik Olusturma
+
+Setup script'i, `45-boilerplate-project-boundary-contract.md` Bolum 9.1'deki formata uygun bir `BOUNDARY.md` dosyasi otomatik olusturur:
+
+```markdown
+# BOUNDARY.md
+
+## Boilerplate Surumu
+- Kaynak: <org>/boilerplate
+- Surum: v<sürüm>
+- Turetme tarihi: <tarih>
+
+## Aktif Override'lar
+(Henuz yok — override gerektiginde bu bolum guncellenir)
+
+## Proje-Ozel Eklemeler
+(Boilerplate'te olmayan, projeye ozel eklenen dependency/config/kural)
+
+## Son Audit
+- Tarih: <turetme-tarihi>
+- Sonuc: Baslangic — ilk audit henuz yapilmadi
+```
+
+---
+
+# 10. Boundary Contract Otomatik Audit
+
+## 10.1. Amac
+
+Derived project olusturulduktan sonra ve yasam suresi boyunca, boilerplate boundary contract'ina uyumun surekli olarak dogrulanmasi gerekir. Bu bolum, otomatik audit mekanizmasini tanimlar.
+
+## 10.2. Ilk CI Calistirmasinda Uyum Dogrulamasi
+
+Derived project'in ilk CI pipeline calistirmasinda asagidaki boundary contract kontrolleri otomatik olarak yapilir:
+
+| Kontrol | Ne Denetlenir | Basarisizlik Durumu |
+|---------|--------------|-------------------|
+| **Canonical dependency kontrolu** | `package.json`'lardaki core dependency'lerin `38-version-compatibility-matrix.md` ile uyumu | CI warning (ilk hafta), CI fail (sonrasi) |
+| **Zorunlu dosya varligi** | `BOUNDARY.md`, `CLAUDE.md`, `AGENTS.md`, `.claudeignore` dosyalarinin varligi | CI fail |
+| **Config uyumu** | `tsconfig.base.json`, `eslint.config.js` dosyalarinin boilerplate baseline'i ile uyumu | CI warning |
+| **Token hiyerarsi kontrolu** | `packages/design-tokens/` altinda raw → semantic → component hiyerarsisinin korunuyor olmasi | CI fail |
+| **Yasak dependency kontrolu** | `37-dependency-policy.md`'de yasaklanan dependency'lerin (orn. moment.js, lodash full bundle) yuklu olmamasi | CI fail |
+
+## 10.3. Quarterly Scheduled Audit
+
+Her ceyrekte (quarterly) otomatik veya yari-otomatik bir boundary audit yurutulur:
+
+### Audit Kapsami
+
+1. **Dependency drift:** Canonical dependency'lerin versiyonlari boilerplate'in guncel compatibility matrix'i ile karsilastirilir. Major versiyon farki varsa guncelleme plani olusturulur.
+
+2. **Zorunlu miras ihlali taramasi:** Boilerplate zorunlu miras katmanindaki kurallardan (WCAG AA, security baseline, TypeScript strict mode, hardcoded deger yasagi) sapma taranir.
+
+3. **Override denetimi:** `BOUNDARY.md`'de kayitli override'larin hala gecerli oldugu, surelerinin dolup dolmadigi ve ilgili exception kaydinin (`44-exception-and-exemption-policy.md`) guncel oldugu kontrol edilir.
+
+4. **Yeni boilerplate kurallari:** Son ceyrekte boilerplate'e eklenen yeni kurallar veya ADR'lerin derived project'e yansitilip yansitilmadigi kontrol edilir.
+
+### Audit Ciktisi
+
+Audit sonuclari `BOUNDARY.md`'nin "Son Audit" bolumune yazilir:
+
+```markdown
+## Son Audit
+- Tarih: 2026-07-01
+- Sonuc: PASS (2 uyari)
+- Uyarilar:
+  - @project/ui paketinde 85 export var (uyari esigi: 100)
+  - react-native-reanimated versiyonu matrix'ten 1 minor geride
+- Blocker: Yok
+```
+
+## 10.4. Audit Otomasyonu
+
+Quarterly audit'in mumkun oldugunca otomatize edilmesi hedeflenir:
+
+- **Dependency drift:** `npm outdated` veya custom script ile otomatik tespit.
+- **Zorunlu miras kontrolu:** ESLint kurallari, TypeScript strict mode kontrolu ve CI kalite kapilari ile otomatik.
+- **Override suresi:** `BOUNDARY.md` parse edilerek tarihleri gecmis override'lar otomatik raporlanir.
+- **Manuel kontrol:** Domain-spesifik kurallar (a11y uyumu, design system token kullanimi) yari-otomatik audit gerektirir.
+
+---
+
+# 11. Onay Kriterleri
 
 Bu belge asagidaki kosullar saglandiginda uygulamaya hazir kabul edilir:
 

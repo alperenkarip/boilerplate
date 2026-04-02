@@ -142,6 +142,7 @@ Mevcut domain'ler:
 | D-PAY | Payment, subscription, in-app purchase | ADR-016, 27 |
 | D-PRI | Privacy, GDPR, KVKK, consent management | ADR-017, 27, 28 |
 | D-BIO | Biometric authentication, passkey | ADR-010, 27 |
+| D-OFL | Offline support, local storage, persistence stratejisi | ADR-019, 10, ADR-005 |
 
 Bu liste kapalı değildir. Yeni domain ihtiyacı ortaya çıktığında bu tabloya eklenir, ilgili guardrail dokümanı oluşturulur.
 
@@ -184,6 +185,7 @@ Mevcut aktiviteler:
 | A-PAYMENT | Ödeme/abonelik entegrasyonu | D-PAY, D-SEC, D-PRI |
 | A-OTA | OTA güncelleme | D-SEC, D-OBS, D-PLT |
 | A-PRIVACY | Gizlilik uyum çalışması | D-PRI, D-SEC, D-OBS |
+| A-SDK-UPGRADE | SDK/Framework major upgrade | D-PLT, D-PRF, D-TST, D-SEC, D-3RD, D-OFL |
 
 Bu liste de kapalı değildir. Yeni aktivite türü ortaya çıktığında eklenir.
 
@@ -544,3 +546,98 @@ Bu nedenle bundan sonra:
 - guardrail ihlalleri Codex tarafından bağımsız olarak denetlenir,
 - türetilen projeler guardrail çerçevesini zorunlu miras olarak devralır,
 - guardrail dokümanları da diğer boilerplate dokümanları gibi yaşar, güncellenir ve denetlenir.
+
+---
+
+# 14. Guardrail Effectiveness Metrikleri (2026-04-02 Eki)
+
+Bu bölüm, guardrail çerçevesinin etkinliğini ölçen metrikleri ve hedeflerini tanımlar.
+
+## 14.1. Temel Metrikler
+
+| Metrik | Tanım | Hedef | Aksiyon (Hedef Dışı) |
+|--------|-------|-------|---------------------|
+| Yakalama oranı | Guardrail tarafından tespit edilen ihlal oranı (toplam ihlale göre) | >%90 | Kural kapsamını genişlet, yeni pattern ekle |
+| False positive oranı | Guardrail'in yanlış alarm verme oranı | <%15 | Kuralı gevşet, pattern'i daralt |
+| Düzeltme süresi | İhlal tespitinden düzeltmeye kadar geçen süre | <30 dakika | Hook/skill akışını optimize et |
+| Exception oranı | İhlallerin exception ile kapatılma oranı | <%5 | Kural uygulanabilirliğini değerlendir |
+| Coverage | Kod değişikliklerinin guardrail ile denetlenme oranı | >%95 | Hook/trigger eksikliğini gider |
+
+## 14.2. Aylık Trend Raporu
+
+- Her ayın sonunda guardrail effectiveness raporu oluşturulur.
+- Rapor, yukarıdaki metriklerin son 3 aylık trendini gösterir.
+- Trend kötüleşiyorsa (örn: false positive artışı), ilgili guardrail kuralları gözden geçirilir.
+- Rapor `docs/audits/guardrail-report-YYYY-MM.md` formatında saklanır.
+
+## 14.3. False Positive Yönetimi
+
+- False positive oranı %15'i aşarsa, ilgili guardrail kuralı review'a alınır.
+- Review seçenekleri:
+  - Kural pattern'ini daraltma (daha spesifik eşleşme)
+  - Kural kapsamını sınırlama (belirli dosya/dizin hariç tutma)
+  - Kural'ı uyarıya düşürme (blocker → warning)
+- False positive düzeltmesi, guardrail dokümanında belgelenir.
+
+---
+
+# 15. Guardrail Otomatik Güncelleme (2026-04-02 Eki)
+
+Bu bölüm, guardrail dokümanlarının kaynak dokümanlarla senkronizasyonunu sağlayan otomatik güncelleme mekanizmasını tanımlar.
+
+## 15.1. Bağımlılık Grafiği
+
+Her guardrail dokümanı, hangi kaynak dokümanlardan türetildiğini başlığında belirtir:
+
+```markdown
+<!-- kaynak: 22-design-tokens-spec.md, 04-design-system-architecture.md -->
+<!-- versiyon: v1.2.0 -->
+```
+
+Örnek bağımlılık grafiği:
+
+| Guardrail | Kaynak Doküman(lar) |
+|-----------|-------------------|
+| D-DSY (Design System) | 04, 22, 23 |
+| D-UIX (HIG/UX) | 03, 34, 26 |
+| D-A11 (Accessibility) | 12 |
+| D-FRM (Forms) | 11, ADR-006 |
+| D-SEC (Security) | 27, ADR-010 |
+| D-NAV (Navigation) | 08, ADR-012 |
+| D-FIR (Firebase) | 27 |
+| D-TST (Testing) | 14, ADR-008 |
+| D-STA (State) | 09, ADR-004 |
+| D-DAT (Data) | 10, ADR-005 |
+| D-3RD (Third-party) | 37, 38 |
+| D-STY (Styling) | 22, ADR-007 |
+| D-PLT (Platform) | 26, 34, ADR-002 |
+| D-OBS (Observability) | 28, ADR-009 |
+| D-ERR (Error States) | 25 |
+| D-MOT (Motion) | 24 |
+| D-NTF (Push Notification) | ADR-013 |
+| D-DPL (Deep Linking) | ADR-014 |
+| D-PAY (Payment) | ADR-016 |
+| D-PRI (Privacy) | ADR-017 |
+| D-AIX (AI/ML UX) | 40, 41 |
+| D-OFL (Offline/Storage) | ADR-019 |
+
+## 15.2. Değişiklik Algılama
+
+- Kaynak doküman değiştiğinde (git diff ile tespit), CI otomatik olarak ilgili guardrail dokümanlarını listeler.
+- CI uyarı üretir: "Kaynak doküman [22-design-tokens-spec.md] değişti. İlgili guardrail'ler: D-DSY. Guardrail güncelleme gerekebilir."
+- Uyarı, "guardrail-update" etiketli issue olarak açılır.
+
+## 15.3. Güncelleme Süreci
+
+1. Kaynak doküman değişikliği merge edilir.
+2. CI, bağımlı guardrail'leri tespit eder ve issue açar.
+3. Issue, değişen bölümleri ve potansiyel guardrail etkisini listeler.
+4. Geliştirici, guardrail dokümanını günceller.
+5. Guardrail dokümanındaki `<!-- versiyon: ... -->` etiketi güncellenir.
+6. PR review ve merge.
+
+## 15.4. Sapma Tespiti
+
+- Guardrail dokümanının kaynak dokümanla son senkronizasyon tarihinden bu yana kaynak doküman değiştiyse, guardrail "stale" olarak işaretlenir.
+- Stale guardrail'ler audit raporunda (31-audit-checklist.md) ayrı bölümde listelenir.
+- 30 gün boyunca stale kalan guardrail, audit'te Major severity olarak işaretlenir.

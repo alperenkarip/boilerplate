@@ -4,7 +4,7 @@ type: domain
 name: State Management
 kaynak-dokümanlar: 09, ADR-004
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-STA: State Management Guardrail
@@ -49,6 +49,69 @@ son-güncelleme: 2026-04-01
 - [ ] Form state React Hook Form'da mı?
 - [ ] Store slice izole mi?
 - [ ] Logout'ta state sıfırlanıyor mu?
+
+---
+
+## Store Hydration Sırası
+
+Uygulama başlangıcında persist edilen store'ların yüklenme (hydration) sırası:
+
+### Sıralama
+
+| Öncelik | Store | Bağımlılık | Açıklama |
+|---------|-------|-----------|----------|
+| 1 (en yüksek) | Auth Store | Yok | Token, oturum durumu — diğer tüm store'lar buna bağımlı |
+| 2 | Config Store | Auth Store | Remote config, feature flag'ler |
+| 3 | User Preferences | Auth Store | Tema, dil, bildirim tercihleri |
+| 4 (paralel) | Feature Data Store'ları | Auth + Config | Uygulama verileri, paralel yüklenebilir |
+
+### Kurallar
+1. [ZORUNLU] Auth store yüklenmeden API çağrısı yapılmamalı — token hazır olmalı
+2. [ZORUNLU] Splash/loading ekranı kritik store'lar (Auth + Config) yüklenene kadar gösterilmeli
+3. [ZORUNLU] Hydration timeout: 5 saniye — aşılırsa varsayılan değerlerle devam et
+4. [YAPILMALI] Hydration hatası durumunda: Auth store yüklenemezse → logout akışına yönlendir
+5. [YAPILMALI] Feature data store'ları paralel yükle — sıralı bekleme gereksiz
+6. [YAPILMAMALI] Tüm store'ları sıralı yükleme — bağımsız store'lar paralel olmalı
+7. [YAPILMAMALI] Hydration tamamlanmadan kullanıcıyı ana ekrana yönlendirme
+
+### Hata Senaryoları
+- Auth store corrupt → Tüm persist temizle, login ekranına yönlendir
+- Config store hata → Varsayılan config ile devam, arka planda yeniden dene
+- Preferences hata → Varsayılan tema/dil ile devam
+
+---
+
+## Memory Leak Prevention
+
+Zustand store kullanımında bellek sızıntılarını önleme kuralları:
+
+### useEffect Cleanup
+```typescript
+// Doğru: Cleanup fonksiyonunda unsubscribe
+useEffect(() => {
+  const unsubscribe = useAuthStore.subscribe((state) => {
+    // ...
+  });
+  return () => unsubscribe(); // cleanup
+}, []);
+```
+
+### Kurallar
+1. [ZORUNLU] `useEffect` içindeki her `subscribe()` çağrısı cleanup fonksiyonunda `unsubscribe` edilmeli
+2. [ZORUNLU] Component unmount olduktan sonra `setState` çağrısı yapılmamalı — async işlemlerde `isMounted` guard kullan
+3. [YAPILMALI] Selector kullanımında `useShallow` ile shallow comparison uygula — gereksiz re-render ve referans birikmesini önle
+4. [YAPILMALI] Global listener'ları hook içinde yönet, store action'ında değil — lifecycle kontrolü hook'ta
+5. [YAPILMAMALI] Store subscribe'da closure üzerinden eski state referansı tutma — stale closure riski
+6. [YAPILMAMALI] Store'da interval/timeout başlatıp cleanup yapmama
+
+### Anti-pattern (Ek)
+- [ZAYIF] `useStore()` selector'süz çağrı — tüm store değişikliğinde re-render
+- [ZAYIF] `subscribe()` cleanup'sız — bellek sızıntısı
+- [ZAYIF] `setTimeout` içinde `setState` — unmount sonrası hata
+
+### Kontrol
+- React DevTools Profiler ile re-render sayısı kontrol et
+- Hermes/V8 memory snapshot ile leak tespiti yap
 
 ## Kaynak
 - State stratejisi → docs/architecture/09-state-management-strategy.md

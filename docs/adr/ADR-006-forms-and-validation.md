@@ -1014,8 +1014,210 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 42. Kısa Sonuç
+# 42. Zod Schema Paylaşım Stratejisi
+
+Monorepo’da frontend-backend arası schema paylaşımı ve tek kaynak ilkesi:
+
+## 42.1. Paylaşımlı Schema Paketi
+
+`packages/schemas/` altında tüm Zod schema’ları tanımlanır. Bu paket monorepo genelinde tek schema otoritesidir:
+
+- **Frontend kullanımı:** Schema’dan form validasyonu + TypeScript tipi türetilir (`z.infer<typeof UserSchema>`)
+- **Backend kullanımı (derived project):** Aynı schema’dan API request/response validasyonu yapılır
+- **Avantaj:** Frontend ve backend arasında validation tutarsızlığı sıfırlanır. "Frontend kabul etti ama backend reddetti" veya tersi durumlar ortadan kalkar.
+
+## 42.2. Schema Versiyonlama
+
+- Schema paketi semantic versioning kullanır
+- Breaking change’de (alan kaldırma, tip değişikliği) major versiyon artırılır
+- Non-breaking change’de (yeni opsiyonel alan, validation kuralı yumuşatma) minor versiyon artırılır
+- Tüm consumer’lar aynı schema versiyonunu kullanır (pnpm catalog ile garanti edilir)
+
+## 42.3. Partial Schema Pattern’leri
+
+Aynı entity için farklı form/API varyantları `z.pick()`, `z.omit()` ve `z.partial()` ile türetilir:
+
+- **Create formu:** `UserSchema.omit({ id: true, createdAt: true })` — id ve timestamp server tarafında üretilir
+- **Update formu:** `UserSchema.partial().required({ id: true })` — yalnızca değişen alanlar gönderilir, id zorunlu
+- **List response:** `z.array(UserSchema.pick({ id: true, name: true, email: true }))` — yalnızca liste için gereken alanlar
+- **Detail response:** `UserSchema` — tüm alanlar döner
+
+Bu pattern code duplication’ı ortadan kaldırır ve entity değişikliğinde tüm varyantlar otomatik güncellenir.
+
+## 42.4. Schema Organizasyonu
+
+```
+packages/schemas/
+├── src/
+│   ├── user.ts           # UserSchema + varyantları
+│   ├── auth.ts           # LoginSchema, RegisterSchema
+│   ├── product.ts        # ProductSchema + varyantları
+│   ├── common.ts         # Paylaşılan alt schema’lar (AddressSchema, PhoneSchema)
+│   └── index.ts          # Public API
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+# 43. Conditional Validation Pattern Kataloğu
+
+Sık karşılaşılan koşullu validasyon reçeteleri ve Zod implementasyonları:
+
+## 43.1. Tip Bazlı Zorunluluk (Discriminated Union)
+
+**Senaryo:** "Şirket faturası seçiliyse vergi no zorunlu, bireysel fatura seçiliyse gereksiz"
+
+```typescript
+const InvoiceSchema = z.discriminatedUnion(‘invoiceType’, [
+  z.object({
+    invoiceType: z.literal(‘individual’),
+    fullName: z.string().min(2),
+  }),
+  z.object({
+    invoiceType: z.literal(‘corporate’),
+    companyName: z.string().min(2),
+    taxNumber: z.string().length(10),
+    taxOffice: z.string().min(2),
+  }),
+]);
+```
+
+`discriminatedUnion` TypeScript tip narrowing’i otomatik sağlar; form UI’da tip seçimine göre alanlar dinamik gösterilir.
+
+## 43.2. Değer Bazlı Validasyon (Refine)
+
+**Senaryo:** "Ülke TR ise TC kimlik no formatı kontrol et"
+
+```typescript
+const ProfileSchema = z.object({
+  country: z.string(),
+  nationalId: z.string().optional(),
+}).refine(
+  (data) => data.country !== ‘TR’ || (data.nationalId && /^\d{11}$/.test(data.nationalId)),
+  { message: ‘TC Kimlik No 11 haneli olmalıdır’, path: [‘nationalId’] }
+);
+```
+
+`refine` ile cross-field validasyon yapılır; `path` ile hatanın hangi alana ait olduğu belirtilir.
+
+## 43.3. Cross-Field Validasyon (SuperRefine)
+
+**Senaryo:** "Şifre ve şifre tekrar eşleşmeli"
+
+```typescript
+const PasswordSchema = z.object({
+  password: z.string().min(8),
+  confirmPassword: z.string(),
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: ‘Şifreler eşleşmiyor’,
+      path: [‘confirmPassword’],
+    });
+  }
+});
+```
+
+`superRefine` birden fazla hata üretebilir ve her hatayı farklı alanlara bağlayabilir.
+
+## 43.4. Dinamik Alan Validasyonu (Array)
+
+**Senaryo:** "Adres sayısı 1-5 arası olabilir, her adres complete olmalı"
+
+```typescript
+const AddressListSchema = z.object({
+  addresses: z.array(
+    z.object({
+      street: z.string().min(5),
+      city: z.string().min(2),
+      zipCode: z.string().regex(/^\d{5}$/),
+    })
+  ).min(1, ‘En az bir adres girilmelidir’).max(5, ‘En fazla 5 adres eklenebilir’),
+});
+```
+
+React Hook Form’un `useFieldArray` hook’u ile dinamik alan ekleme/çıkarma işlemi yapılır.
+
+## 43.5. Conditional Required (Union + Refine)
+
+**Senaryo:** "İletişim tercihi email ise email zorunlu, telefon ise telefon zorunlu"
+
+```typescript
+const ContactSchema = z.object({
+  contactPreference: z.enum([‘email’, ‘phone’, ‘both’]),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+}).refine(
+  (data) => {
+    if (data.contactPreference === ‘email’ || data.contactPreference === ‘both’) {
+      return !!data.email;
+    }
+    return true;
+  },
+  { message: ‘Email adresi zorunludur’, path: [‘email’] }
+).refine(
+  (data) => {
+    if (data.contactPreference === ‘phone’ || data.contactPreference === ‘both’) {
+      return !!data.phone;
+    }
+    return true;
+  },
+  { message: ‘Telefon numarası zorunludur’, path: [‘phone’] }
+);
+```
+
+Her conditional pattern için form UI’da ilgili alanların visibility ve required durumu schema ile senkron yönetilir.
+
+---
+
+# 44. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 
 > Bu boilerplate’te formlar random local state, generic store veya dağınık validation ile kurulmayacaktır. React Hook Form + Zod kombinasyonu, type-safe, a11y-first, schema-aware ve explicit submit lifecycle taşıyan canonical forms foundation olarak kabul edilmiştir. Form state form engine’de kalır; orchestration, mutation ve feedback onun etrafında kurulur.
+
+---
+
+# 45. React 19 Form API’leri ile İlişki
+
+Bu bölüm, React 19.2 ile gelen form-related API’lerin bu boilerplate’teki konumunu açıkça kaydeder.
+
+## 45.1. useFormStatus
+
+React 19 `useFormStatus` hook’u, `<form>` elementinin submit durumunu (pending, data, method, action) child component’lere context üzerinden iletir. Bu hook React’in native `<form action={...}>` pattern’i ile çalışacak şekilde tasarlanmıştır.
+
+**Bu boilerplate’teki pozisyonu:** Kullanılmaz.
+
+Neden: React Hook Form 7.x (ADR-006 canonical) kendi `formState.isSubmitting` mekanizmasına sahiptir ve form submit lifecycle’ını tamamen yönetir. `useFormStatus` React’in `<form action>` pattern’i ile çalışır; RHF ise `handleSubmit` ile kendi submit pipeline’ını kontrol eder. İki sistem birlikte kullanıldığında submit state ownership çakışması oluşur.
+
+## 45.2. useActionState
+
+React 19 `useActionState` hook’u (önceki adıyla `useFormState`), Server Actions ile entegre bir form state yönetimi sunar. Server-side form processing ve progressive enhancement senaryoları için tasarlanmıştır.
+
+**Bu boilerplate’teki pozisyonu:** Non-goal.
+
+Neden: Bu boilerplate SPA-first mimaridedir (ADR-001). Server Actions ve Server Components bu mimarinin kapsamı dışındadır. Form submit işlemleri client-side RHF `handleSubmit` → TanStack Query mutation (ADR-005) → REST/GraphQL API zinciri üzerinden gerçekleşir. `useActionState`’in sunduğu server-side form processing bu zincirle uyumsuz ve gereksizdir.
+
+## 45.3. React 19 `<form action={fn}>` Pattern’i
+
+React 19, `<form>` elementine doğrudan `action` prop’u olarak bir fonksiyon geçirilmesini destekler. Bu pattern, form submit’i React’in transition mekanizması ile entegre eder.
+
+**Bu boilerplate’teki pozisyonu:** Kullanılmaz.
+
+Neden: RHF kendi `<form onSubmit={handleSubmit(onSubmit)}>` pattern’ini kullanır. React’in `<form action>` pattern’i ile RHF’in submit interception’ı aynı anda çalıştırılamaz. RHF canonical form engine olduğu sürece, React 19’un native form submission pattern’i bu boilerplate’te aktif değildir.
+
+## 45.4. Bilinçli Karar Kaydı
+
+Bu bölüm, React 19 form API’lerinin bilinçli olarak değerlendirildiğini ve reddedildiğini kaydeder:
+
+> React Hook Form 7.x bu boilerplate’in canonical form engine’idir. React 19’un `useFormStatus`, `useActionState` ve `<form action>` pattern’leri SPA-first, client-side form mimarisi ile yapısal olarak uyumsuz oldukları için kullanılmaz. Bu karar, React 19 form API’lerinin kalitesiz olduğu anlamına gelmez; yalnızca bu projenin mimari tercihiyle hizalı olmadığı anlamına gelir.
+
+## 45.5. Yeniden Değerlendirme Koşulu
+
+Bu pozisyon aşağıdaki koşullardan biri gerçekleşirse yeniden değerlendirilir:
+
+1. RHF’in React 19 form API’leri ile resmi entegrasyon katmanı yayımlaması
+2. SPA-first mimariden SSR/RSC mimariye geçiş kararı alınması (yeni ADR gerektirir)
+3. React 20+ ile form API’lerinin evrilmesi ve RHF’in bu evrimi benimsemesi

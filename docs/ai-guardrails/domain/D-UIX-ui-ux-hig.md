@@ -4,7 +4,7 @@ type: domain
 name: UI/UX Kalitesi, Apple HIG, Premium Ton
 kaynak-dokümanlar: 03, 33, 34
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-UIX: UI/UX & HIG Guardrail
@@ -239,6 +239,96 @@ son-güncelleme: 2026-04-01
 - Touch target, safe area, contrast, Dynamic Type → hemen düzelt (blocker seviye)
 - Button hierarchy, state visibility, dark mode → düzelt veya gerekçelendir
 - Premium ton, icon tutarlılığı → audit/review'da değerlendirilir
+
+---
+
+## Bottom Sheet Interaction Standardı
+
+Bottom sheet bileşenlerinin etkileşim kuralları:
+
+### Snap Point Tanımları
+| Snap | Yüzde | Kullanım |
+|------|-------|----------|
+| Peek | %25 | Kısa bilgi, teaser, minimal içerik |
+| Medium | %50 | Kısa form, bilgi kartı, seçenekler |
+| Expanded | %90 | Uzun form, tam liste, detaylı içerik |
+
+### Drag Indicator
+- Boyut: 36×4px, border-radius 2px
+- Renk: `color-surface-tertiary` semantic token
+- Konum: Sheet üstünde merkezi, 8px padding-top
+
+### Dismiss Mekanizmaları
+- [ZORUNLU] Drag down (aşağı sürükle) ile dismiss desteklenmeli
+- [ZORUNLU] Backdrop tap ile dismiss desteklenmeli (form sheet'lerde unsaved guard ekle)
+- [ZORUNLU] Close butonu her zaman görünür olmalı — tek dismiss yöntemi gesture olmamalı
+- [YAPILMAMALI] Sadece close buton ile dismiss — gesture desteği zorunlu
+
+### Keyboard Davranışı
+- [ZORUNLU] Keyboard açıldığında sheet yukarı kaymalı — input alanı görünür kalmalı
+- [YAPILMALI] `KeyboardAvoidingView` veya `android:windowSoftInputMode="adjustResize"` kullan
+
+### Nested Scroll
+- [YAPILMALI] Expanded (tam açık) durumda içerik scroll edilebilir olmalı
+- [YAPILMALI] Peek/medium durumda scroll devre dışı — sheet drag öncelikli
+- [YAPILMAMALI] Scroll ve sheet drag aynı anda aktif — gesture conflict (D-MOT ile kesişir)
+
+### Erişilebilirlik
+- [ZORUNLU] `role="dialog"` ve `aria-label` tanımla
+- [ZORUNLU] Focus trap: Sheet açıkken arkadaki içerik erişilemez olmalı
+- [YAPILMALI] ESC tuşu (web) ile dismiss
+
+### Performans
+- [ZORUNLU] Reanimated 3 gesture handler kullan — 60fps animasyon
+- [YAPILMAMALI] Animated API ile sheet animasyonu — JS thread bottleneck riski
+
+---
+
+## Search UX Pattern
+
+Arama özelliği implementasyonu için standart kurallar:
+
+### Input Davranışı
+- [ZORUNLU] Debounced input: 300ms gecikme ile API çağrısı — her tuşta istek atma
+- [ZORUNLU] Clear butonu: Input'ta metin varken `×` butonu göster
+- [ZORUNLU] Cancel butonu: Arama modundan çıkış (iOS: "İptal", Android: back arrow)
+- [YAPILMALI] `returnKeyType="search"` — klavyede Enter yerine Ara butonu
+- [YAPILMALI] Auto-focus: Arama ekranı açıldığında input'a odaklan
+
+### Son Aramalar
+- [YAPILMALI] Son 5 aramayı MMKV'de sakla (D-OFL ile kesişir)
+- [YAPILMALI] Arama inputuna tıklandığında son aramaları listele
+- [YAPILMALI] Her son arama öğesinde silme butonu
+- [YAPILMALI] "Tümünü temizle" seçeneği
+
+### Öneriler (Suggestions)
+- [YAPILMALI] API destekliyorsa debounced autocomplete önerileri göster
+- [YAPILMALI] Öneriler son aramaların altında ayrı bölümde
+- [YAPILMAMALI] Her karakter için ayrı öneri isteği — debounce uygula (300ms)
+
+### Sonuç Listesi
+- [ZORUNLU] Sonuçlar FlashList ile infinite scroll destekli gösterilmeli (D-PRF ile kesişir)
+- [ZORUNLU] Sonuç bulunamazsa: "Sonuç bulunamadı" mesajı + arama önerileri
+- [YAPILMALI] Loading durumunda skeleton veya spinner göster
+- [YAPILMALI] Sonuçlarda arama terimini vurgula (highlight)
+
+### Analytics
+- [ZORUNLU] Şu event'leri tanımla: `search_started`, `search_query_submitted`, `search_result_tapped`, `search_no_result`
+- [YAPILMALI] Popüler arama terimleri ve sıfır sonuç sorgularını analiz et
+
+## 13. In-App Rating ve Feedback Kuralları
+
+85. [ZORUNLU] iOS'ta StoreKit native API kullan — custom rating dialog (yıldız seçimi) YASAK (Apple App Store Review Guidelines 5.6.1)
+86. [ZORUNLU] Rating prompt'u negatif deneyim anında gösterme (hata sonrası, crash recovery, ödeme sırasında)
+87. [ZORUNLU] Rating prompt gösterimi yılda max 3 kez (Apple kısıtlaması — iOS otomatik enforce eder)
+88. [YAPILMALI] Minimum 3 başarılı oturum ve 3 gün kullanım sonrası rating iste
+89. [YAPILMALI] Shake-to-report bug raporu için cihaz bilgisi ve Sentry event ID otomatik ekle
+90. [YAPILMALI] Feedback form'da kategorilendirme (bug/öneri/soru) sun — serbest metin yerine
+91. [YAPILMAMALI] İlk uygulama açılışında rating prompt gösterme
+92. [YAPILMAMALI] Rating prompt sonucunu backend'e kaydetmeye çalışma (API dönmez)
+93. [YAPILMAMALI] Feedback form'da email alanını zorunlu yapma (kullanıcı bırakma riski)
+
+---
 
 ## Kaynak
 - UI/UX kalite standardı → docs/design-system/03-ui-ux-quality-standard.md

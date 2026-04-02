@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: —
   codex: önerilen
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-FIX: Bug Fix Guardrail
@@ -35,8 +35,19 @@ son-güncelleme: 2026-04-01
 | Stitch | — | Görsel bug ise referans olabilir |
 | Codex Review | Önerilen | 50+ satır değişiklikte zorunlu |
 
+## Root Cause Analysis Zorunluluğu
+6. **P0/P1 bug fix** PR'larında zorunlu 5 bölümlü RCA:
+   1. **Belirtiler** — Kullanıcı/sistem nasıl etkilendi?
+   2. **Kök neden** — Bug neden oluştu?
+   3. **Düzeltme** — Ne yapıldı?
+   4. **Önleme** — Tekrar oluşmaması için ne eklendi? (test, lint kuralı, guardrail)
+   5. **Etki alanı** — Başka hangi alanlar etkilenmiş olabilir?
+7. **P2/P3 bug fix** PR'larında minimum: kök neden + düzeltme açıklaması
+8. **Tekrarlayan bug kuralı:** Aynı kök nedenden 2+ bug çıkarsa → architectural issue olarak değerlendirilir ve ayrı iyileştirme planı oluşturulur
+
 ## DoD Ek Maddeleri
 - [ ] Root cause belirlenmiş
+- [ ] RCA bölümleri PR'da mevcut (P0/P1: 5 bölüm, P2/P3: kök neden + düzeltme)
 - [ ] Regression test yazılmış
 - [ ] Mevcut testler geçiyor
 - [ ] Fix scope dar tutulmuş (ek değişiklik yok)

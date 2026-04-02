@@ -1047,6 +1047,111 @@ Bu bölüm, App Store ve Google Play Store listing gereksinimlerini, ASO (App St
 - **Rate limiting:** Aynı kullanıcıya tekrar tekrar review prompt gösterilmemelidir. Platform API'leri bu sınırlamayı kısmen yönetir, ancak uygulama tarafında da kontrol sağlanmalıdır.
 - **Kötü deneyim sonrası:** Hata, crash veya başarısız işlem sonrasında review prompt göstermek yasaktır.
 
+---
+
+# 35. Expo SDK Major Upgrade Release Prosedürü (2026-04-02 Eki)
+
+SDK upgrade'inin release döngüsüne entegrasyonu. Detaylı teknik upgrade adımları için `48-expo-sdk-upgrade-strategy.md`'ye bakılmalıdır. Bu bölüm release sürecindeki koordinasyonu tanımlar.
+
+## 35.1. Hazırlık Aşaması (Upgrade'den 1 Hafta Önce)
+
+1. EAS CLI ve `expo` paketlerinin son sürümleri kontrol edilir.
+2. `npx expo-doctor` ile mevcut projenin uyumluluk taraması yapılır.
+3. Yeni SDK'nın changelog'u okunur, breaking change listesi çıkarılır.
+4. Third-party kütüphane uyumluluğu doğrulanır (reactnative.directory kontrol edilir).
+5. `38-version-compatibility-matrix.md`'deki hedef satır güncellenir (taslak olarak).
+
+## 35.2. Upgrade Branch
+
+- Branch isimlendirme: `upgrade/sdk-XX` (ör. `upgrade/sdk-56`)
+- `npx expo install --fix` ile paketler güncellenir.
+- Native config (`app.json` / `app.config.js`) güncellenir.
+- `expo-doctor` temiz geçene kadar hata düzeltmeleri yapılır.
+- TypeScript compile hataları çözülür.
+
+## 35.3. Feature Freeze
+
+- SDK upgrade branch'inde yeni feature geliştirilmez.
+- Sadece upgrade ile ilgili düzeltmeler (breaking change adaptasyonu, deprecated API migration) yapılır.
+- Paralel feature branch'ler upgrade branch'inden değil, `main`'den açılır.
+
+## 35.4. Regression Test
+
+1. Tüm kritik kullanıcı akışları (auth, navigation, form submit, push notification) manuel test edilir.
+2. E2E test suite (Playwright) çalıştırılır.
+3. Performance benchmark before/after karşılaştırılır (startup time, JS bundle size, memory).
+4. iOS ve Android'de ayrı ayrı development build ve EAS build doğrulanır.
+
+## 35.5. Merge ve Release
+
+1. Upgrade branch `main`'e merge edilir (squash merge).
+2. Version bump yapılır + CHANGELOG güncellenir.
+3. EAS Build ile production build oluşturulur.
+4. Canary release (%5 kullanıcı) yayımlanır.
+5. 48 saat izleme süresi: Crash rate, ANR rate, performance metrikleri Sentry'den takip edilir.
+6. Sorun yoksa full rollout yapılır.
+7. Sorun varsa OTA revert veya store rollback uygulanır.
+
+---
+
+# 36. Otomatik Release Notes Üretimi (2026-04-02 Eki)
+
+Conventional commits + changeset ile otomatik CHANGELOG yönetimi.
+
+## 36.1. Commit Format Kuralları
+
+Commit mesajları conventional commit formatını takip eder:
+
+| Prefix | Kullanım | CHANGELOG Kategorisi |
+|--------|---------|---------------------|
+| `feat:` | Yeni özellik | Yeni Özellikler |
+| `fix:` | Hata düzeltme | Hata Düzeltmeleri |
+| `perf:` | Performans iyileştirme | İyileştirmeler |
+| `refactor:` | Davranış değiştirmeyen kod düzenleme | İyileştirmeler |
+| `docs:` | Doküman değişikliği | CHANGELOG'a girmez |
+| `test:` | Test ekleme/düzeltme | CHANGELOG'a girmez |
+| `chore:` | Build, CI, dependency | CHANGELOG'a girmez (major dependency hariç) |
+
+## 36.2. Changeset Workflow
+
+- Araç: `@changesets/cli`
+- Her PR'da changeset dosyası oluşturulur: `pnpm changeset`
+- Changeset dosyası `.changeset/` dizininde tutulur ve PR'a dahil edilir.
+- CI: `changeset-bot` PR'da changeset eksikse uyarı comment'i bırakır.
+- Exception: `docs:`, `test:`, `chore:` prefix'li PR'larda changeset opsiyoneldir.
+
+## 36.3. Release Akışı
+
+1. `pnpm changeset version` → package.json version bump + CHANGELOG.md otomatik güncelleme.
+2. Version bump commit'i oluşturulur.
+3. Git tag oluşturulur (`v1.2.0`).
+4. CHANGELOG.md'nin doğruluğu gözden geçirilir.
+5. Release publish yapılır.
+
+## 36.4. Release Notes Formatı
+
+```markdown
+## v1.2.0 (2026-04-15)
+
+### Yeni Özellikler
+- feat: Profil ekranı skeleton loading eklendi (#45)
+- feat: Bildirim ayarları ekranı oluşturuldu (#50)
+
+### Hata Düzeltmeleri
+- fix: Auth token refresh race condition çözüldü (#52)
+- fix: Dark mode geçişinde flicker düzeltildi (#54)
+
+### İyileştirmeler
+- perf: FlatList render optimizasyonu, %30 scroll performansı artışı (#48)
+- refactor: useAuth hook'u adapter pattern'ine taşındı (#51)
+```
+
+## 36.5. Entegrasyon
+
+- GitHub Release: Tag push'ta otomatik GitHub Release oluşturulur, CHANGELOG'dan ilgili bölüm çekilir.
+- Slack/Teams bildirimi: Release sonrası otomatik bildirim (opsiyonel CI adımı).
+- Store release notes: Mobile release'lerde store listing açıklaması CHANGELOG'dan türetilir.
+
 ## 34.5. Store Review Guideline Uyumu
 
 - **Apple App Review Guidelines:**
@@ -1058,3 +1163,106 @@ Bu bölüm, App Store ve Google Play Store listing gereksinimlerini, ASO (App St
   - User data policy: veri toplama, paylaşma ve data safety beyanı uyumlu olmalıdır.
   - Deceptive behavior: yanıltıcı davranış, gizli izleme veya kullanıcıyı aldatan pratikler yasaktır.
 - **Pre-submission checklist:** Her release öncesi platform guideline'ları kontrol edilmelidir. Yeni guideline değişiklikleri takip edilmeli ve uyum sağlanmalıdır.
+
+---
+
+# 37. Canary Release ve Preview Deployment
+
+Bu bölüm, değişikliklerin kontrollü ve kademeli olarak son kullanıcıya ulaştırılmasını sağlayan stratejileri tanımlar.
+
+## 37.1. Web Preview Deployment
+
+Her PR için otomatik preview ortamı oluşturulur:
+
+- **Araç:** Vercel / Netlify / Cloudflare Pages (proje tercihine göre)
+- **URL pattern:** `pr-{number}.preview.{domain}` veya platform otomatik URL
+- **Lifecycle:** PR açıldığında oluşturulur, PR kapatıldığında/merge edildiğinde silinir
+- **Erişim:** Yalnızca ekip üyeleri (authentication veya IP whitelist)
+- **Kullanım:** QA review, tasarım doğrulama, stakeholder demo
+
+## 37.2. Mobile Canary Release (EAS Update Channels)
+
+OTA güncellemelerde kademeli yayın (staged rollout) stratejisi:
+
+| Aşama | Hedef Kitle | Süre | Koşul |
+|-------|-------------|------|-------|
+| Internal | Geliştirme ekibi | 1 gün | Smoke test geçmeli |
+| Canary (%5) | Küçük kullanıcı grubu | 2-3 gün | Error rate baseline'ın altında |
+| Staged (%25) | Genişletilmiş grup | 2-3 gün | Metrikler stabil |
+| Full (%100) | Tüm kullanıcılar | — | Tüm aşamalar temiz |
+
+### EAS Update Channel Yapısı
+
+```
+channels:
+  - production        → Tüm son kullanıcılar
+  - canary            → Kademeli yayın grubu (%5-25)
+  - staging           → QA ve test ekibi
+  - development       → Geliştirme ekibi
+```
+
+### Rollback Prosedürü
+
+1. Canary aşamasında kritik hata tespit edilirse, EAS Update rollback komutu çalıştırılır
+2. Rollback, önceki stable update'i `production` channel'ına tekrar yayımlar
+3. Rollback süresi: < 5 dakika (OTA dağıtım süresi)
+4. Native binary değişikliği varsa OTA rollback yeterli değildir; App Store / Play Store rollback gerekir
+
+## 37.3. Native Binary Staged Rollout
+
+- **Google Play:** Console'dan kademeli yayın (%5 → %25 → %50 → %100) desteklenir
+- **Apple App Store:** Phased release desteklenir (7 gün boyunca kademeli dağıtım)
+- **Kural:** Kritik olmayan release'ler staged rollout ile yapılır. Hotfix release'ler %100 anında yayımlanabilir.
+
+---
+
+# 38. Otomatik Versiyon ve CHANGELOG Yönetimi
+
+Bu bölüm, monorepo kapsamında paket versiyonlama, CHANGELOG üretimi ve breaking change iletişimini tanımlar.
+
+## 38.1. Canonical Araç: Changesets
+
+Bu boilerplate Changesets'i otomatik versiyon yönetimi aracı olarak canonical kabul eder.
+
+**Neden Changesets, neden semantic-release değil?**
+
+- Changesets monorepo-native'dir; her paket bağımsız versiyonlanabilir
+- Changeset dosyaları PR sürecinde oluşturulur; release kararı merge anında değil, changeset birikiminde alınır
+- semantic-release commit mesajlarından otomatik versiyon çıkarır; bu yaklaşım monorepo'da çakışma riski taşır
+- Changesets'in "human review" adımı yanlış version bump'ı önler
+
+## 38.2. Changeset Workflow
+
+1. **PR oluşturulurken:** Geliştirici `pnpm changeset` çalıştırır, etkilenen paketleri ve değişiklik türünü (major/minor/patch) seçer
+2. **PR review'da:** Changeset dosyası (`.changeset/*.md`) review edilir
+3. **Merge sonrası:** CI, Changesets bot PR'ı oluşturur (version bump + CHANGELOG güncelleme)
+4. **Release kararı:** Changesets bot PR'ı merge edildiğinde paketler yayımlanır
+
+## 38.3. Monorepo Paket Versiyonlama
+
+| Paket | Versiyonlama Stratejisi |
+|-------|-------------------------|
+| `@boilerplate/ui` | Independent — kendi semver döngüsü |
+| `@boilerplate/utils` | Independent |
+| `@boilerplate/design-tokens` | Independent — token değişikliği minor/major bump |
+| `apps/web` | App versiyonu — release tag ile yönetilir |
+| `apps/mobile` | App versiyonu — EAS Build + app.config.ts ile yönetilir |
+
+**Kural:** Paket versiyonu ve app versiyonu birbirinden bağımsızdır.
+
+## 38.4. CHANGELOG Otomatik Üretimi
+
+- Her paket kendi `CHANGELOG.md` dosyasına sahiptir
+- CHANGELOG, Changesets tarafından changeset dosyalarından otomatik üretilir
+- Format: Keep a Changelog standardı (Added, Changed, Fixed, Removed)
+- GitHub Release: Tag push'ta CHANGELOG'dan ilgili bölüm otomatik çekilir
+
+## 38.5. Breaking Change İletişimi
+
+Breaking change (major bump) aşağıdaki prosedürle iletilir:
+
+1. Changeset dosyasında `major` olarak işaretlenir
+2. CHANGELOG'da `### Breaking Changes` başlığı altında açıkça listelenir
+3. Migration rehberi changeset açıklamasına veya ayrı dokümana yazılır
+4. Dependent paketler ve app'ler uyumluluk testi geçirilir
+5. Breaking change PR'ı, etkilenen tüm paket maintainer'larının onayını gerektirir

@@ -942,7 +942,83 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 32. Kısa Sonuç
+# 32. Token Kullanım Analiz Reçetesi
+
+Kullanılmayan ve eksik token'ları sistematik olarak tespit etmek için aşağıdaki analiz adımları uygulanır. Bu reçete, token sisteminin sağlığını ölçülebilir hale getirir.
+
+## 32.1. Kullanılmayan Token Tespiti (Orphan Token Analizi)
+
+Token dosyasında tanımlı olup kaynak kodda hiçbir yerde referans edilmeyen token'ları bulmak için aşağıdaki adımlar izlenir:
+
+1. **Token envanter çıkarma:** `packages/design-tokens/` altındaki tüm token dosyalarından token adları programatik olarak çıkarılır.
+2. **Kaynak kod tarama:** `src/**/*.{ts,tsx}` dosyalarında her token adı için referans aranır (grep/ripgrep).
+3. **Raporlama:** Hiçbir kaynak dosyada referansı bulunmayan token'lar `orphan-tokens.json` olarak raporlanır.
+4. **CI entegrasyonu:** `pnpm lint:tokens:unused` komutu CI pipeline'ına eklenir. Bu adım **uyarı** üretir (bloklamaz). Orphan token sayısı trend olarak izlenir; artış durumunda token cleanup sprint planlanır.
+
+## 32.2. Token Coverage Raporu (Hardcoded Değer Tespiti)
+
+Kaynak kodda token sistemi dışında kullanılan hardcoded görsel değerleri tespit etmek için:
+
+1. **Hardcoded renk tarama:** Hex renk kodları (`#[0-9a-fA-F]{3,8}`), `rgb()`, `rgba()`, `hsl()` kalıpları kaynak kodda aranır.
+2. **Hardcoded spacing tarama:** Inline `px`, `pt`, `rem`, `em` değerleri (ör. `padding: 16px`, `margin: '12'`) tespit edilir.
+3. **Hardcoded font-family tarama:** Doğrudan font-family string'leri (`'Inter'`, `'Roboto'`) aranır.
+4. **Raporlama:** Hardcoded değer bulunan satırlar dosya adı, satır numarası ve bulunan değer ile birlikte raporlanır.
+5. **CI entegrasyonu:** `pnpm lint:tokens:coverage` komutu CI pipeline'ına eklenir. Bu adım **blocker** (P0) olarak çalışır; hardcoded görsel değer içeren PR merge edilemez.
+
+## 32.3. Token Kullanım Dashboard'u
+
+Token sağlığını izlemek için aşağıdaki metrikler dashboard olarak görselleştirilir:
+
+- **En çok kullanılan token'lar:** Referans sayısına göre sıralı top 20 token
+- **En az kullanılan token'lar:** 1-2 referansla sınırlı token'lar (potansiyel cleanup adayı)
+- **Orphan token sayısı:** Sprint bazlı trend grafiği
+- **Hardcoded değer sayısı:** Sprint bazlı trend grafiği (hedef: 0)
+- **Token ailesi dağılımı:** Color, spacing, typography, motion vb. ailelerin kullanım oranları
+
+---
+
+# 33. Dynamic Token (User-Customizable) Mekanizması
+
+Bazı kullanım senaryolarında kullanıcının tema rengini veya font boyutunu runtime'da değiştirmesi gerekebilir. Bu bölüm, dynamic token mekanizmasının teknik yaklaşımını ve sınırlamalarını tanımlar.
+
+## 33.1. Kullanım Senaryoları
+
+- **Kullanıcı aksiyonu:** Uygulama ayarlarından "Tema rengini değiştir" (primary color picker ile renk seçimi).
+- **Accessibility:** "Font boyutunu büyüt" (OS düzeyinde Dynamic Type veya uygulama içi ayar).
+- **Branding:** White-label uygulamalarda runtime tema değişimi (backend'den gelen marka renkleri).
+
+## 33.2. Teknik Yaklaşım
+
+### Web:
+- CSS custom properties ile runtime override: `document.documentElement.style.setProperty('--color-primary', '#FF6600')`
+- Tailwind CSS 4.x CSS variable desteği ile token'lar doğrudan CSS variable'a bağlanır.
+- Tema değişimi sayfa yenilemesi gerektirmez; anlık güncellenir.
+
+### React Native:
+- Theme context provider ile dynamic token değerleri React context üzerinden dağıtılır.
+- `ThemeProvider` component'i dynamic token'ları props olarak alır ve tüm alt ağaca yayar.
+- NativeWind 5.x CSS variable desteği ile web ile paralel mekanizma kullanılır.
+
+### Persist:
+- Kullanıcı tercihi MMKV'de (veya AsyncStorage'da) saklanır.
+- Uygulama açılışında saklanan tercih okunur ve theme provider'a uygulanır.
+- Key formatı: `user_theme_preference_{userId}` (kullanıcı bazlı tercih desteği).
+
+## 33.3. Dynamic Token Sınırlamaları
+
+- **Dynamic olabilen token'lar:** Renk (color-primary, color-accent), font-size scale multiplier.
+- **Static kalması gereken token'lar:** Spacing, layout, radius, border-width, z-index, motion duration.
+- **Gerekçe:** Spacing ve layout token'larının runtime değişimi layout shift ve CLS sorunlarına yol açar; bu token'lar build-time'da sabitlenir.
+
+## 33.4. Fallback Mekanizması
+
+- Dynamic token uygulanamıyorsa (hatalı değer, parse hatası, desteklenmeyen format) varsayılan tema kullanılır.
+- Kontrast oranı kontrolü: Kullanıcının seçtiği primary renk, arka plan ile minimum 4.5:1 kontrast sağlamazsa uyarı gösterilir.
+- White-label senaryoda backend'den gelen renk geçersizse fallback renk paleti uygulanır.
+
+---
+
+# 34. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: —
   codex: —
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-DOCS: Doküman Yazımı Guardrail
@@ -24,7 +24,14 @@ son-güncelleme: 2026-04-01
 5. Mevcut doküman güncellemesi: son-güncelleme tarihini revize et
 6. CLAUDE.md güncellemesi: 500 satır sınırına dikkat et
 
+## Doküman Freshness Kontrolü
+7. Kaynak kod değiştiğinde, o koda referans veren dokümanlar da güncellenmeli
+8. **CI uyarısı:** "Bu PR, X.md'ye referans veren kodu değiştirdi — doküman güncel mi?" şeklinde otomatik uyarı
+9. PR author değerlendirir ve gerekiyorsa dokümanı günceller
+10. **Exception:** Typo düzeltme, import yolu değişikliği, refactoring gibi dokümanı anlamsal olarak etkilemeyen değişiklikler freshness kontrolünden muaftır
+
 ## DoD Ek Maddeleri
 - [ ] Format standartlarına uygun
 - [ ] Otorite hiyerarşisi ile çelişmiyor
 - [ ] Document map güncellenmiş (yeni doküman ise)
+- [ ] İlgili kaynak kod değişmişse doküman freshness kontrolü yapılmış

@@ -345,3 +345,73 @@ Bu proje için exception ve exemption yönetimi standardı şudur:
 - Exception yönetimi, kural sisteminin sağlığının doğrudan göstergesidir.
 
 > İstisna yönetilmezse kural yoktur; kural yoksa kalite sistemi yoktur.
+
+---
+
+# 14. Exception Dashboard (2026-04-02 Eki)
+
+Bu bölüm, exception kayıtlarının merkezi görünürlüğünü sağlayan dashboard mekanizmasını tanımlar.
+
+## 14.1. Dashboard İçeriği
+
+`EXCEPTIONS-DASHBOARD.md` dosyası aşağıdaki tabloyu içerir:
+
+| Exception ID | Kural | Dosya/Modül | Gerekçe | Bitiş Tarihi | Durum |
+|-------------|-------|-------------|---------|--------------|-------|
+| EXC-001 | D-A11/touch-target | `packages/ui/Button` | Legacy API uyumu | 2026-05-15 | Aktif |
+| EXC-002 | TS-strict/any | `apps/web/src/legacy/` | Migration sürecinde | 2026-06-01 | Aktif |
+| EXC-003 | D-UIX/hardcoded-color | `packages/ui/Chart` | Third-party kısıtı | 2026-04-30 | Süresi yakın |
+
+## 14.2. Otomatik Güncelleme
+
+- CI pipeline'da `exceptions/` dizinindeki YAML dosyaları taranır.
+- Her YAML dosyasından exception metadata'sı çıkarılır.
+- `EXCEPTIONS-DASHBOARD.md` otomatik olarak güncellenir.
+- Dashboard, repoda `docs/` dizininde tutulur.
+
+## 14.3. Süre Dolumu Uyarıları
+
+| Zaman | Aksiyon | Hedef |
+|-------|---------|-------|
+| T-7 gün | Uyarı e-posta/Slack bildirimi | Geliştirici (exception owner) |
+| T-3 gün | Escalation bildirimi | Tech lead |
+| T-0 (süre dolumu) | CI warning → exception "expired" olarak işaretlenir | Tüm ekip |
+| T+7 gün | P0'a yükseltme, CI blocker olarak işaretlenir | Tüm ekip |
+
+---
+
+# 15. Otomatik Expiry Yönetimi (2026-04-02 Eki)
+
+Bu bölüm, exception kayıtlarının severity'ye göre otomatik süre yönetimini tanımlar.
+
+## 15.1. Severity Bazlı Süre Tablosu
+
+| Severity | Maksimum Süre | Uzatma Hakkı | Uzatma Süresi |
+|----------|-------------|-------------|--------------|
+| P0 (Blocker) | 1 sprint (2 hafta) | 1 kez | +1 sprint |
+| P1 (Major) | 2 sprint (4 hafta) | 2 kez | +1 sprint her seferinde |
+| P2 (Minor) | 1 çeyrek (3 ay) | 1 kez | +1 çeyrek |
+| P3 (Cosmetic) | 6 ay | Sınırsız | +3 ay her seferinde |
+
+## 15.2. Uzatma Kuralları
+
+- Uzatma talebi, exception owner tarafından bitiş tarihinden en az 3 gün önce yapılmalıdır.
+- Uzatma gerekçesi YAML kaydında belirtilmelidir.
+- P0 uzatma onayı tech lead'den, P1 uzatma onayı senior developer'dan alınmalıdır.
+- P2/P3 uzatmaları self-service yapılabilir (YAML kaydı güncellenir, PR review yeterli).
+
+## 15.3. Bildirim Zinciri
+
+```
+T-7 gün  → Geliştirici (exception owner) bilgilendirilir
+T-3 gün  → Tech lead bilgilendirilir
+T-0      → Exception "expired" olarak işaretlenir, CI warning
+T+7 gün  → Exception P0'a yükseltilir, CI blocker
+```
+
+## 15.4. Expired Exception İşleme
+
+- Süresi dolan exception 7 gün içinde ya düzeltilmeli ya da uzatılmalıdır.
+- 7 gün sonra exception otomatik olarak P0'a yükseltilir.
+- P0'a yükseltilen exception CI pipeline'ı bloklar.
+- Exception'ın artık geçerli olmadığı (kural zaten karşılandığı) durumda, exception kapatılır ve YAML kaydı arşivlenir.

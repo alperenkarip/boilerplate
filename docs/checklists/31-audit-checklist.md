@@ -504,3 +504,111 @@ Bu proje için audit standardı şudur:
 - dependency ve compatibility drift’i yakalar
 - design system, security, observability, testing, i18n ve release disiplinini aynı kalite sistemine bağlar
 - severity ve aksiyon üretmeyen audit değerli sayılmaz
+
+---
+
+# 27. Audit Otomasyon Seviyesi (2026-04-02 Eki)
+
+Bu bölüm, audit maddelerinin otomasyon durumunu tanımlar. Her maddenin hangi seviyede otomatikleştirilebileceğini ve mevcut durumunu gösterir.
+
+## 27.1. Otomasyon Seviyeleri
+
+- 🟢 **Otomatik (CI):** Tamamen CI pipeline'da çalışır, insan müdahalesi gerektirmez.
+- 🟡 **Yarı-otomatik (AI+İnsan):** AI aracı tarafından çalıştırılır, sonuç insan tarafından değerlendirilir.
+- 🔴 **Manuel:** Tamamen insan tarafından yapılır.
+
+## 27.2. Audit Maddesi Otomasyon Matrisi
+
+| Audit Alanı | Madde | Otomasyon |
+|-------------|-------|-----------|
+| Canonical Stack | Canonical dışı dependency kontrolü | 🟢 CI (`pnpm audit`, dependency scan) |
+| Canonical Stack | Versiyon sapma kontrolü (38 ile karşılaştırma) | 🟢 CI (version check script) |
+| TypeScript | `any` type kullanımı | 🟢 CI (ESLint `@typescript-eslint/no-explicit-any`) |
+| TypeScript | strict mode kontrolü | 🟢 CI (tsconfig parse) |
+| Design System | Hardcoded renk/spacing/font kontrolü | 🟢 CI (lint rule + grep) |
+| Design System | Token isimlendirme uyumu | 🟡 AI (guardrail hook) + İnsan review |
+| Accessibility | Touch target minimum boyut | 🟡 AI (guardrail) + Manuel test |
+| Accessibility | Screen reader uyumu | 🔴 Manuel (VoiceOver/TalkBack test) |
+| Security | Secret/credential repo taraması | 🟢 CI (git-secrets, trufflehog) |
+| Security | Auth token güvenli saklama | 🟡 AI (code review) + İnsan review |
+| Security | CSP header kontrolü | 🟢 CI (header test) |
+| Testing | Coverage eşik kontrolü | 🟢 CI (coverage report) |
+| Testing | Test dosyası varlığı | 🟢 CI (dosya pattern kontrolü) |
+| i18n | Inline string kontrolü | 🟢 CI (lint rule) |
+| i18n | Namespace organizasyonu | 🟡 AI (guardrail) + İnsan review |
+| Performance | Bundle boyutu kontrolü | 🟢 CI (size-limit) |
+| Performance | Core Web Vitals | 🟡 CI (Lighthouse CI) + Field data |
+| Observability | Sentry entegrasyonu kontrolü | 🟡 AI + İnsan (config review) |
+| Import/Boundary | Import yönü kontrolü | 🟢 CI (eslint-plugin-import) |
+| Guardrail | Guardrail doküman güncelliği | 🟡 CI (tarih kontrolü) + İnsan review |
+| Release | Changelog oluşturuldu mu | 🟢 CI (dosya varlığı kontrolü) |
+| Visual | Design-code uyumu | 🔴 Manuel (görsel karşılaştırma) |
+| Platform | iOS/Android parity | 🔴 Manuel (her iki platformda test) |
+
+## 27.3. Otomasyon Hedefi
+
+| Seviye | Mevcut Oran | Hedef Oran |
+|--------|------------|-----------|
+| 🟢 Otomatik | ~%45 | %60 |
+| 🟡 Yarı-otomatik | ~%30 | %25 |
+| 🔴 Manuel | ~%25 | %15 |
+
+Otomasyon oranı her çeyrekte değerlendirilir. Yarı-otomatik maddeler CI'a taşınabilirliği açısından önceliklendirilir.
+
+---
+
+# 28. Audit Sonuç Arşivi (2026-04-02 Eki)
+
+Bu bölüm, audit sonuçlarının arşivlenmesi ve trend takibi mekanizmasını tanımlar.
+
+## 28.1. Arşiv Yapısı
+
+```
+docs/audits/
+├── audit-2026-01-15.md
+├── audit-2026-02-15.md
+├── audit-2026-03-15.md
+├── guardrail-report-2026-01.md
+├── guardrail-report-2026-02.md
+└── guardrail-report-2026-03.md
+```
+
+- Dosya adı formatı: `audit-YYYY-MM-DD.md`
+- Her audit sonucu ayrı dosyada saklanır.
+- Guardrail effectiveness raporları aylık: `guardrail-report-YYYY-MM.md`
+
+## 28.2. Audit Dosyası İçeriği
+
+Her audit dosyası aşağıdaki bölümleri içerir:
+
+```markdown
+# Audit Raporu — YYYY-MM-DD
+
+## Özet
+- Toplam madde: XX
+- Pass: XX | Fail: XX | N/A: XX
+- Blocker: X | Major: X | Minor: X
+
+## Bulgular
+(Fail olan maddeler ve aksiyonlar)
+
+## Trend
+(Önceki audit ile karşılaştırma)
+
+## Aksiyonlar
+(Her bulgu için atanan iş ve sorumlu)
+```
+
+## 28.3. Trend Analizi
+
+- Son 3 audit raporu karşılaştırılarak trend analizi yapılır.
+- İyileşen alanlar yeşil, kötüleşen alanlar kırmızı olarak işaretlenir.
+- Ardışık 2 audit'te kötüleşen alan, sprint backlog'una eklenir.
+
+## 28.4. Saklama Politikası
+
+| Dönem | Aksiyon |
+|-------|---------|
+| 0-12 ay | Aktif saklama, `docs/audits/` dizininde |
+| 12-24 ay | Arşiv, `docs/audits/archive/` dizinine taşınır |
+| 24+ ay | Silinebilir (git history'de kalır) |

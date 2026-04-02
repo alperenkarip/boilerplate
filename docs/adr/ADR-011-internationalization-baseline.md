@@ -829,7 +829,130 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 38. Kısa Sonuç
+# 38. RTL (Right-to-Left) Layout Stratejisi
+
+Arapça, İbranice, Farsça gibi sağdan sola yazılan diller için layout desteği.
+
+## 38.1. Şu Anki Pozisyon
+
+RTL desteği **derived project kararıdır**. Bu boilerplate RTL-ready altyapı sağlar; ancak RTL’i varsayılan olarak aktif etmez. Derived project’te RTL dil desteği gerektiğinde aşağıdaki rehber uygulanır.
+
+## 38.2. Mobile RTL Altyapısı
+
+### Uygulama Genelinde RTL Aktivasyonu
+`I18nManager.forceRTL(true)` ile uygulama genelinde layout yönü değiştirilir. Bu çağrı app başlangıcında, locale değişikliğinde tetiklenir ve uygulama yeniden başlatılır (RTL değişikliği hot-reload ile uygulanamaz).
+
+### Flexbox Davranışı
+- `flexDirection: ‘row’` RTL modunda otomatik olarak `row-reverse` gibi davranır (`I18nManager.isRTL` aktifken)
+- Layout yönü platform tarafından otomatik yönetilir; manuel reverse gereksizdir
+
+### Text Alignment
+- `textAlign: ‘left’` / `textAlign: ‘right’` yerine `textAlign: ‘start’` / `textAlign: ‘end’` kullanılır (uygun olan yerlerde)
+- Bu sayede RTL’de metin otomatik doğru yöne hizalanır
+
+### İkon Mirroring
+- Yön bildiren ikonlar (geri oku, ileri oku, chevron, çıkış) RTL’de ayna görüntüsü olmalıdır
+- Yön bağımsız ikonlar (kalp, yıldız, silme) mirror edilmemelidir
+- `I18nManager.isRTL` kontrolü ile koşullu `transform: [{ scaleX: -1 }]` uygulanır
+
+### Spacing
+- `marginLeft` / `marginRight` yerine `marginStart` / `marginEnd` kullanılır
+- `paddingLeft` / `paddingRight` yerine `paddingStart` / `paddingEnd` kullanılır
+- Bu API’ler RTL’de otomatik yön değiştirir
+
+## 38.3. Web RTL Altyapısı
+
+- HTML `dir="rtl"` attribute’u ile document yönü değiştirilir
+- Tailwind CSS `rtl:` prefix ile RTL-specific stiller yazılır (ör. `rtl:text-right`)
+- CSS logical properties (`margin-inline-start`, `padding-inline-end`) tercih edilir
+- `@layer` ile RTL override’lar organize edilir
+
+## 38.4. NativeWind RTL Desteği
+
+NativeWind’in `rtl:` prefix’i ile RTL-specific stiller yazılabilir:
+- `rtl:flex-row-reverse` — RTL’de satır yönünü tersine çevir
+- `rtl:mr-4` → `rtl:ml-4` — RTL’de margin yönünü değiştir
+- Bu prefix’ler yalnızca RTL modunda aktif olur
+
+## 38.5. Test Gereksinimleri
+
+- RTL destekli her ekran **hem LTR hem RTL** modunda visual test gerektirir
+- Storybook’ta RTL toggle ile her component’in RTL görünümü doğrulanır
+- Navigation flow (back button, drawer direction) RTL’de doğru çalışmalıdır
+- Sayılar ve tarihler RTL’de doğru formatta gösterilmelidir (bu i18next locale formatters ile sağlanır)
+
+---
+
+# 39. Namespace Lazy Loading
+
+i18next namespace’lerinin ekran bazlı lazy load edilmesi, initial bundle boyutunu küçültür ve uygulama başlangıç süresini iyileştirir.
+
+## 39.1. Varsayılan Namespace
+
+`common` namespace’i app başlangıcında yüklenir. Bu namespace genel UI metinlerini içerir:
+- Buton etiketleri (Kaydet, İptal, Tamam, Geri)
+- Navigasyon etiketleri (Ana Sayfa, Ayarlar, Profil)
+- Genel hata mesajları (Bir hata oluştu, Tekrar deneyin)
+- Genel durum mesajları (Yükleniyor, Sonuç bulunamadı)
+
+## 39.2. Feature Namespace’leri
+
+Feature-specific namespace’ler ilgili ekran render edildiğinde dinamik olarak yüklenir:
+
+| Namespace | Yükleme Zamanı | İçerik |
+|-----------|---------------|--------|
+| `auth` | Login/Register ekranı açıldığında | Giriş yap, Hesap oluştur, Şifremi unuttum |
+| `profile` | Profil ekranı açıldığında | Profil düzenle, Hesap bilgileri, Abonelik |
+| `settings` | Ayarlar ekranı açıldığında | Bildirim tercihleri, Dil seçimi, Tema |
+| `payment` | Ödeme ekranı açıldığında | Ödeme yöntemi, Fatura bilgileri, Abonelik planları |
+| `onboarding` | Onboarding flow’u başladığında | Hoş geldiniz, Adım 1/2/3 |
+
+## 39.3. Lazy Loading Mekanizması
+
+```typescript
+// i18next konfigürasyonu
+i18n.init({
+  ns: [‘common’],           // Başlangıçta yüklenen namespace
+  defaultNS: ‘common’,
+  partialBundledLanguages: true,
+  // ...
+});
+
+// Ekran seviyesinde namespace yükleme
+function ProfileScreen() {
+  const { t, ready } = useTranslation(‘profile’);
+
+  if (!ready) return <LoadingSkeleton />;
+
+  return <Text>{t(‘profile:editProfile’)}</Text>;
+}
+```
+
+## 39.4. React.lazy + Suspense Entegrasyonu
+
+Namespace yükleme sırasında Suspense fallback gösterilir. Bu, ekranın namespace yüklenene kadar loading skeleton göstermesini sağlar.
+
+## 39.5. Bundle Boyutu Etkisi
+
+- **Öncesi:** Tüm dil dosyaları (tüm namespace’ler × tüm diller) initial bundle’da → örneğin 200KB+ JSON
+- **Sonrası:** Yalnızca `common` namespace initial bundle’da → örneğin 15KB JSON
+- **Kazanım:** Initial bundle boyutu %90+ küçülür; kalan namespace’ler on-demand yüklenir
+
+## 39.6. Cache
+
+- Yüklenen namespace’ler memory’de tutulur; aynı ekrana tekrar gidildiğinde yeniden yüklenmez
+- App restart’ta namespace’ler tekrar yüklenir (persist edilmez; translation dosyaları küçük olduğu için her seferinde yüklemek kabul edilir)
+
+## 39.7. Backend Plugin (Opsiyonel)
+
+`i18next-http-backend` plugin’i ile translation dosyaları remote server’dan çekilebilir:
+- **Avantaj:** Yeni çeviri eklendiğinde app update gerekmez; OTA translation update mümkün olur
+- **Dezavantaj:** Ağ bağımlılığı, ilk yüklemede gecikme riski
+- **Boilerplate pozisyonu:** Bu özellik opsiyoneldir. Varsayılan olarak translation dosyaları bundle’da yaşar. Remote translation ihtiyacı derived project kararıdır.
+
+---
+
+# 40. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

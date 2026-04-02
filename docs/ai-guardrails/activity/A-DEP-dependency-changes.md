@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-DEP: Dependency Değişikliği Guardrail
@@ -42,9 +42,27 @@ son-güncelleme: 2026-04-01
 12. Import'ları temizle
 13. Wrapper/abstraction'ı da kaldır
 
+## Bundle Size Impact Raporu
+14. Her dependency ekleme/upgrade PR'ında bundle size impact raporu zorunlu:
+
+| Bilgi | Açıklama |
+|-------|---------|
+| Paket adı | Eklenen/güncellenen paket |
+| Gzip boyutu | Paketin sıkıştırılmış boyutu |
+| Tree-shaking | Tree-shakeable mi? |
+| Bundle farkı | Önceki vs sonraki toplam bundle boyutu |
+
+15. CI action (bundlesize veya size-limit) ile otomatik kontrol
+16. **Eşik değerler:**
+    - **+100KB:** Uyarı — gerekçe açıklanmalı
+    - **+500KB:** PR bloklanır — alternatif araştırılmalı
+17. Daha hafif alternatif varsa PR'da önerilmeli
+
 ## DoD Ek Maddeleri
 - [ ] Dependency policy (37) kontrol edilmiş
 - [ ] Compatibility matrix (38) güncel
 - [ ] Bundle size etkisi kabul edilebilir
+- [ ] Bundle size impact raporu PR'da mevcut
 - [ ] Güvenlik taraması geçmiş
+- [ ] +500KB eşiği aşılmamış (veya gerekçelenmiş)
 - [ ] Testler geçiyor

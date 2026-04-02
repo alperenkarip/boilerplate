@@ -1150,3 +1150,386 @@ Bu nedenle bundan sonraki hiçbir doküman:
 - loading davranışını performanstan bağımsız tasarlayamaz,
 - asset, motion ve data kararlarının runtime etkisini yok sayamaz,
 - performans sorunlarını ölçmeden sezgisel mikro optimizasyonlarla kapatmaya çalışamaz.
+
+---
+
+# 32. New Architecture Performans Metrikleri (2026-04 Ekleme)
+
+Expo SDK 55 ve React Native 0.83+ ile New Architecture (Fabric + JSI + TurboModules + Hermes V1) zorunlu hale gelmiştir. Bu bölüm, New Architecture'ın performans etkisini ölçülebilir metriklerle tanımlar.
+
+## 32.1. Neden Bu Bölüm Gerekli?
+
+Mevcut performans standardı (bu belgenin önceki bölümleri) runtime-agnostic kurallar tanımlar. Ancak New Architecture, performans profilini kökten değiştiren bir altyapı değişikliğidir. Eski bridge mimarisi ile New Architecture arasındaki farklar ölçülebilir ve bu farklar performans bütçelerini, beklentilerini ve audit kriterlerini doğrudan etkiler.
+
+## 32.2. Cold Start Performansı
+
+### Eski mimari (bridge):
+- JavaScript kaynak kodu runtime'da parse edilir ve derlenir
+- Tüm native modüller uygulama açılışında eager-load edilir
+- Bridge üzerinden JSON serialization ile ilk iletişim kurulur
+- Tipik cold start: 1.5-3 saniye (cihaz ve uygulama boyutuna göre)
+
+### New Architecture (Hermes V1 + TurboModules):
+- JavaScript bytecode'a derleme build-time'da yapılır (Hermes bytecode precompilation)
+- TurboModules lazy-loaded olarak yalnızca kullanıldığında yüklenir
+- JSI ile doğrudan C++ obje erişimi, serialization overhead yok
+- Tipik cold start: 0.8-1.5 saniye (aynı koşullarda)
+- **Beklenen iyileşme: %30-43**
+
+### Ölçüm yöntemi:
+- Flipper / React Native Performance Monitor ile cold start süresi ölçülmeli
+- `AppStartup` custom Sentry span ile production'da izlenmeli
+- Hedef: cold start < 1.5 saniye (orta segment cihaz, temiz açılış)
+
+## 32.3. JS-to-Native İletişim Latansı
+
+### Eski mimari (bridge):
+- Her JS → Native çağrısı JSON serialization + deserialization gerektirir
+- Mesajlar async batch olarak bridge queue üzerinden iletilir
+- Tek çağrı latansı: 1-5ms (basit çağrı), 10-50ms (büyük payload)
+- Yüksek frekanslı çağrılarda (gesture, animation) bottleneck oluşur
+
+### New Architecture (JSI):
+- JS ve Native aynı bellek alanını paylaşır (shared memory through JSI host objects)
+- Senkron çağrı mümkün (gerektiğinde)
+- Serialization overhead yok
+- Tek çağrı latansı: 0.01-0.1ms
+- **Beklenen iyileşme: 10-100x daha hızlı iletişim**
+
+### Kural:
+- Yoğun JS-Native iletişimi gereken alanlar (gesture handler, animation driver, kamera, sensörler) JSI tabanlı kütüphanelerle çözülmeli
+- Bridge-only kütüphaneler bu alanlarda kullanılmamalı (performans regresyonu yaratır)
+
+## 32.4. UI Thread Frame Budget
+
+### Hedef:
+- 60 FPS garanti → her frame için 16.67ms bütçe
+- 120 FPS (ProMotion cihazlar) → her frame için 8.33ms bütçe
+
+### Fabric renderer etkileri:
+- **View flattening:** Fabric, gereksiz wrapper view'ları otomatik olarak düzleştirir. Bu, view hierarchy derinliğini azaltır ve layout hesaplama süresini kısaltır. Eski mimaride manuel optimizasyon gerektiren bu süreç Fabric'te otomatiktir.
+- **Concurrent rendering desteği:** React 18/19 concurrent features (useTransition, useDeferredValue) ile ağır render işleri düşük öncelikli olarak planlanabilir. UI thread bloklama riski azalır.
+- **Priority-based rendering:** Fabric, render işlerini öncelik sırasına göre planlar. Kullanıcı etkileşimleri (touch, scroll) en yüksek önceliklidir.
+
+### Ölçüm yöntemi:
+- React DevTools Profiler ile component render süreleri
+- Flipper Performance plugin ile frame timing
+- Production'da Sentry slow frame / frozen frame metrikleri
+- Hedef: slow frame oranı < %5, frozen frame oranı < %1
+
+## 32.5. TurboModules Bellek Footprint
+
+### Eski mimari:
+- Tüm native modüller uygulama başlangıcında belleğe yüklenir (eager initialization)
+- 20 native modül = 20 modülün tamamının bellek maliyeti startup'ta ödenir
+- Kullanılmayan modüller de bellekte yer kaplar
+
+### New Architecture (TurboModules):
+- Native modüller lazy-loaded: yalnızca ilk kullanımda belleğe yüklenir
+- Kullanılmayan modüller bellek tüketmez
+- **Beklenen bellek tasarrufu: %10-25 (native modül sayısına bağlı)**
+
+### Kural:
+- Uygulama başlangıcında gereksiz native modül import'u yapılmamalı
+- Heavy native modüller (kamera, harita, ML) yalnızca ilgili ekrana gelindiğinde yüklenecek şekilde yapılandırılmalı
+- Bellek kullanımı production'da Sentry veya custom metric ile izlenmeli
+
+## 32.6. Benchmark Referans Tablosu
+
+| Metrik | Eski Mimari (Bridge) | New Architecture | İyileşme |
+|--------|---------------------|-----------------|----------|
+| Cold start (orta segment) | 2-3 saniye | 1-1.5 saniye | %30-50 |
+| JS→Native tek çağrı | 1-5ms | 0.01-0.1ms | 10-100x |
+| Native modül init (20 modül) | Hepsi startup'ta | Lazy-loaded | %10-25 bellek |
+| 60 FPS scroll (1000 item) | Sık jank | Minimal jank | Ölçülebilir |
+| Gesture response | 16-32ms delay | <1ms delay | Hissedilir |
+| Bundle parse süresi | Runtime parse | Precompiled bytecode | %40-60 |
+
+### Kural:
+Bu metrikler rehber niteliğindedir. Her proje kendi baseline benchmark'ını almalı ve performans regresyonlarını CI'da izlemelidir.
+
+## 32.7. Performans Audit Checklist (New Architecture Spesifik)
+
+1. [ ] Cold start süresi ölçüldü mü? (hedef: < 1.5s orta segment)
+2. [ ] Hermes bytecode precompilation aktif mi?
+3. [ ] Bridge-only paket var mı? (performans bottleneck riski)
+4. [ ] TurboModules lazy-loading çalışıyor mu?
+5. [ ] Fabric view flattening etkin mi?
+6. [ ] Slow frame / frozen frame oranları izleniyor mu?
+7. [ ] JS→Native iletişim yoğun alanlarda JSI tabanlı kütüphane kullanılıyor mu?
+8. [ ] Bellek kullanımı startup sonrası ölçülüyor mu?
+9. [ ] React DevTools Profiler ile render süreleri kontrol edildi mi?
+10. [ ] Production'da Sentry performance monitoring aktif mi?
+
+---
+
+# 33. New Architecture Performans Benchmark'ları
+
+JSI (JavaScript Interface), Fabric renderer ve Hermes engine ile New Architecture'ın sağladığı performans iyileşmeleri bu bölümde somut benchmark'larla tanımlanır.
+
+## 33.1. Benchmark Karşılaştırma Tablosu
+
+| Metrik | Old Architecture (Bridge) | New Architecture (JSI/Fabric) | Yaklaşık İyileşme |
+|--------|--------------------------|------------------------------|-------------------|
+| Cold start (JS init) | ~800ms | ~600ms | ~%25 |
+| JS-Native call latansı | ~5ms (bridge, async batch) | ~0.1ms (JSI, sync direct call) | ~%98 |
+| Render throughput | 16ms/frame (bridge serialization) | 12ms/frame (Fabric direct) | ~%25 |
+| Memory (Hermes GC) | Sabit GC overhead | Incremental GC, düşük pause | ~%15 azalma |
+| Bundle parse süresi | Runtime JS parse | Hermes bytecode precompiled | ~%30 iyileşme |
+| TurboModules startup | Tüm native modüller eager load | Lazy loading (ilk kullanımda yükle) | ~%20 startup iyileşme |
+| View hierarchy | Manuel optimization gerekli | Fabric view flattening otomatik | Layout hesaplama hızlanması |
+| Gesture response | 16-32ms delay (bridge round-trip) | <1ms delay (JSI direct) | Hissedilir iyileşme |
+
+**Not:** Bu değerler yaklaşıktır ve orta segment cihazlarda (iPhone 12, Pixel 6 benzeri) alınmış benchmark verilerine dayanır. Gerçek değerler uygulamanın boyutuna, native modül sayısına ve component ağacı derinliğine göre değişir.
+
+## 33.2. Proje-Spesifik Benchmark Alma
+
+CI'da proje-spesifik benchmark verilerinin alınması zorunludur:
+
+1. **Baseline oluşturma:** İlk bootstrap sonrası cold start, render throughput ve memory metrikleri ölçülür.
+2. **Sprint bazlı karşılaştırma:** Her sprint sonunda baseline ile karşılaştırma yapılır.
+3. **Araçlar:**
+   - Cold start: `react-native-performance` veya custom startup metric (Sentry transaction)
+   - Render: React DevTools Profiler + Sentry slow frame/frozen frame metrikleri
+   - Memory: Xcode Instruments (iOS), Android Profiler, Sentry memory monitoring
+4. **Hedefler:**
+   - Cold start < 1.5s (orta segment cihaz)
+   - Slow frame oranı < %5
+   - Frozen frame oranı < %1
+   - JS heap memory < 150MB (normal kullanım)
+
+## 33.3. Bridge-Only Paket Riski
+
+New Architecture'da bridge üzerinden çalışan (JSI desteği olmayan) paketler performans darboğazı oluşturur:
+
+- Bridge-only paketler interop layer üzerinden çalışır; JSI avantajlarından yararlanamaz.
+- Her yeni dependency eklenmesinde `37-dependency-policy.md` gereği New Architecture uyumluluğu kontrol edilir.
+- CI'da bridge-only paket tespiti uyarı üretir; alternatif JSI-uyumlu paket varsa geçiş planlanır.
+
+---
+
+# 34. Performance Regression CI Entegrasyonu
+
+PR bazında performans regresyon testi ile performans kaybı erken aşamada tespit edilir.
+
+## 34.1. Araç Seçimi
+
+- **reassure (Callstack):** React Native component render performansını ölçer. `measurePerformance` API'si ile kritik component'lerin render süresi ve re-render sayısı benchmark alınır.
+- **Alternatif:** flashlight — daha geniş kapsamlı performans profiling.
+
+## 34.2. Ölçülen Metrikler
+
+| Metrik | Açıklama | Ölçüm Aracı |
+|--------|---------|-------------|
+| Render süresi | Component'in mount ve re-render süresi (ms) | reassure `measurePerformance` |
+| Re-render sayısı | Bir interaction sonrası gerçekleşen re-render sayısı | reassure `measureRenders` |
+| FPS | Animasyon ve scroll sırasında frame rate | Flipper Performance plugin |
+| Bundle boyutu | JS bundle dosya boyutu (KB) | `react-native-bundle-visualizer` |
+
+## 34.3. CI Akışı
+
+1. **Base branch benchmark:** CI, base branch (main) üzerinde kritik component'lerin benchmark'ını alır.
+2. **PR branch benchmark:** Aynı component'lerin PR branch üzerinde benchmark'ı alınır.
+3. **Karşılaştırma raporu:** İki benchmark karşılaştırılır ve fark yüzdesi hesaplanır.
+4. **PR comment:** Karşılaştırma sonucu PR'a otomatik markdown tablosu olarak yorum eklenir.
+
+## 34.4. Regresyon Eşikleri
+
+| Regresyon Seviyesi | Eşik | CI Davranışı |
+|-------------------|------|-------------|
+| Kabul edilebilir | <%10 | Bilgi — PR'da gösterilir, bloklama yok |
+| Uyarı | %10 - %25 | Sarı uyarı — reviewer dikkatine sunulur |
+| Blocker | >%25 | Kırmızı hata — PR merge bloklenir |
+
+## 34.5. reassure Konfigürasyonu
+
+```typescript
+// reassure.setup.ts
+import { measurePerformance } from 'reassure';
+
+// Kritik component'ler için benchmark
+test('Button render performansı', async () => {
+  await measurePerformance(<Button label="Test" onPress={() => {}} />);
+});
+
+test('FlatList 100 item render performansı', async () => {
+  await measurePerformance(<ItemList items={generate100Items()} />);
+});
+```
+
+## 34.6. Raporlama Formatı
+
+PR'a eklenen otomatik yorum örneği:
+
+```markdown
+## Performans Raporu
+
+| Component | Base (ms) | PR (ms) | Fark | Durum |
+|-----------|----------|---------|------|-------|
+| Button    | 2.1      | 2.3     | +%9  | Kabul |
+| ItemList  | 45.2     | 48.1    | +%6  | Kabul |
+| LoginForm | 12.3     | 18.7    | +%52 | BLOCKER |
+```
+
+---
+
+# 35. Startup Time Metrikleri ve Bütçesi
+
+Uygulama başlangıç süresi, kullanıcı algısını doğrudan etkileyen en kritik performans metriklerinden biridir. Bu bölüm, cold start ve warm start süreleri için somut hedefler, ölçüm yöntemleri ve CI gate tanımları sağlar.
+
+## 35.1. Tanımlar
+
+- **Cold start:** Uygulama bellekte değilken sıfırdan başlatılması. İşletim sistemi process oluşturma, Hermes engine başlatma, JavaScript bundle yükleme, React tree mount ve ilk anlamlı ekranın render edilmesini kapsar.
+- **Warm start:** Uygulama arka plana alınmış ve bellekte hâlâ mevcutken tekrar ön plana getirilmesi.
+- **Time to Interactive (TTI):** İlk anlamlı ekranın render edildiği ve kullanıcının etkileşim yapabilir hale geldiği an.
+
+## 35.2. Hedef Bütçeler
+
+### 35.2.1. Mobile (React Native + Expo)
+
+| Metrik | Hedef (Wi-Fi/4G) | Uyarı Eşiği | Blocker Eşiği |
+|--------|-------------------|-------------|---------------|
+| Cold start → TTI | < 1.5s | 1.5s – 2.5s | > 2.5s |
+| Warm start → TTI | < 500ms | 500ms – 1s | > 1s |
+| JS bundle parse | < 300ms | 300ms – 500ms | > 500ms |
+| Hermes bytecode load | < 100ms | 100ms – 200ms | > 200ms |
+| Splash screen süresi | < 2s (toplam) | — | > 3s |
+
+### 35.2.2. Web (React + Vite)
+
+| Metrik | Hedef (4G) | Hedef (3G) | Blocker |
+|--------|------------|------------|---------|
+| First Contentful Paint (FCP) | < 1s | < 2s | > 3s |
+| Largest Contentful Paint (LCP) | < 1.5s | < 3s | > 4s |
+| Time to Interactive (TTI) | < 2s | < 4s | > 5s |
+| Cumulative Layout Shift (CLS) | < 0.1 | < 0.1 | > 0.25 |
+
+## 35.3. Ölçüm Yöntemleri
+
+### 35.3.1. Mobile Startup Ölçümü
+
+```typescript
+// app.config.ts veya App.tsx — startup marker örneği
+import * as SplashScreen from 'expo-splash-screen';
+
+const appStartTime = global.performance.now();
+
+// İlk anlamlı ekran render edildiğinde:
+function onAppReady() {
+  const startupTime = global.performance.now() - appStartTime;
+  console.log(`[STARTUP] Cold start: ${startupTime.toFixed(0)}ms`);
+  
+  // Sentry performance transaction
+  Sentry.startTransaction({ name: 'app.startup', op: 'startup' });
+  
+  SplashScreen.hideAsync();
+}
+```
+
+### 35.3.2. Web Startup Ölçümü
+
+- Lighthouse CI: Her PR'da otomatik Lighthouse raporu
+- Web Vitals SDK: FCP, LCP, TTI, CLS metrikleri Sentry'ye raporlanır
+- Vite bundle analyzer: Chunk boyut analizi
+
+## 35.4. Startup Performansını Etkileyen Faktörler
+
+1. **Hermes bytecode precompilation:** Hermes V1 (ADR-018) JavaScript'i build zamanında bytecode'a derler; runtime parse süresi neredeyse sıfırdır. Bu avantajın korunması için raw JS eval kullanımından kaçınılmalıdır.
+2. **TurboModules lazy loading:** Native modüller ilk kullanımda yüklenir (ADR-018). Başlangıçta gereksiz modül import'u startup'ı yavaşlatır.
+3. **Zustand store hydration:** MMKV senkron okuma sağlar (ADR-019); bu hydration süresini minimumda tutar. AsyncStorage kullanılsaydı hydration 50-150ms daha uzun sürerdi.
+4. **Splash screen stratejisi:** Splash screen, startup süresini gizlemek içindir. Ancak splash screen'in kendisi uzun olmamalıdır (max 2s). Asset yükleme splash altında yapılabilir.
+5. **Bundle boyutu:** Büyük bundle = uzun parse/load süresi. Code splitting ve lazy import ile azaltılır.
+
+## 35.5. CI Gate Entegrasyonu
+
+Startup metrikleri şu aşamada CI gate olarak uygulanmaz; ancak izleme zorunludur:
+
+- **Phase 1 (bootstrap):** Startup süreleri Sentry'ye raporlanır, baseline oluşturulur
+- **Phase 2 (stabilizasyon):** Baseline'dan >%25 sapma sarı uyarı üretir
+- **Phase 3 (olgunluk):** Blocker eşiği aşımında PR merge engellenir
+
+---
+
+# 36. App Size Optimization Stratejisi
+
+Uygulama boyutu, indirme oranını, güncelleme hızını ve cihaz depolama algısını doğrudan etkiler. Bu bölüm binary boyut bütçesi, optimizasyon teknikleri ve ölçüm yöntemlerini tanımlar.
+
+## 36.1. Boyut Bütçesi
+
+| Platform | Metrik | Hedef | Uyarı | Blocker |
+|----------|--------|-------|-------|---------|
+| iOS | IPA boyutu (App Store thinned) | < 50 MB | 50-80 MB | > 80 MB |
+| Android | APK / AAB (universal) | < 30 MB | 30-50 MB | > 50 MB |
+| Web | İlk yükleme (gzip) | < 200 KB JS + < 100 KB CSS | 300-500 KB | > 500 KB |
+
+**Not:** Mobile boyutlar App Store / Play Store'un uyguladığı thinning (bitcode stripping, ABI split, asset slicing) sonrası boyutlardır. Universal build boyutu bu hedeflerin üstünde olabilir.
+
+## 36.2. Hermes Bytecode Optimizasyonu
+
+Hermes V1 (ADR-018) JavaScript'i bytecode'a derler. Bytecode boyutu source JS'ten genellikle daha küçüktür ancak optimize edilebilir:
+
+- **Tree shaking:** Kullanılmayan export'lar bundle'dan çıkarılır (Metro bundler default)
+- **Minification:** Metro minifier ile değişken isimleri kısaltılır
+- **Dead code elimination:** `__DEV__` flag'i ile development-only kod production'dan çıkarılır
+- **Inline requires:** Metro `inlineRequires` ile lazy module loading, bytecode segmentasyonunu iyileştirir
+
+## 36.3. Native Binary Optimizasyonu
+
+### 36.3.1. Android
+
+- **ProGuard / R8:** Release build'de zorunlu aktif. Kullanılmayan Java/Kotlin sınıflarını kaldırır ve bytecode optimize eder.
+- **ABI split:** `abiFilters` ile arm64-v8a, armeabi-v7a, x86_64 ayrı APK'lar üretilir. AAB formatında Google Play bu işi otomatik yapar.
+- **Resource shrinking:** `shrinkResources true` ile kullanılmayan drawable, layout ve string resource'ları kaldırılır.
+- **Native library stripping:** Debug symbol'ler release build'den çıkarılır.
+
+### 36.3.2. iOS
+
+- **Bitcode:** Xcode 16+ ile bitcode artık desteklenmemektedir; App Store thinning diğer mekanizmalarla sağlanır.
+- **Asset Catalog optimization:** Xcode asset catalog'u platform ve cihaz çözünürlüğüne göre otomatik slice eder.
+- **Strip debug symbols:** Release build'de debug symbol'ler ayrı dSYM dosyasına taşınır (Sentry source map için gerekli).
+
+## 36.4. Asset Optimizasyonu
+
+| Asset Türü | Format | Maksimum Boyut | Araç |
+|------------|--------|----------------|------|
+| Fotoğraf/görsel | WebP (iOS 14+, Android 4.2.1+) | Tek görsel < 200 KB | sharp, squoosh |
+| İkon | SVG (web), PNG (mobile) veya react-native-svg | SVG < 5 KB | svgo |
+| Font | woff2 (web), OTF/TTF (mobile) | Subset < 100 KB | glyphhanger, fonttools |
+| Animasyon (Lottie) | Lottie JSON | Tek animasyon < 50 KB | bodymovin optimizer |
+| Video | HLS/DASH streaming | Bundled video yasak | CDN streaming |
+
+**Kurallar:**
+- Bundled video dosyası yasaktır; video CDN üzerinden stream edilir
+- Font subsetting zorunludur; kullanılmayan glyph'ler font dosyasından çıkarılır
+- Lottie animasyonları 50 KB üstündeyse lazy load edilir
+- Görseller 2x/3x çözünürlük setleri olarak sağlanır; cihaz yalnızca uygun olanı indirir
+
+## 36.5. Code Splitting ve Lazy Loading
+
+### 36.5.1. Web
+
+- Route-based code splitting: `React.lazy()` + `Suspense` ile her route ayrı chunk olarak yüklenir
+- Component-level lazy loading: Ağır component'ler (ör: chart, rich editor) dinamik import edilir
+- Vite chunk stratejisi: Vendor chunk, common chunk ve route chunk'lar ayrılır
+
+### 36.5.2. Mobile
+
+- Metro `inlineRequires`: Modüller ilk kullanımda yüklenir
+- Conditional require: Platform-specific kod `Platform.select` ile koşullu yüklenir
+- Expo Router lazy: Ekranlar navigasyon anında yüklenir
+
+## 36.6. Ölçüm ve İzleme
+
+- **EAS Build boyut raporu:** Her build sonrası binary boyut loglanır
+- **Vite bundle analyzer:** `npx vite-bundle-visualizer` ile web bundle analizi
+- **Metro bundle analyzer:** `npx react-native-bundle-visualizer` ile mobile bundle analizi
+- **expo-doctor:** Expo uyumluluk ve boyut kontrolü
+- **CI trend takibi:** Her PR'da önceki build ile boyut karşılaştırması yapılır; >%10 artış sarı uyarı üretir
+
+## 36.7. Anti-pattern'ler
+
+- Büyük görsel dosyalarını (>500 KB) bundle'a dahil etmek — CDN kullan
+- Kullanılmayan dependency'leri kaldırmamak — `depcheck` ile periyodik kontrol
+- Tüm Lottie animasyonlarını eager load etmek — lazy load ve boyut limiti uygula
+- Font dosyasının tamamını (tüm weight, tüm glyph) bundle'a dahil etmek — subset kullan
+- Development dependency'lerinin production bundle'a girmesi — `devDependencies` doğru sınıflandır

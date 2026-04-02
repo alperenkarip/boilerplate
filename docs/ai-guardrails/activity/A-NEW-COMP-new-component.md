@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: önerilen
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-NEW-COMP: Yeni Component Oluşturma Guardrail
@@ -39,6 +39,16 @@ son-güncelleme: 2026-04-01
 | Stitch | Önerilen | Görsel referans varsa kullan |
 | Codex Review | Zorunlu | DS/a11y/boundary uyumu denetimi |
 
+## Storybook Story Zorunluluğu
+7. **Shared component** (`packages/ui/` altında) için Storybook story zorunlu:
+   - Default story (varsayılan props ile)
+   - Variant story'leri (tüm varyasyonlar)
+   - Interactive story (args/controls ile kullanıcı etkileşimi)
+   - Dark mode story
+   - Accessibility geçen story (a11y addon pass)
+8. **Feature-scope component** için Storybook story opsiyonel
+9. **CI kontrolü:** Storybook build hatası → PR bloklanır
+
 ## DoD Ek Maddeleri
 - [ ] Component governance (23) kriterlerine uygun
 - [ ] Tüm token'lar semantic (hardcoded değer yok)
@@ -46,3 +56,5 @@ son-güncelleme: 2026-04-01
 - [ ] Render testi yazılmış
 - [ ] Tüm state'ler görünür
 - [ ] Platform parity (cross-platform ise) sağlanmış
+- [ ] Storybook story'leri yazılmış (shared component ise zorunlu: default, variants, interactive, dark mode, a11y)
+- [ ] Storybook build başarılı

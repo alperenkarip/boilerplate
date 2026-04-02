@@ -712,3 +712,354 @@ Aşağıdaki araçlar backlog'da görünse bile otomatik baseline yapılmaz; ADR
 - Expo Router (navigation canonical aday, otomatik final karar değil)
 
 Bu sınıftaki araçlar için “ekosistemde güncel” olmak tek başına yeterli kabul edilmez.
+
+---
+
+# 27. Watchlist → Candidate → Canonical Terfi Süreci (2026-04-02 Eki)
+
+Teknoloji yaşam döngüsü yönetimi. Her teknoloji aşağıdaki aşamalardan geçer.
+
+## 27.1. Watchlist (İzleme)
+
+- **Giriş kriteri:** Potansiyel değer sağlayacak teknoloji + aktif geliştirme sürecinde olması.
+- **Sorumluluk:** Quarterly (çeyreklik) release notları takibi. Önemli gelişmeler governance toplantısında raporlanır.
+- **Çıkış:** Stable release yayımlandığında ve değerlendirme koşulları (Bölüm 38 benzeri checklist) karşılandığında Candidate'e terfi.
+- **Güncel örnekler:** Biome 2.x, React Navigation 8.x, @expo/ui (Expo UI), Firebase Remote Config (feature flags için)
+
+## 27.2. Candidate (Aday)
+
+- **Giriş kriteri:** Stable release yayımlanmış + pilot test planı hazırlanmış.
+- **Sorumluluk:** 1-2 sprint (2-4 hafta) pilot uygulama. Pilot sırasında production kodu etkilenmez.
+- **Çıkış:** Pilot başarılı → Canonical'a terfi. Pilot başarısız → Watchlist'e geri veya Hold'a düşer.
+- **Değerlendirme kriterleri:**
+  - Performance benchmark (mevcut çözümle karşılaştırma)
+  - DX (Developer Experience) feedback (pilot katılımcılardan)
+  - Migration efor tahmini (mevcut kodun yeni araca taşınma maliyeti)
+  - Compatibility matrix etkisi (diğer canonical paketlerle uyum)
+- **Güncel örnekler:** NativeWind 5.x
+
+## 27.3. Canonical (Kanonik)
+
+- **Giriş kriteri:** Pilot başarılı + ADR yazıldı + migration planı hazır.
+- **Sorumluluk:** Aktif bakım, güncelleme takibi, doküman güncelliği.
+- **Çıkış:** Deprecated → yeni teknoloji Canonical olduğunda eski Deprecated'a düşer.
+- **Korunma kuralı:** Canonical statüsündeki teknoloji “Bölüm 5.1 — Closed Canonical Decisions” altındadır ve alternatif teklifi ADR gerektirir.
+- **Güncel örnekler:** React 19, Expo SDK 55, Zustand 5, Tailwind CSS 4, Vitest 4, Playwright 1.58, Sentry, i18next 26
+
+## 27.4. Deprecated (Kullanımdan Kaldırılıyor)
+
+- **Giriş kriteri:** Yerine Canonical geçen teknoloji. ADR'de migration deadline tanımlanır.
+- **Kurallar:**
+  - Yeni kodda kullanımı yasaklanır (lint rule ile enforce edilir).
+  - Mevcut kullanımlar migration deadline'a kadar taşınır.
+  - Deadline'da tamamen kaldırılır ve dependency listesinden çıkarılır.
+- **Migration deadline:** ADR'de belirtilir, genellikle 1-2 çeyrek.
+
+## 27.5. Hold (Askıda)
+
+- **Giriş kriteri:** Değerlendirildi, pilot yapıldı ama reddedildi. Gerekçe ADR veya değerlendirme raporunda kayıt altında.
+- **Kurallar:**
+  - Proje kapsamında kullanılmaz.
+  - Koşullar değişirse (yeni major version, ekosistem değişimi vb.) tekrar Watchlist'e alınabilir.
+- **Güncel örnekler:** Redux, MobX, styled-components, Emotion, Detox, Enzyme
+
+## 27.6. Terfi Akış Diyagramı
+
+```
+Watchlist ──(stable release + checklist OK)──→ Candidate
+Candidate ──(pilot başarılı + ADR)──→ Canonical
+Candidate ──(pilot başarısız)──→ Watchlist veya Hold
+Canonical ──(yeni teknoloji canonical oldu)──→ Deprecated
+Deprecated ──(migration tamamlandı)──→ Kaldırıldı
+Hold ──(koşullar değişti)──→ Watchlist
+```
+
+---
+
+# 28. Technology Radar Görselleştirmesi (2026-04-02 Eki)
+
+Projedeki tüm teknolojilerin ThoughtWorks Technology Radar formatında kategorilenmesi.
+
+## 28.1. Adopt (Kullan)
+
+Bu kategorideki teknolojiler canonical baseline'dır. Proje genelinde varsayılan olarak kullanılır.
+
+- **Runtime:** React 19, React Native 0.79+, Expo SDK 55, Hermes V1
+- **Altyapı:** pnpm 10, Turborepo 2, TypeScript 5.8+, Node.js 22 LTS
+- **State / Data:** Zustand 5, TanStack Query 5 (conditional track)
+- **Forms:** React Hook Form 7, Zod 4
+- **Styling:** Tailwind CSS 4
+- **Navigation:** React Router 7 (web), React Navigation 7 (mobile)
+- **Testing:** Vitest 4, Jest 30, Testing Library, Playwright 1.58
+- **Observability:** Sentry
+- **i18n:** i18next 26
+- **Component Lab:** Storybook 10
+- **IAP:** RevenueCat (react-native-purchases)
+
+## 28.2. Trial (Dene)
+
+Bu kategorideki teknolojiler Candidate statüsündedir. Kontrollü pilot ile kullanılır.
+
+- **NativeWind 5.x:** Mobile styling candidate track. Stable durumu bootstrap öncesi doğrulanmalı, fallback planı yazılmalı.
+- **Hermes V1:** RN 0.84 ile varsayılan. Bytecode precompilation ve incremental GC ile performans iyileştirmesi.
+- **React Compiler:** Controlled opt-in. Otomatik memoization. Varsayılan açık değil, dosya/modül bazında etkinleştirme.
+
+## 28.3. Assess (Değerlendir)
+
+Bu kategorideki teknolojiler Watchlist'tedir. Araştırılır, quarterly takip edilir.
+
+- **Biome 2.x:** ESLint + Prettier yerine potansiyel. Rust tabanlı, 10-100x hızlı. Pilot prosedürü Bölüm 38'de.
+- **React Navigation 8.x:** Gelecek major. API değişiklikleri ve static type checking iyileştirmeleri takip edilir.
+- **@expo/ui (Expo UI):** SwiftUI ve Jetpack Compose bileşenlerini React Native'de sunan kütüphane. Mid-2026 stable 1.0 hedefi.
+- **Firebase Remote Config:** Feature flag canonical candidate. Stack'te zaten Firebase var.
+
+## 28.4. Hold (Beklet)
+
+Bu kategorideki teknolojiler değerlendirilmiş ve reddedilmiştir. Kullanılmaz.
+
+- **State:** Redux, MobX
+- **Styling:** styled-components, Emotion, Tamagui (canonical Tailwind/NativeWind ile çelişir)
+- **Testing:** Detox (Playwright tercih), Enzyme (Testing Library tercih)
+- **Forms:** Formik (React Hook Form tercih)
+- **Navigation:** Expo Router (React Navigation/React Router canonical)
+
+## 28.5. Güncelleme Periyodu
+
+- **Periyodik güncelleme:** Her çeyrek (Q1, Q2, Q3, Q4) veya major Expo SDK release sonrasında.
+- **Acil güncelleme:** Canonical teknolojide kritik güvenlik açığı veya EOL duyurusu.
+- **Sorumluluk:** Teknik lider veya mimari sorumlusu radar güncellemesini başlatır.
+- **Kayıt:** Radar güncellemesi governance/ dizinine tarih bazlı loglanır.
+
+---
+
+# 29. Major Upgrade Playbook (2026-04-02 Eki)
+
+Bu bölüm, canonical stack'teki major versiyon yükseltmelerinin nasıl planlanacağını, yürütüleceğini, test edileceğini, deploy edileceğini ve gerektiğinde geri alınacağını tanımlar. Expo SDK upgrade'i bu playbook'un özelleştirilmiş hali olup detayları `48-expo-sdk-upgrade-strategy.md`'de bulunur.
+
+---
+
+## 29.1. Kapsam
+
+Bu playbook aşağıdaki major upgrade türlerini kapsar:
+
+| Upgrade Türü | Örnekler | Risk Seviyesi |
+|-------------|---------|--------------|
+| **React major** | React 19 → 20 | Yüksek — tüm component'leri etkiler |
+| **TypeScript major** | TypeScript 5 → 6 | Yüksek — tüm workspace'leri etkiler |
+| **React Navigation major** | React Navigation 7 → 8 | Orta — mobil navigation yapısını etkiler |
+| **React Native major** | RN 0.79 → 0.84+ | Yüksek — native layer değişiklikleri |
+| **Monorepo tooling** | pnpm 10 → 11, Turborepo 2 → 3 | Orta — build/install altyapısını etkiler |
+| **Test framework** | Vitest 4 → 5, Jest 30 → 31 | Düşük-Orta — test config değişiklikleri |
+| **Styling framework** | Tailwind CSS 4 → 5 | Orta — token ve utility class değişiklikleri |
+
+**Kapsam dışı:** Expo SDK upgrade (ayrı strateji belgesi mevcut), patch/minor güncellemeler (dependency policy'ye göre otomatik), üçüncü parti kütüphane major upgrade (dependency policy'ye göre değerlendirilir).
+
+---
+
+## 29.2. Genel Major Upgrade Süreci (6 Adım)
+
+### Adım 1 — Impact Analizi
+
+Upgrade başlatılmadan önce kapsamlı etki analizi yapılır.
+
+**Yapılacaklar:**
+- Resmi changelog ve migration guide okunur (README değil, resmi docs).
+- Breaking change listesi madde madde çıkarılır.
+- Deprecated API listesi oluşturulur (mevcut kodda kullanılanlar işaretlenir).
+- Dependency cascade analizi: Bu upgrade hangi diğer paketleri doğrudan etkiliyor? Peer dependency uyumsuzluğu oluşuyor mu?
+- Etki alanı tahmini: Kaç dosya değişecek? Hangi workspace'ler etkilenecek?
+- Community feedback taraması: GitHub issues, Reddit, Twitter/X'te erken kullanıcı raporları.
+
+**Risk Seviyesi Belirleme:**
+
+| Risk Seviyesi | Kriter | Upgrade Süresi Tahmini |
+|-------------|--------|----------------------|
+| **Low** | API değişikliği yok veya minimal; otomatik codemod mevcut | 1-2 gün |
+| **Medium** | Deprecation var; bazı API'ler değişti; codemod kısmen kapsıyor | 3-5 gün |
+| **High** | Breaking change var; yeni paradigma; codemod kapsamı yetersiz | 1-2 hafta |
+
+**Çıktı:** Impact analiz raporu (markdown formatında, PR description'a eklenir).
+
+### Adım 2 — Upgrade Branch Oluşturma
+
+- Branch adı: `upgrade/[paket]-v[versiyon]` (ör. `upgrade/react-19`, `upgrade/typescript-6`, `upgrade/pnpm-11`)
+- Bu branch trunk-based development'tan ayrı tutulur (uzun ömürlü branch istisnası — `42-branching-and-merge-strategy.md`'de tanımlı).
+- Branch süresi: Maksimum 2 hafta. Süre aşılırsa:
+  - Upgrade parçalanabilir mi değerlendirilir (ör. önce deprecation'ları kaldır, sonra major bump).
+  - Parçalanamıyorsa tarih ve gerekçe ile branch süre uzatma kaydı açılır.
+- Branch oluşturulduğunda `main`'den güncel olarak alınır; upgrade süresince `main`'den periyodik rebase yapılır.
+- Upgrade branch'inde diğer feature geliştirmeleri yapılmaz; yalnızca upgrade ile ilgili değişiklikler bulunur.
+
+### Adım 3 — Breaking Change Fix
+
+Migration guide adımları sırayla ve disiplinli biçimde uygulanır.
+
+**Uygulama sırası:**
+1. **Codemod çalıştırma:** Resmi codemod varsa önce otomatik dönüşüm yapılır (ör. `npx react-codemod`, `npx @typescript-eslint/utils/migrate`).
+2. **Codemod sonrası review:** Otomatik dönüşümlerin doğruluğu manuel kontrol edilir; yanlış dönüşümler düzeltilir.
+3. **Deprecated API güncellemeleri:** Mevcut deprecated API kullanımları yeni API'lere güncellenir.
+4. **TypeScript tip hataları:** `pnpm typecheck` çalıştırılır; tüm tip hataları çözülür.
+5. **Lint hataları:** `pnpm lint` çalıştırılır; yeni lint kuralları veya değişen kurallar ele alınır.
+6. **Peer dependency güncellemeleri:** Breaking change'den etkilenen peer dependency'ler uyumlu versiyonlara güncellenir.
+
+**Kurallar:**
+- `@ts-ignore` veya `@ts-expect-error` geçici olarak kullanılabilir ama upgrade PR'ı merge edilmeden önce kaldırılmalıdır.
+- `eslint-disable` geçici kullanımı exception policy'ye (`44-exception-and-exemption-policy.md`) tabidir.
+- Codemod çıktısı commit mesajında belirtilir (ör. "react-codemod uygulandı").
+
+### Adım 4 — Regression Test
+
+Upgrade sonrası kapsamlı test süreci uygulanır.
+
+**Otomatik Test:**
+- `pnpm test` — Full test suite (unit + integration) tüm workspace'lerde çalıştırılır.
+- `pnpm test:e2e` — Playwright E2E testleri çalıştırılır.
+- Test failure → upgrade branch'inde düzeltilir; test skip veya disable yapılmaz.
+
+**Manuel Smoke Test:**
+Kritik akışlar manuel olarak doğrulanır:
+
+| Akış | Web | Mobile |
+|------|-----|--------|
+| Login / Logout | ✓ | ✓ |
+| Ana sayfa yükleme | ✓ | ✓ |
+| Navigation (tüm tab'lar) | ✓ | ✓ |
+| Form submit (validation dahil) | ✓ | ✓ |
+| Ödeme akışı (varsa) | ✓ | ✓ |
+| Deep link açma | — | ✓ |
+| Push notification alma | — | ✓ |
+| Tema değiştirme (light/dark) | ✓ | ✓ |
+| Dil değiştirme | ✓ | ✓ |
+
+**Performance Benchmark:**
+- Before/after karşılaştırma: Upgrade öncesi ve sonrası aynı test senaryolarında performans ölçümü.
+- Ölçülen metrikler: LCP (web), TTI (web), JS bundle size, app startup time (mobile), memory usage.
+- Kabul kriteri: %10'dan fazla performans kaybı → root cause analizi gerektirir.
+
+**Visual Regression:**
+- Storybook snapshot karşılaştırma: Upgrade öncesi ve sonrası component snapshot'ları diff edilir.
+- Beklenmeyen görsel değişiklik → inceleme ve düzeltme gerektirir.
+
+### Adım 5 — Canary Deploy
+
+- Upgrade branch staging/preview ortamında deploy edilir.
+- QA team tarafından 1-3 gün süresince test edilir (smoke test + exploratory testing).
+- Staging onayından sonra production canary deploy yapılır:
+  - İlk aşama: %5 kullanıcıya açılır.
+  - Monitoring süresi: 24 saat.
+  - Monitör edilen metrikler: Crash rate, ANR rate (Android), error rate (Sentry), API response time.
+  - Canary başarı kriteri: Crash rate artışı <%0.5; yeni P0/P1 hata yok.
+
+### Adım 6 — Gradual Rollout
+
+- Canary başarılı → %25 kullanıcıya açılır → 24 saat monitoring.
+- %25 başarılı → %100 kullanıcıya açılır.
+- Monitoring devam eder: 72 saat boyunca crash rate, error rate, performance metrikleri izlenir.
+
+**Rollback Tetikleyicisi:**
+- Crash rate >%1 artış (baseline'a göre).
+- P0 bug tespiti (veri kaybı, güvenlik açığı, ödeme hatası).
+- ANR rate >%0.5 artış (Android).
+- Core Web Vital "Kötü" kategorisine geçiş (web).
+
+---
+
+## 29.3. Teknoloji Bazlı Özel Notlar
+
+### 29.3.1. React Major Upgrade
+
+- **StrictMode ile hazırlık:** Upgrade öncesi `StrictMode` aktif edilir; deprecated API kullanımları konsol uyarılarından tespit edilir.
+- **Concurrent features:** `useTransition`, `Suspense` boundary kontrolleri yapılır; concurrent mode ile uyumsuz pattern'ler güncellenir.
+- **ReactDOM.render migration:** Eski `ReactDOM.render` kullanımı `createRoot` API'sine güncellenir.
+- **Codemod:** `npx react-codemod` çalıştırılır; resmi migration tool kullanılır.
+- **Özel risk:** React major upgrade genellikle React DOM, React Native ve ilişkili kütüphanelerin (React Router, React Navigation, Testing Library) uyumluluğunu etkiler; cascade analizi kritiktir.
+
+### 29.3.2. TypeScript Major Upgrade
+
+- **tsconfig.json hedef güncellemesi:** `target`, `lib`, `module`, `moduleResolution` alanları gözden geçirilir.
+- **Yeni strict flag'ler:** Major versiyon ile gelen yeni strict flag'ler değerlendirilir ve mümkünse aktif edilir.
+- **lib type değişiklikleri:** DOM, ES2024, ES2025 gibi lib type güncellemeleri kontrol edilir; breaking type change'ler ele alınır.
+- **Tüm workspace'lerde paralel güncelleme:** pnpm catalogs ile tüm workspace'lerde TypeScript versiyonu eşzamanlı güncellenir; versiyon uyumsuzluğu oluşmaması sağlanır.
+- **Özel risk:** TypeScript major upgrade genellikle `@types/*` paketlerinin de güncellenmesini gerektirir; özellikle `@types/react` ve `@types/node` dikkatle kontrol edilir.
+
+### 29.3.3. React Navigation Major Upgrade
+
+- **Navigation API değişiklikleri:** `Screen`, `Navigator`, `NavigationContainer` API farkları kontrol edilir.
+- **Deep link config format değişiklikleri:** `linking` config yapısı major versiyonlar arasında değişebilir; `ADR-014` ile uyumluluk doğrulanır.
+- **TypeScript tiplendirme:** `ParamList` type tanımları ve `useNavigation<>` generic kullanımları güncellenir.
+- **Screen options API farkları:** `headerStyle`, `tabBarStyle` gibi option API'leri major versiyonda değişebilir.
+- **Özel risk:** React Navigation major upgrade genellikle `@react-navigation/*` alt paketlerinin hepsinin eşzamanlı güncellenmesini gerektirir.
+
+### 29.3.4. Monorepo Tooling (pnpm / Turborepo) Upgrade
+
+- **pnpm lockfile format değişikliği:** Major pnpm upgrade lockfile formatını değiştirebilir; tüm ekibin aynı pnpm versiyonuna geçmesi gerekir (`packageManager` field ile zorunlu kılınır).
+- **Workspace protocol güncellemeleri:** `workspace:*` protokolünde davranış değişikliği kontrol edilir.
+- **turbo.json schema değişiklikleri:** Turborepo major versiyonunda `turbo.json` schema'sı değişebilir; pipeline tanımları güncellenir.
+- **Remote cache invalidation riski:** Turborepo remote cache major upgrade sonrası geçersiz olabilir; ilk build'lerde cache miss beklenir.
+- **Özel risk:** Monorepo tooling upgrade CI pipeline'ını doğrudan etkiler; CI workflow'ları upgrade ile birlikte test edilmelidir.
+
+---
+
+## 29.4. Expo SDK ile İlişki
+
+- Expo SDK upgrade bu playbook'un özel ve genişletilmiş halidir.
+- `48-expo-sdk-upgrade-strategy.md` daha detaylı ve Expo-spesifik adımlar içerir.
+- Expo SDK upgrade genellikle aşağıdaki cascade upgrade'leri de kapsar:
+  - React Native versiyon güncellemesi
+  - Hermes engine güncellemesi
+  - Metro bundler güncellemesi
+  - Expo modülleri (`expo-*` paketleri) güncellemesi
+- SDK upgrade'i bu playbook'un Adım 1-6 sürecini takip eder + Expo-spesifik adımlar:
+  - `expo-doctor` ile uyumluluk kontrolü
+  - `runtimeVersion` policy güncellemesi (OTA update uyumluluğu)
+  - `expo install --check` ile dependency uyumluluk doğrulaması
+  - EAS Build profil güncellemesi
+
+---
+
+## 29.5. Rollback Stratejisi
+
+Upgrade sonrası ciddi sorun tespit edildiğinde geri alma süreci.
+
+**Rollback Yöntemleri:**
+
+| Yöntem | Kullanım Durumu | Uygulama |
+|--------|---------------|----------|
+| **Git revert** | Upgrade PR merge edilmiş, rollback gerekiyor | `git revert <merge-commit>` ile merge commit geri alınır |
+| **Hotfix branch** | Spesifik bir breaking change düzeltilebilir | `hotfix/upgrade-fix-xxx` branch'i ile hızlı düzeltme |
+| **Version pin** | Tek bir dependency'nin eski versiyonuna dönüş | `pnpm catalogs` veya `package.json` overrides ile versiyon sabitleme |
+| **Canary rollback** | Production canary'de sorun tespit edildi | Deployment tool üzerinden canary geri alınır (%0'a çekilir) |
+
+**Rollback Karar Kriterleri:**
+- P0 bug tespiti (veri kaybı, güvenlik açığı, ödeme hatası).
+- Crash rate artışı (>%1 baseline üstü).
+- Performance regresyon (>%20 kötüleşme, kritik metrikte).
+- Kullanıcı deneyimini ciddi bozan görsel/fonksiyonel bozulma.
+
+**Rollback Süresi:**
+- Karardan uygulamaya: Maksimum 2 saat.
+- Rollback commit'i hazırlanır, test edilir ve deploy edilir.
+- Rollback sonrası staging ortamında doğrulama yapılır.
+
+**Post-Rollback Süreci:**
+1. Root cause analizi yapılır: Neden sorun oluştu? Migration guide'da atlanmış adım var mı?
+2. Fix planı oluşturulur: Sorunun çözümü için gerekli adımlar belirlenir.
+3. Yeni upgrade denemesi planlanır: Fix uygulandıktan sonra Adım 1'den tekrar başlanır.
+4. Rollback kaydı oluşturulur: Tarih, gerekçe, etki ve çözüm planı dokümante edilir.
+
+---
+
+## 29.6. Major Upgrade Anti-Pattern Listesi
+
+Aşağıdaki davranışlar bu repo'da doğrudan zayıf kabul edilir ve kabul edilemezdir:
+
+1. **Major upgrade'i test etmeden main'e merge etmek** — Full test suite ve smoke test geçmeden merge yasaktır.
+2. **Breaking change kontrolü yapmadan `pnpm update` çalıştırmak** — Kontrolsüz güncelleme cascade breaking change'e neden olabilir.
+3. **Birden fazla major upgrade'i aynı branch'te yapmak** — Her major upgrade izole branch'te yapılır; sorun tespiti ve rollback kolaylığı için.
+4. **Upgrade branch'ini 2 haftadan fazla açık bırakmak** — Uzun ömürlü branch main'den koparak merge conflict biriktir; parçalama veya süre uzatma kaydı gerekir.
+5. **Migration guide okumadan upgrade başlamak** — "Bump version, build et, bak ne olacak" yaklaşımı kabul edilemez; impact analizi zorunludur.
+6. **Codemod çıktısını review etmeden commit etmek** — Otomatik dönüşümler hatalı olabilir; her codemod çıktısı manuel review gerektirir.
+7. **`@ts-ignore` ile tip hatalarını upgrade sonrası kalıcı bırakmak** — Geçici kullanım kabul edilir ama merge öncesi tümü kaldırılmalıdır.
+8. **Performance benchmark yapmadan upgrade'i tamamlamak** — Performans regresyonu ancak ölçümle tespit edilir; "hissedilir fark yok" yeterli değildir.
+9. **Rollback planı olmadan production'a deploy etmek** — Her major upgrade deploy'unda rollback senaryosu hazır olmalıdır.
+10. **Upgrade'i tek kişinin bilgisi dahilinde yapmak** — En az iki geliştirici upgrade sürecine dahil olmalıdır; bus factor riski azaltılır.

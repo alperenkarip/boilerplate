@@ -447,6 +447,77 @@ Vertical slice'ın somut ekran referansı `39-default-screens-and-components-spe
 
 ---
 
+# 18.5. Bootstrap Sure Tahmini
+
+Her faz icin gercekci sure tahminleri asagida sunulmustur. Bu tahminler, deneyimli bir gelistirici veya kucuk ekip (2-3 kisi) icin gecerlidir ve projenin bu dokumantasyon setini takip eden ilk implementasyonunu hedefler. Tahmini sureler, "dosya acildi" degil "done kaniti saglandi" kriterine goredir.
+
+| Faz | Asama | Aciklama | Tahmini Sure | Paralel? | Bagimliliklari |
+|-----|-------|----------|-------------|----------|----------------|
+| A | Environment and Toolchain Lock | Node/pnpm/Turbo baseline kilitleme, `.nvmrc`, expo-doctor kontrolu | 2-4 saat | — (ilk adim) | Yok |
+| B | Root Repo Bootstrap | `apps/`, `packages/`, `docs/`, `project/`, `tooling/`, `scripts/` ust alanlari, workspace tanimlari | 2-4 saat | Hayir (A'dan sonra) | Faz A |
+| C | Core Config Packages and Root Config | tsconfig, eslint, prettier zincirleri, config paketleri | 1-2 gun | Evet (B tamamlandiginda D ile paralel) | Faz B |
+| D | Quality Gates Minimum Activation | typecheck/lint/test CI'da aktif, boundary enforcement ilk versiyon | 1-2 gun | Evet (C ile paralel) | Faz B |
+| E | Design System and Theme Foundation | Design tokens paketi, semantic mapping, web/mobile theme runtime | 2-3 gun | Evet (C/D ile paralel) | Faz B |
+| F | App Shells (web + mobile) | Entry points, provider composition, auth gate, navigation root | 1-2 gun | Kismen (web ve mobile paralel, ama E'ye bagimli) | Faz C, D, E |
+| G | Navigation + State/Data/Form/Auth/I18n/Obs Foundations | Zustand stores, TanStack Query wiring, RHF+Zod, i18n, Sentry, SecureStore | 2-3 gun | Hayir (F'den sonra sirayla) | Faz F |
+| H | Sample Vertical Slice | Ilk anlamli feature (list → detail → form), tum katmanlari icermeli | 2-3 gun | Hayir (G'den sonra) | Faz G |
+| I | First Audit and Stabilization | Placement, boundary, token, theme, query/store/form ayrim denetimi | 1-2 gun | Hayir (H'den sonra) | Faz H |
+| J | E2E Test Altyapisi | Playwright (web) ve/veya Detox/Maestro (mobile) ilk test suitesi | 1-2 gun | Evet (I ile paralel) | Faz H |
+
+**Toplam tahmini sure:** 2-3 hafta (tek gelistirici), 1-2 hafta (2-3 kisilik ekip ile paralel track'ler kullanildiginda).
+
+**Not:** Bu sureler "her sey ilk seferde dogru giderse" senaryosundadir. Beklenmedik dependency uyumsuzluklari, expo-doctor uyarilari, CI yapilandirma sorunlari veya platform-specific hatalar ek sure gerektirebilir. %20-30 tampon sure eklenmesi onerili.
+
+---
+
+# 18.6. Paralel Bootstrap Track'ler
+
+Eslzamanli yurutulebilecek is parcaciklari uc ana track'te organize edilebilir. Bu track'ler belirli noktalarda birlesir ve birbirleriyle bagimliliklari asagida detayli sekilde aciklanmistir.
+
+### Track A — Core (Cekirdek Altyapi)
+
+```
+Faz A (Toolchain Lock)
+  → Faz B (Repo Bootstrap)
+    → Faz C (Config Packages)
+      → Faz F (App Shells) — birlesme noktasi
+        → Faz G (Runtime Foundations)
+          → Faz H (Vertical Slice)
+```
+
+Track A, projenin ana kriteri yoludur. Hicbir is, toolchain ve repo bootstrap tamamlanmadan baslatilmaz. Config paketleri kurulduktan sonra app shell'ler ayaga kaldirılabilir.
+
+### Track B — UI (Design System ve Gorsel Altyapi)
+
+```
+Faz B (Repo Bootstrap) [Track A'dan bagimli]
+  → Faz E (Design Tokens + Theme Foundation)
+    → Faz F (App Shells) — Track A ile birlesme noktasi
+```
+
+Track B, Faz B tamamlanir tamamlanmaz (yani repo fiziksel olarak mevcut oldugunda) baslatilabilir. Design tokens ve theme foundation, config paketlerinden (Track A - Faz C) bagimsiz olarak gelistirilebilir. Ancak app shell'lerin (Faz F) ayaga kalkabilmesi icin hem Track A'nin Faz C'si hem de Track B'nin Faz E'si tamamlanmis olmalidir. Bu, ilk birlesme noktasidir.
+
+### Track C — Infra (CI/CD ve Kalite Altyapisi)
+
+```
+Faz B (Repo Bootstrap) [Track A'dan bagimli]
+  → Faz D (Quality Gates)
+    → Faz F (App Shells) — Track A ve B ile birlesme noktasi
+  → Faz J (E2E Test Altyapisi) [Faz H'den sonra]
+```
+
+Track C, Faz B tamamlandiginda baslatilabilir. Quality gates (typecheck, lint, test CI) Track A'nin config paketlerinden bagimsiz olarak kurulabilir (ilk basta root-level eslint ve tsconfig ile baslatilir, sonra shared config paketlerine gecilir). E2E test altyapisi ise vertical slice (Faz H) tamamlandiktan sonra baslar.
+
+### Birlesme Noktalari
+
+| Birlesme Noktasi | Kosul | Aciklama |
+|-----------------|-------|----------|
+| **Faz F (App Shells)** | Track A (Faz C) + Track B (Faz E) + Track C (Faz D) tamamlanmis | Uc track'in ciktilari bir araya gelir: config altyapisi, design tokens ve quality gates. Bu ucunu tamamlanmadan app shell ayaga kaldirilmaz. |
+| **Faz H (Vertical Slice)** | Tum track'ler Faz G'de birlesmis | Vertical slice, tum foundation katmanlarinin calistigini dogruladigi icin tum track'lerin tamamlanmis olmasi zorunludur. |
+| **Faz I/J (Audit + E2E)** | Faz H tamamlanmis | Audit ve E2E birbirinden bagimsiz olarak paralel yuruyebilir. |
+
+---
+
 # 19. Bugün İtibarıyla Doğru Sonraki Adım
 
 Bu belge revizyonu tamamlandıktan sonra doğru sıra şudur:

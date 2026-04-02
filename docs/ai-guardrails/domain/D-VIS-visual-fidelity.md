@@ -4,7 +4,7 @@ type: domain
 name: Visual Fidelity, Implementation Contract
 kaynak-dokümanlar: 33
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-VIS: Visual Fidelity Guardrail
@@ -40,6 +40,67 @@ son-güncelleme: 2026-04-01
 - [ ] Spacing/typography doğru mu?
 - [ ] Tüm state'ler görünür mü?
 - [ ] PR'da visual proof var mı?
+
+---
+
+## Pixel-Perfect Tolerans
+
+Tasarım referansı (Figma/Stitch) ile implementasyon arasındaki kabul edilebilir sapma değerleri:
+
+### Tolerans Tablosu
+
+| Öğe | Kabul Edilebilir Sapma | Açıklama |
+|-----|----------------------|----------|
+| Spacing (margin, padding) | ±2px | Token değerine göre, kümülatif toplam ±4px |
+| Font size | ±0px | Token değeri tam eşleşmeli |
+| Border radius | ±1px | Platform rendering farkı kabul |
+| Renk | ±0 (token) | Semantic token kullanıldığında fark olmamalı |
+| İkon boyutu | ±0px | Tam eşleşme zorunlu |
+| Toplam layout sapması | ±4px kümülatif | Tüm spacing sapmalarının toplamı |
+
+### Ölçüm Yöntemi
+1. Figma overlay: Implementasyon screenshot'ını Figma tasarımının üzerine yarı saydam bindirme
+2. Piksel karşılaştırma: Kritik bölgelerde piksel piksel sapma ölçümü
+3. Araç: Chromatic visual diff (otomatik), overlay manual review (PR'da)
+
+### Kurallar
+1. [ZORUNLU] Font size ve renk sapmada sıfır tolerans — token'dan alınmalı
+2. [YAPILMALI] Spacing sapması ±2px'i aşarsa düzelt — "yaklaşık doğru" kabul edilmez
+3. [YAPILMALI] PR'da visual proof ile tolerans kontrolü yap
+4. [YAPILMAMALI] "Gözle bakılınca aynı" diyerek ölçümsüz onay verme
+
+---
+
+## Font Rendering Tutarlılığı
+
+iOS ve Android arasındaki font rendering farklılıkları ve kabul edilebilir sapmalar:
+
+### Platform Farkları
+
+| Özellik | iOS (Core Text) | Android (FreeType) |
+|---------|-----------------|-------------------|
+| Rendering motoru | Core Text | FreeType + Skia |
+| Genel görünüm | İnce, keskin hatlar | Kalın, yumuşak hatlar |
+| Weight algısı | Daha ince görünür | Aynı weight daha kalın görünür |
+| Anti-aliasing | Sub-pixel | Full-pixel |
+
+### Kabul Edilen Farklar
+- Font weight: Aynı weight'in platformlar arası görünüm farkı kabul edilir (iOS ince, Android kalın)
+- Line-height: Platform bazlı fine-tuning gerekebilir — ±1-2px fark kabul
+- Letter spacing: Küçük farklar kabul edilir — platform rendering engine farkı
+
+### Zorunlu Ayarlar
+1. [ZORUNLU] Android'de `includeFontPadding: false` ayarla — varsayılan ekstra padding kaldırılmalı
+2. [ZORUNLU] Her font varyantı (regular, medium, semibold, bold) her iki platformda screenshot ile karşılaştırılmalı
+3. [YAPILMALI] Line-height değerlerini platform bazlı fine-tune et — tek değer her platformda aynı sonucu vermeyebilir
+4. [YAPILMALI] Custom font yüklenmesinde `@expo-google-fonts` veya asset loading kullan — font yüklenmeden metin gösterme
+5. [YAPILMAMALI] Platform farkını "bug" olarak ele alma — rendering engine farkı doğaldır, tolerans dahilinde kabul et
+6. [YAPILMAMALI] Tek platformda test edip diğerinde sorun olmadığını varsayma
+
+### Test Gerekliliği
+- Her font varyantı için iOS + Android screenshot karşılaştırması (PR'da visual proof)
+- Dynamic Type / font scaling aktifken de kontrol et
+- Dark mode'da font rendering farkı olup olmadığını doğrula
 
 ## Kaynak
 - Visual contract → docs/design-system/33-visual-implementation-contract.md

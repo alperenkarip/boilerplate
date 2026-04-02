@@ -355,3 +355,123 @@ Bu ADR yeterli kabul edilir eğer:
 9. Alternatifler ve ret gerekçeleri dürüstçe sunulmuşsa
 10. Riskler ve risk azaltma önlemleri somutsa
 11. Bu karar, implementation ekibine IAP altyapısını kuracak netlikte baseline sağlıyorsa
+
+---
+
+# 14. Subscription Upgrade/Downgrade Flow
+
+Plan değişikliği UX ve teknik akışı.
+
+## 14.1. Upgrade (Basic → Premium)
+
+### Proration Mekanizması
+Kullanıcı mevcut döneminin ortasında upgrade yaptığında kalan süre oranında fark hesaplanır. Apple ve Google otomatik proration yapar:
+- **Apple:** Immediate mode — hemen yeni plan başlar, kalan gün oranında ücret farkı tahsil edilir
+- **Google:** `IMMEDIATE_WITH_TIME_PRORATION` — hemen yeni plan başlar, kalan süre oranında kredi uygulanır
+
+### UX Akışı
+1. Kullanıcı mevcut plan sayfasını açar
+2. Upgrade butonuna tıklar
+3. **Plan karşılaştırma ekranı** gösterilir: Mevcut plan vs yeni plan, özellik farkları, fiyat farkı
+4. "Upgrade Et" onay butonu → RevenueCat `purchasePackage` veya `switchProduct` API'si çağrılır
+5. Platform native ödeme ekranı açılır (App Store / Google Play)
+6. Ödeme başarılı → entitlement anında güncellenir → UI yeni plana göre yenilenir
+7. Ödeme başarısız → mevcut plan korunur, hata mesajı gösterilir
+
+### RevenueCat API
+```typescript
+const { customerInfo } = await Purchases.purchasePackage(premiumPackage);
+// veya mevcut subscription'dan geçiş:
+const { customerInfo } = await Purchases.purchasePackage(premiumPackage, {
+  oldProductIdentifier: 'basic_monthly',
+});
+```
+
+## 14.2. Downgrade (Premium → Basic)
+
+### Zamanlama
+- Downgrade **mevcut dönem sonunda** uygulanır. Premium özelliklere mevcut dönem bitimine kadar erişim devam eder.
+- Apple ve Google downgrade'i bir sonraki yenileme döneminde uygular.
+
+### UX Akışı
+1. Kullanıcı plan değişikliği sayfasını açar
+2. Downgrade seçeneğini seçer
+3. **Uyarı gösterilir:** "Premium özellikler [tarih] tarihine kadar aktif kalacak. Bu tarihten sonra Basic plana geçilecek."
+4. Kullanıcı onaylar → RevenueCat API ile downgrade kaydedilir
+5. Mevcut dönem boyunca premium erişim devam eder
+6. Dönem sonunda otomatik olarak basic plana geçilir
+
+## 14.3. Edge Case: Trial Döneminde Upgrade
+
+- Kullanıcı trial dönemindeyken upgrade yaparsa **trial iptal olur** ve **hemen ödeme başlar**
+- Bu davranış kullanıcıya açıkça bildirilmelidir: "Free trial'ınız sona erecek ve hemen ödeme alınacak."
+- UX'te trial kalan gün sayısı gösterilmeli
+
+## 14.4. Edge Case: Downgrade Sonrası Re-Upgrade
+
+- Kullanıcı downgrade ettikten sonra (henüz dönem bitmeden) tekrar upgrade yaparsa, downgrade iptal edilir ve premium devam eder
+- RevenueCat bu senaryoyu otomatik yönetir
+
+---
+
+# 15. Grace Period ve Billing Retry Yönetimi
+
+Ödeme başarısızlığı durumunda kullanıcı deneyimi ve teknik yönetim.
+
+## 15.1. Grace Period Süreleri
+
+| Platform | Grace Period Süresi | Konfigürasyon |
+|----------|-------------------|---------------|
+| Apple App Store | 6-16 gün (Apple tarafından belirlenir) | App Store Connect'te etkinleştirilir |
+| Google Play | 7-30 gün (konfigüre edilebilir) | Google Play Console'da ayarlanır |
+
+Grace period boyunca kullanıcı **premium özelliklerine erişmeye devam eder**. Platform bu süre zarfında ödeme yöntemini otomatik olarak retry eder.
+
+## 15.2. Billing Retry Mekanizması
+
+Apple ve Google otomatik billing retry yapar:
+- **Apple:** 60 gün boyunca periyodik retry. Kullanıcıya email ile bildirim gönderir.
+- **Google:** 30 gün boyunca retry. Kullanıcıya Play Store üzerinden bildirim gönderir.
+- Uygulama bu sürece müdahale edemez; platform mekanizmasına bırakılır.
+
+## 15.3. Uygulama İçi Bilgilendirme
+
+### Yumuşak Uyarı (Soft Banner)
+Grace period başladığında ekranın üstünde non-blocking banner gösterilir:
+- Mesaj: "Ödeme yönteminizi güncelleyin"
+- Aksiyon: Platform ödeme ayarlarına yönlendirme (App Store / Google Play → Subscriptions)
+- Dismissable: Kullanıcı kapatabilir, 24 saat sonra tekrar gösterilir
+
+### Sert Uyarı (Modal)
+Grace period sonuna 3 gün kala modal dialog gösterilir:
+- Mesaj: "Ödeme yönteminiz güncel değil. [tarih] tarihine kadar güncellenmezse premium erişiminiz sona erecek."
+- Aksiyon butonu: "Ödeme Yöntemini Güncelle"
+- İkincil buton: "Sonra Hatırlat"
+- Dismissable: Hayır (aksiyon veya sonra hatırlat zorunlu)
+
+## 15.4. Subscription Expired
+
+Grace period sona erdiğinde ve ödeme hâlâ başarısız ise:
+- Premium özellikler kilitlenir
+- Kullanıcı basic özelliklerine düşülür
+- "Premium aboneliğiniz sona erdi" ekranı gösterilir
+- Yeniden abone olma seçeneği sunulur
+
+## 15.5. RevenueCat Webhook Entegrasyonu
+
+Backend'de aşağıdaki RevenueCat webhook event'leri dinlenir:
+
+| Event | Tetikleyici | Aksiyon |
+|-------|------------|---------|
+| `BILLING_ISSUE` | Ödeme başarısız | Uygulama içi yumuşak uyarı tetikle |
+| `SUBSCRIBER_ENTERED_GRACE_PERIOD` | Grace period başladı | Grace period banner göster |
+| `SUBSCRIPTION_EXPIRED` | Abonelik sona erdi | Premium özellikleri kilitle |
+| `RENEWAL` | Yenileme başarılı | Uyarıları kaldır, premium devam |
+
+## 15.6. Restore Flow
+
+Kullanıcı ödeme yöntemini güncellerse:
+- Platform otomatik retry yapar ve ödeme başarılı olursa subscription restore edilir
+- RevenueCat `syncPurchases()` ile entitlement durumu güncellenir
+- Uygulama UI anında premium erişimi yeniden aktif eder
+- Tüm uyarı banner/modal'ları kaldırılır

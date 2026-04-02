@@ -537,3 +537,98 @@ Bu repo’da done demek şunların birlikte sağlanması demektir:
 - reviewer’a açık kanıt sunulabildi
 
 Bunlardan biri kritik seviyede eksikse iş done değildir.
+
+---
+
+# 30. Seviye Bazlı DoD (2026-04-02 Eki)
+
+Bu bölüm, iş türüne (hotfix, feature, epic) göre farklılaşan DoD maddelerini tanımlar. Her maddenin hangi iş türünde zorunlu, önerilen veya opsiyonel olduğunu gösterir.
+
+## 30.1. DoD Matrisi
+
+| DoD Maddesi | Hotfix | Feature | Epic |
+|------------|--------|---------|------|
+| Birim testi | Zorunlu | Zorunlu | Zorunlu |
+| Entegrasyon testi | Opsiyonel | Önerilen | Zorunlu |
+| E2E testi | Opsiyonel | Zorunlu | Zorunlu |
+| A11y testi | Opsiyonel | Zorunlu | Zorunlu |
+| Visual regression testi | Opsiyonel | Önerilen | Zorunlu |
+| Performance benchmark | Opsiyonel | Önerilen | Zorunlu |
+| Doküman güncelleme | Opsiyonel | Zorunlu | Zorunlu |
+| Storybook story | Opsiyonel | Zorunlu (UI component) | Zorunlu |
+| Code review | 1 reviewer | 1 reviewer | 2 reviewer |
+| Guardrail uyumu | Zorunlu | Zorunlu | Zorunlu |
+| i18n key kullanımı | Zorunlu | Zorunlu | Zorunlu |
+| Security review | Opsiyonel | Önerilen (auth/data) | Zorunlu |
+| SPEC yazımı | Opsiyonel | Önerilen | Zorunlu |
+| Changelog entry | Zorunlu | Zorunlu | Zorunlu |
+
+## 30.2. İş Türü Tespiti
+
+| Branch Prefix | İş Türü | DoD Seviyesi |
+|--------------|---------|-------------|
+| `hotfix/` | Hotfix | Hotfix DoD |
+| `fix/` | Bug fix | Feature DoD (azaltılmış) |
+| `feature/` | Feature | Feature DoD |
+| `epic/` veya multi-PR | Epic | Epic DoD |
+| `chore/` | Bakım | Hotfix DoD |
+| `release/` | Release | Feature DoD |
+
+## 30.3. Zorunlu/Önerilen/Opsiyonel Tanımları
+
+- **Zorunlu:** Karşılanmadan PR merge edilemez. CI'da kontrol edilir veya reviewer tarafından doğrulanır.
+- **Önerilen:** Yapılması beklenir, yapılmazsa PR açıklamasında gerekçe belirtilir. CI bloklamaz.
+- **Opsiyonel:** Yapılması faydalıdır, yapılmasa da PR kabul edilebilir. Gerekçe gerekmez.
+
+---
+
+# 31. DoD Compliance Otomasyonu (2026-04-02 Eki)
+
+Bu bölüm, DoD maddelerinin PR sürecinde otomatik olarak kontrol edilmesini sağlayan otomasyon mekanizmasını tanımlar.
+
+## 31.1. PR Template Checkbox'ları
+
+PR template'inde DoD maddeleri checkbox olarak yer alır:
+
+```markdown
+## DoD Kontrol Listesi
+
+### Zorunlu
+- [ ] Birim testi yazıldı
+- [ ] Guardrail uyumu sağlandı
+- [ ] i18n key kullanıldı
+- [ ] Lint + typecheck geçiyor
+
+### Önerilen (Feature/Epic)
+- [ ] E2E testi yazıldı
+- [ ] A11y testi yapıldı
+- [ ] Doküman güncellendi
+- [ ] Storybook story eklendi (UI)
+```
+
+## 31.2. CI Parse ve Kontrol
+
+- CI pipeline, PR body'deki checkbox'ları parse eder.
+- Branch prefix'ten iş türü tespit edilir (`hotfix/` → Hotfix DoD, `feature/` → Feature DoD).
+- İş türüne göre zorunlu checkbox'ların işaretli olması kontrol edilir.
+- İşaretlenmemiş zorunlu checkbox varsa CI uyarı verir (blocking değil, reviewer dikkatini çeker).
+
+## 31.3. Otomatik İş Türü Tespiti
+
+```
+Branch: hotfix/ISSUE-456-login-crash
+  → İş türü: Hotfix
+  → Zorunlu DoD: Birim testi, guardrail, i18n, lint/typecheck, changelog
+  → Opsiyonel: Geri kalan tüm maddeler
+
+Branch: feature/ISSUE-789-kullanici-profili
+  → İş türü: Feature
+  → Zorunlu DoD: Birim testi, E2E, a11y, guardrail, i18n, doküman, changelog
+  → Önerilen: Visual regression, performance benchmark, Storybook
+```
+
+## 31.4. Review Entegrasyonu
+
+- PR'da DoD uyumu düşükse (zorunlu madde eksikse), reviewer otomatik olarak bilgilendirilir.
+- "DoD incomplete" etiketi otomatik eklenir.
+- Reviewer, eksik maddelerin gerçekten gerekli olup olmadığını değerlendirir ve onay verir veya düzeltme ister.

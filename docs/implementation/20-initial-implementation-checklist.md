@@ -211,6 +211,91 @@ Kod üretimi büyümeden önce kalite kapıları çalışmalıdır.
 
 ---
 
+# 8.5. Faz D.5 — New Architecture Readiness Check
+
+## 8.5.1. Amac
+Expo SDK 55 ile New Architecture (Fabric, JSI, TurboModules) varsayilan ve kapatılamaz hale gelmistir. Dependency installation'dan once tum third-party kutuphanelerin New Architecture ile uyumlu oldugu dogrulanmalidir.
+
+## 8.5.2. Yapilacak isler
+
+- [ ] `npx expo-doctor` calistirilarak tum dependency'lerin New Architecture uyumlulugu dogrulandi. Herhangi bir "incompatible" uyarisi varsa ilgili kutuphane icin alternatif planlandı.
+- [ ] TurboModules gerektiren native moduller tespit edildi. Legacy Bridge-only moduller listelendi ve migration plani olusturuldu veya JSI tabanli alternatifleri belirlendi.
+- [ ] Fabric uyumsuz third-party component'ler belirlendi. Ozellikle native view manager tabanli eski component'ler (orn. eski harita, video, grafik kutuphaneleri) Fabric uyumlu versiyonlariyla veya alternatifleriyle degistirildi.
+- [ ] Hermes bytecode compilation dogrulandi. `npx react-native info` ciktisinda Hermes'in aktif oldugu ve bytecode precompilation'in calıstıgı goruldu.
+- [ ] JSI tabanli kutuphanelerin versiyonlari New Architecture ile uyumlu:
+  - [ ] `react-native-reanimated` 4.x (JSI + Fabric uyumlu)
+  - [ ] `react-native-mmkv` 3.x (JSI tabanli)
+  - [ ] `@shopify/flash-list` (Fabric uyumlu)
+  - [ ] `react-native-gesture-handler` 2.x (Fabric uyumlu)
+  - [ ] `@gorhom/bottom-sheet` (Fabric uyumlu versiyon dogrulandi)
+- [ ] React Native Directory (reactnative.directory) uzerinden kullanilacak tum third-party paketlerin "New Architecture" badge'i kontrol edildi.
+- [ ] Uyumsuz paketler icin fallback plani (alternatif kutuphane, custom bridge wrapper, veya feature erteleme) belgelendi.
+
+## 8.5.3. Done kaniti
+- `expo-doctor` temiz gecti (critical uyari yok)
+- Tum canonical dependency'ler New Architecture uyumlu
+- Uyumsuz paketler icin yazili alternatif plani mevcut
+- Hermes aktif ve bytecode compilation calisiyor
+- Fabric renderer devrede ve test build'de crash yok
+
+## 8.5.4. Kirmizi bayrak
+New Architecture uyumluluğu dogrulanmadan dependency installation'a gecmek. Bu, runtime'da beklenmedik crash'lere, performance sorunlarina ve debug edilmesi zor hatalara yol acar.
+
+---
+
+# 8.6. Automated Bootstrap Recetesi
+
+## 8.6.1. Amac
+
+Checklist maddelerinin buyuk bolumu tekrar eden, deterministik ve otomatize edilebilir islerdir. Manuel adim adim ilerlemek hem zaman kaybettirir hem de hata riskini artirir. Bu bolum, checklist adimlarini mumkun oldugunca otomatize eden yaklasimi tanimlar.
+
+## 8.6.2. Scaffold Generator Stratejisi
+
+Turborepo'nun `turbo gen` ozelligii veya custom plop generator kullanilarak tekrar eden scaffold islemleri otomatize edilir:
+
+| Islem | Otomasyon Araci | Aciklama |
+|-------|----------------|----------|
+| Yeni workspace package olusturma | `turbo gen` veya `plop` | `pnpm gen:package <paket-adi>` komutu ile `packages/<paket-adi>/` altinda `package.json`, `tsconfig.json`, `src/index.ts` ve `__tests__/` dizini olusturulur |
+| Yeni app olusturma | `turbo gen` | `pnpm gen:app <app-adi>` komutu ile `apps/<app-adi>/` altinda canonical app shell yapisi olusturulur |
+| Yeni feature modulu olusturma | `plop` veya custom script | `pnpm gen:feature <feature-adi>` komutu ile feature dizin yapisi (ui/, state/, data/, tests/) ve barrel file olusturulur |
+| Config dosyalari kopyalama | Shell script | `tsconfig.json`, `eslint.config.js`, `.prettierrc` sablonlari kaynak dizinden hedef dizine kopyalanir |
+
+## 8.6.3. Template Dosyalari
+
+Her generator template'i su dosyalari icerir:
+
+**Package template:**
+```
+packages/<paket-adi>/
+├── package.json          # @project/<paket-adi> scope'u, "private": true
+├── tsconfig.json         # tsconfig.base.json'u extend eder
+├── src/
+│   └── index.ts          # barrel export dosyasi
+└── __tests__/
+    └── index.test.ts     # ilk test dosyasi
+```
+
+**Feature module template:**
+```
+apps/<app>/src/features/<feature>/
+├── index.ts              # public surface (barrel export)
+├── ui/                   # screen ve component dosyalari
+├── state/                # feature-local state (Zustand slice veya hook)
+├── data/                 # query hook'lari ve mappers
+└── __tests__/            # feature testleri
+```
+
+## 8.6.4. Idempotent Calistirma
+
+Her generator ve script **idempotent** olmalidir: ayni komutu ikinci kez calistirmak hata uretmemeli, mevcut dosyalari ezMemeli ve ayni sonucu vermeli. Bu, CI/CD pipeline'inda ve tekrar eden bootstrap senaryolarinda guvenli calistirmayi garanti eder.
+
+Idempotent davranis su sekilde saglanir:
+- Dosya olusturulmadan once varlik kontrolu yapilir (`if not exists`)
+- Mevcut dosya degistirilmez, sadece eksik dosyalar olusturulur
+- Basarili tamamlama mesaji ile hangi dosyalarin olusturuldugu, hangilerinin atlandigi raporlanir
+
+---
+
 # 9. Faz E — Canonical Dependency Installation Pass
 
 ## 9.1. Amaç

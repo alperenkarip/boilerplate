@@ -4,7 +4,7 @@ type: domain
 name: Push Notification Yönetimi
 kaynak-dokümanlar: ADR-013, 26
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-NTF: Push Notification Guardrail
@@ -70,6 +70,66 @@ son-güncelleme: 2026-04-01
 - Permission request contextual değil → pre-permission ekranı ekle
 - Deep link eksik → notification → ekran routing tanımla
 - Gerçek push test'te gönderiliyor → mock'a geç
+
+---
+
+## Permission Request Timing
+
+Bildirim izni isteme zamanlaması kullanıcı deneyimi ve izin oranı için kritiktir:
+
+### Zamanlama Kuralları
+1. [YASAK] İlk açılışta (cold start) doğrudan bildirim izni sorma
+2. [YASAK] Onboarding akışı içinde zorunlu adım olarak izin isteme
+3. [ZORUNLU] İlgili feature kullanıldığında bağlamsal olarak sor (örn: sipariş tamamlandığında "Sipariş durumunu bildirimle takip et")
+4. [ZORUNLU] OS dialog öncesi uygulama içi açıklama ekranı (pre-prompt) göster
+5. [YAPILMALI] App açılışından minimum 2 dakika sonra sor — kullanıcı uygulamayı tanısın
+6. [YAPILMAMALI] Kritik akış (ödeme, kayıt) sırasında izin isteme — akışı bölme
+
+### Pre-prompt Akışı
+```
+Uygulama içi açıklama ekranı göster
+  → Kullanıcı "Tamam" → OS bildirim izni dialog'u aç
+  → Kullanıcı "Şimdi değil" → 3 gün sonra tekrar göster (max 2 kez)
+  → OS'ta reddedilirse → "Ayarlardan açın" rehber ekranı göster
+```
+
+### Tekrar Sorma Politikası
+- İlk red sonrası: 3 gün bekle, farklı bağlamda tekrar dene
+- İkinci red sonrası: Bir daha sorma, ayarlar ekranında pasif yönlendirme bırak
+- OS seviyesinde red: Tekrar sorulamaz, `Linking.openSettings()` ile yönlendir
+
+### Analytics
+- [ZORUNLU] Şu event'leri tanımla: `permission_prompt_shown`, `permission_granted`, `permission_denied`, `permission_settings_redirect`
+- [YAPILMALI] İzin oranını (grant rate) takip et ve pre-prompt mesajını optimize et
+
+---
+
+## Silent Push Data Sync
+
+Arka planda veri senkronizasyonu için sessiz bildirim kullanım kuralları:
+
+### Kullanım Alanları
+- Cache güncelleme (yeni içerik hazır bildirimi)
+- Badge güncelleme (okunmamış sayısı)
+- Remote config refresh (feature flag değişikliği)
+- Kullanıcıya gösterilmeyen arka plan veri sync'i
+
+### Platform Implementasyonu
+| Platform | Yöntem | Kısıtlama |
+|----------|--------|-----------|
+| iOS | `content-available: 1` payload | 30sn background time, garanti yok (battery optimization, Low Power Mode'da kısıtlı) |
+| Android | `priority: "high"`, data-only message | Doze Mode kısıtlaması, FCM quota sınırı |
+
+### Kurallar
+1. [ZORUNLU] Silent push handler'da ağır işlem yapma — sadece cache invalidation veya lightweight sync
+2. [ZORUNLU] Fallback mekanizması tanımla: Foreground'a geçildiğinde normal fetch ile güncelle
+3. [YAPILMALI] Silent push frekansını sınırla — saatte max 2-3 (platform throttling riski)
+4. [YAPILMAMALI] Silent push'a kritik iş mantığı bağlama — teslim garantisi yok
+5. [YAPILMAMALI] Büyük veri indirmesini silent push handler'da yapma — sadece tetikleme, indirme foreground'da
+
+### Privacy
+- [ZORUNLU] Silent push ile toplanan/güncellenen veriler consent kapsamında değerlendirilmeli
+- [YAPILMAMALI] Silent push ile kullanıcı consent'i olmadan konum veya aktivite verisi toplama
 
 ## Kaynak
 - Push notification kararı → docs/adr/ADR-013-push-notification-strategy.md

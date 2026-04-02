@@ -236,6 +236,59 @@ Kısa vadede kolay görünen ama uzun vadede borç çıkaran kararlar bu proje k
 
 Bu kararlar erken aşamada pratik görünür ama maliyet biriktirir.
 
+## 4.7. AI-First Development Prensibi
+
+Bu proje, AI agent'larla (Claude Code, Codex CLI, GitHub Copilot vb.) birlikte geliştirme gerçeğini kabul eden ve bu gerçeği kalite standardına entegre eden bir yaklaşım benimser. AI araçları geliştirme hızını artırabilir ancak kalite standardını otomatik olarak garanti etmez. Bu nedenle AI destekli geliştirme süreci de aynı disiplin kurallarına tabidir.
+
+### Bu ilkenin zorunlu sonuçları
+
+1. **Spec-first yaklaşım AI ile de geçerlidir:** AI agent'a doğrudan "şu feature'ı yaz" demek yerine, önce SPEC veya doküman oluşturulmalı, ardından AI agent bu spesifikasyona göre yönlendirilmelidir. Belirsiz prompt, belirsiz kod üretir.
+
+2. **AI ürettiği kod guardrail denetiminden muaf değildir:** AI agent tarafından üretilen her kod satırı, `47-ai-guardrail-governance.md`'de tanımlanan guardrail protokolünden geçmek zorundadır. Pre-edit ve post-edit hook'ları AI çıktısına da uygulanır. AI "hızlı ürettiği için" kalite kapısı atlanmaz.
+
+3. **Prompt kalitesi = kod kalitesi ilişkisi:** AI agent'a verilen talimatın netliği, üretilen kodun kalitesini doğrudan belirler. Bu nedenle `CLAUDE.md` ve `AGENTS.md` dosyaları birer "AI talimat sözleşmesi" olarak ele alınır ve güncel tutulmaları zorunludur. Talimat dosyalarındaki eskimiş veya çelişkili bilgi, AI'ın hatalı kod üretmesine neden olur.
+
+4. **AI agent çıktısı mutlaka human review'dan geçmelidir:** AI ürettiği kod ne kadar doğru görünürse görünsün, bir insan geliştirici tarafından review edilmeden merge edilmez. Human review özellikle şu alanlarda kritiktir: güvenlik etkileri, mimari sınır kararları, design system uyumu, erişilebilirlik semantikleri ve domain iş kuralları.
+
+5. **AI talimat sözleşmeleri yaşayan belgelerdir:** `CLAUDE.md`, `AGENTS.md` ve dizin-spesifik AGENTS.md dosyaları proje evrildikçe güncellenmeli, yeni ADR'ler ve guardrail'ler eklendikçe talimat sözleşmelerine yansıtılmalıdır. Talimat sözleşmesinin güncelliğini kaybetmesi, AI agent'ın eski kurallara göre kod üretmesine yol açar.
+
+6. **AI güçlü olduğu alanlarda kullanılır, zayıf olduğu alanlarda temkinli olunur:** AI agent'lar boilerplate kodu, tekrar eden pattern'ler, test yazımı ve refactoring gibi alanlarda verimlidir. Ancak yeni mimari karar alma, güvenlik kritik kod ve domain-spesifik iş kuralı oluşturma gibi alanlarda AI çıktısı daha dikkatli incelenmelidir.
+
+## 4.8. Prensip Çatışma Matrisi
+
+Prensipler arasında çatışma kaçınılmazdır. Belirli durumlarda bir prensip diğerinin önüne geçmek zorunda kalır. Bu matris, çatışma anlarında hangi prensibin öncelikli olduğunu açıkça tanımlar ve keyfi karar almayı engeller.
+
+### Öncelik Hiyerarşisi
+
+Aşağıdaki hiyerarşi, en yüksek öncelikten en düşüğe doğru sıralanmıştır:
+
+1. **Güvenlik** (Security)
+2. **Performans** (Performance)
+3. **Kullanıcı Deneyimi** (UX Quality)
+4. **Geliştirme Hızı** (Velocity)
+
+### Çatışma Senaryoları ve Çözüm Kuralları
+
+| Çatışma | Kazanan Prensip | Çözüm Yaklaşımı | Örnek |
+|---------|----------------|-----------------|-------|
+| Güvenlik vs. Performans | Güvenlik | Güvenlik açığı oluşturacak performans optimizasyonu yapılmaz. Güvenli ve performanslı çözüm aranır; bulunamazsa güvenlik korunur. | Auth token'ı cache'lemek performansı artırır ama XSS riskini artırıyorsa yapılmaz. |
+| Güvenlik vs. UX | Güvenlik | Kullanıcı deneyimini iyileştirmek için güvenlik gevşetilmez. Güvenlik korunarak en iyi UX aranır. | Biometric bypass ile "hızlı giriş" sunulabilir ama session güvenliği zayıflatılmaz. |
+| Güvenlik vs. Hız | Güvenlik | Güvenlik denetimi hızlı delivery için atlanamaz. Security review tamamlanmadan deploy yapılmaz. | Hotfix bile olsa auth flow değişikliği güvenlik review'dan geçer. |
+| Performans vs. UX | Performans | Performans budgetlarını (`13-performance-standard.md`) aşan UX zenginlikleri kabul edilmez. Budget dahilinde en iyi UX aranır. | Ağır animasyon UX'i güzelleştirir ama FPS düşürüyorsa sadeleştirilir. |
+| Documentation-first vs. Hızlı delivery | Documentation-first | Doküman yazılmadan implementasyona geçilmez. Ancak doküman derinliği görev karmaşıklığına göre orantılı olabilir (basit bug fix için ADR gerekmez). | Yeni feature modülü için spec yazılmadan kodlamaya başlanmaz. |
+| Platform convention vs. Cross-platform tutarlılık | Platform convention | Platformun doğal davranışı (iOS sheet, Android material dialog vb.) cross-platform tutarlılık uğruna bastırılmaz. Behavior parity korunarak presentation farkı kabul edilir. | iOS'ta native bottom sheet, Android'de material bottom sheet kullanılabilir; ikisi de aynı ürün görevini çözer. |
+| Spec uyumu vs. Pragmatik kısayol | Spec uyumu | Spesifikasyonda tanımlı davranış, pratik kısayol uğruna atlanmaz. Spec yetersizse önce spec güncellenir, sonra implementasyon yapılır. | Component spec'te tanımlı a11y semantikleri "çalışıyor, gerek yok" diye atlanmaz. |
+| Shared code vs. Platform kalitesi | Platform kalitesi | Ortaklaştırma platform kalitesini düşürüyorsa, platform-specific implementasyon tercih edilir. | Aynı navigation component web ve mobile'da kaliteyi düşürüyorsa, ayrı implementasyon yapılır. |
+
+### Çatışma Çözüm Süreci
+
+Matristeki öncelik hiyerarşisi net bir çatışma durumunda doğrudan uygulanır. Ancak hiyerarşinin yetersiz kaldığı gri alanlarda şu süreç izlenir:
+
+1. Çatışan prensipleri ve etki alanlarını yazılı olarak tanımla.
+2. Her seçeneğin avantaj, dezavantaj ve risk analizini yap.
+3. Kararı gerekçesiyle birlikte ADR veya doküman notu olarak kaydet.
+4. Geçici çözüm alınıyorsa `13-geçici-çözüm-politikası` kuralları uygula.
+
 ---
 
 # 5. Cevap ve Yönlendirme Standardı

@@ -1488,6 +1488,113 @@ Bir veri davranışı tasarlanırken şu sorular sorulmalıdır:
 
 ---
 
+# 28.5. Offline Mutation Queue Pattern
+
+## 28.5.1. Amac
+
+Kullanici cevrimdisi iken veya zayif baglantida iken yapilan mutation'larin (veri degisikligi islemleri) kaybolmamasi, baglanti geldiginde otomatik olarak sunucuya gonderilmesi ve bu surecin kullaniciya seffaf biçimde yonetilmesi gerekir. Bu bolum, TanStack Query'nin `onlineMutationOptions` ozelligi ile offline mutation kuyrugu pattern'ini tanimlar.
+
+## 28.5.2. Mekanizma
+
+TanStack Query'nin `MutationCache` yapisinda `onMutate`, `onError` ve `onSettled` callback'leri ile mutation lifecycle yonetilir. Offline senaryoda su akis izlenir:
+
+1. **Mutation tetiklenir:** Kullanici bir aksiyon yapar (orn. yorum ekle, formu kaydet, like toggle).
+2. **Baglanti kontrolu:** Eger cihaz cevrimdisi ise, mutation hemen calistirilmaz; bunun yerine mutation kuyruğuna (queue) eklenir.
+3. **Kuyrukta bekleme:** Mutation, kuyrukta FIFO (first-in-first-out) sirasinda bekler. Kullaniciya pending mutation sayisi gosterilir (orn. "2 islem baglanti bekleniyor").
+4. **Baglanti geldiginde replay:** Online event alginlandiginda, kuyruktaki mutation'lar siraya uygun olarak replay edilir (tekrar calistirilir).
+5. **Basari/basarisizlik:** Her mutation basarili olursa kuyruktan cikarilir. Basarisiz olursa retry politikasi uygulanir.
+
+## 28.5.3. Kuyruk Persistence
+
+Kuyruktaki mutation'larin uygulama kapanip acilsa bile korunmasi icin MMKV'de persist edilmesi gerekir. Uygulama yeniden basladiginda kuyruk MMKV'den okunur ve online olundiginda replay edilir. Persist edilen mutation verisi su alanlari icermelidir:
+
+- Mutation key / tanımlayıcısı
+- Mutation endpoint (hangi API cagrisina ait)
+- Mutation payload (gonderilecek veri)
+- Olusturma zamani (timestamp)
+- Retry sayisi
+
+## 28.5.4. Catisma Cozum Stratejisi
+
+Offline mutation'lar replay edilirken, ayni kaynak uzerinde sunucu tarafinda da degisiklik yapilmis olabilir. Bu durumda catisma (conflict) olusur. Catisma cozum stratejisi derived project'in ihtiyacina gore belirlenir:
+
+- **Last-write-wins (son yazan kazanir):** En basit strateji. Offline mutation'in verisi sunucudaki veriyi ust yazar. Basit tercih ve toggle islemleri icin uygundur.
+- **Server-wins (sunucu kazanir):** Sunucudaki veri korunur, offline mutation reddedilir. Kullaniciya "Isleminiz gerceklestirilemedi, veri degismis" bildirimi gosterilir.
+- **Merge (birlestirme):** Alan bazli birlestime yapilir. Ornegin kullanici offline iken adini degistirmis, sunucu tarafinda email degismisse, her ikisi de uygulanir. Bu strateji en karmasik olandir ve dikkatli domain analizi gerektirir.
+
+## 28.5.5. Kullanici Bildirimi
+
+- **Kuyruk durumu:** Kuyruktaki bekleyen mutation sayisi kullaniciya gosterilir (orn. app bar'da "2 islem bekliyor" badge'i).
+- **Basarili replay:** Mutation basariyla sunucuya gonderildiginde kisa bir success toast gosterilir.
+- **Basarisiz replay:** Retry limiti asildiysa kullaniciya "Islem gonderilemedi. Tekrar deneyin veya iptal edin" bildirimi gosterilir.
+- **Catisma durumu:** Merge veya server-wins senaryosunda kullaniciya catisma bilgisi sunulur.
+
+## 28.5.6. Zayif Yaklasimlar
+
+- Offline mutation'lari hicbir kuyruğa almadan sessizce kaybetmek.
+- Kuyruktaki mutation'lari persist etmemek (uygulama kapanirsa islem kaybolur).
+- Catisma ihtimalini hic dusunmeden tum mutation'lari kör replay yapmak.
+- Kullaniciya kuyruktaki islemlerin varligini hic gostermemek.
+
+---
+
+# 28.6. Optimistic Update ve Rollback Stratejisi
+
+## 28.6.1. Amac
+
+Optimistic update, mutation'in sunucu yanitini beklemeden UI'yi hemen guncellemektir. Bu, kullaniciya anlik geri bildirim saglar ve uygulamanin hizli hissetmesini saglar. Ancak sunucu mutation'i reddederse veya hata olursa, onceki duruma geri donulmesi (rollback) gerekir. Bu bolum, optimistic update'in ne zaman kullanilacagini, rollback mekanizmasini ve kullaniciya bildirim stratejisini tanimlar.
+
+## 28.6.2. Mekanizma
+
+TanStack Query'nin `useMutation` hook'u ile optimistic update su adimlari izler:
+
+1. **`onMutate` callback'inde snapshot alinir:** Mevcut cache state'inin bir kopyasi alinir (`previousState`). Bu, rollback icin geri donulecek noktadir.
+2. **Cache hemen guncellenir:** UI aninda yeni degeri gosterir. Kullanici sonucu hemen gorur.
+3. **Sunucu yaniti beklenir:** Mutation request sunucuya gonderilir.
+4. **Basari durumu (`onSuccess`):** Cache zaten dogru degerle guncellenmistir. Gerekiyorsa invalidation tetiklenir.
+5. **Hata durumu (`onError`):** `previousState` snapshot'indan rollback yapilir. Cache eski haline doner. Kullaniciya "Islem basarisiz, degisiklik geri alindi" toast/snackbar gosterilir.
+
+## 28.6.3. Optimistic Update Kullanilacak Durumlar
+
+Asagidaki islem turleri optimistic update icin uygun adaylardir:
+
+| Islem | Neden Uygun | Ornek |
+|-------|-------------|-------|
+| Like / unlike toggle | Basarısızlik riski dusuk, kullanici beklentisi anlik geri bildirim | Kalp ikonu aninda dolar/bosalir |
+| Favori ekleme/cikarma | Geri alinabilir, kullanici etkisi dusuk | Yildiz aninda aktif/pasif olur |
+| Basit CRUD (olusturma/guncelleme) | Validation client-side yapilmissa basarisizlik riski dusuk | Yorum ekleme aninda listede gorulur |
+| Liste siralama/filtreleme tercihi | Sunucu onayina gerek yok, tercih hemen uygulanabilir | Siralama aninda degisir |
+| Okundu/okunmadi isaretleme | Geri alinabilir, kullanici etkisi dusuk | Mesaj aninda okundu olarak isaretlenir |
+
+## 28.6.4. Optimistic Update Kullanilmayacak Durumlar
+
+Asagidaki islem turleri icin optimistic update **kullanilmamalidir**:
+
+| Islem | Neden Uygun Degil | Yaklasim |
+|-------|-------------------|----------|
+| Odeme islemi | Basarisizlik riski yuksek, finansal sonuc geri alinamaz | Loading state goster, sunucu yanitini bekle |
+| Kritik veri degisikligi | Yanlis gosterim ciddi sonuclar dogurabilir | Sunucu onayindan sonra guncelle |
+| Dosya yukleme | Yukleme suresi belirsiz, basarisizlik riski yuksek | Progress indicator goster |
+| Hesap silme | Geri alinamaz, destructive islem | Onay dialog + sunucu yaniti bekle |
+| Stok/envanter guncelleme | Race condition riski yuksek, birden fazla kullanici ayni anda degistirebilir | Server-confirmed update kullan |
+
+## 28.6.5. Partial Failure ve Kismi Rollback
+
+Bir mutation birden fazla entity'yi guncellediyse (orn. siparis olusturma = stok guncelleme + odeme + siparis kaydi) ve islemlerden bazilari basarili, bazilari basarisiz olduysa, kismi rollback gerekir. Bu durumda:
+
+- Basarisiz entity'lerin cache'i rollback edilir.
+- Basarili entity'ler korunur (sunucu zaten guncellenmistir).
+- Kullaniciya hangi islemlerin basarili, hangilerinin basarisiz oldugu acikca gosterilir.
+- Karmasik partial failure senaryolarinda sunucu invalidation (refetch) yaparak tutarli duruma donulur.
+
+## 28.6.6. Kullanici Bildirimi
+
+- **Basarili optimistic update:** Ek bildirim gerekmez (UI zaten guncellenmistir).
+- **Rollback durumu:** Toast/snackbar ile "Islem basarisiz oldu, degisiklik geri alindi" mesaji gosterilir. Mesaj 4-5 saniye gorunur ve dismiss edilebilir.
+- **Retry imkani:** Rollback sonrasi kullaniciya "Tekrar dene" aksiyonu sunulabilir (toast'ta inline button olarak).
+
+---
+
 # 29. Sonraki Dokümanlara Etkisi
 
 ## 29.1. Forms, inputs and validation
@@ -1536,3 +1643,130 @@ Bu nedenle bundan sonraki hiçbir doküman:
 - invalidation ve retry davranışlarını rastgele bırakamaz,
 - optimistic update’i düşünmeden uygulayamaz,
 - stale ve doğru veri ayrımını görmezden gelemez.
+
+---
+
+# 32. API Client ve Network Layer Architecture
+
+## 32.1. Amaç
+
+Data fetching stratejisi (TanStack Query, cache, mutation) üst katmanı tanımlar; bu bölüm alt katman olan HTTP client altyapısını tanımlar. Üst katmandaki query/mutation lifecycle, alt katmandaki apiClient'ın güvenilirliğine, tutarlılığına ve güvenlik mekanizmalarına bağımlıdır. Bu iki katman net ayrılmalı, birbirinin sorumluluğuna karışmamalıdır.
+
+## 32.2. Fetch Wrapper / HTTP Client Instance Pattern
+
+- Tüm API çağrıları merkezi bir `apiClient` fonksiyonu/instance üzerinden yapılır.
+- Doğrudan `fetch()` veya `axios()` çağrısı component veya hook içinde **YASAK**tır.
+- `apiClient`, tüm interceptor'ları, default header'ları ve base URL'i kapsar; çağrı noktaları yalnızca endpoint path ve parametrelerle ilgilenir.
+- TanStack Query'nin `queryFn` callback'i bu `apiClient`'ı kullanmalıdır — TanStack Query kendi başına HTTP çağrısı yapmaz, sadece çağrı sonucunu yönetir.
+- `apiClient` tek bir yerde tanımlanır (`packages/core/src/api/apiClient.ts` veya dengi konum) ve tüm feature modülleri bu instance'ı import eder.
+
+```
+┌──────────────────────────────────────────────┐
+│  Component / Hook                            │
+│  └─ useQuery({ queryFn: () => apiClient(…) })│
+│                                              │
+├──────────────────────────────────────────────┤
+│  apiClient (merkezi HTTP katmanı)            │
+│  ├─ Request Interceptors                     │
+│  ├─ Response Interceptors                    │
+│  ├─ Base URL Resolution                      │
+│  ├─ Timeout Management                       │
+│  └─ AbortController Entegrasyonu             │
+│                                              │
+├──────────────────────────────────────────────┤
+│  fetch() / XMLHttpRequest (platform API)     │
+└──────────────────────────────────────────────┘
+```
+
+## 32.3. Interceptor Zinciri
+
+Interceptor'lar, her API çağrısının ortak davranışlarını merkezi olarak yönetir. Bu zincirin sırası deterministiktir; sıranın bozulması güvenlik veya debugging açıklarına yol açar.
+
+### Request Interceptor'ları (sıralı):
+
+1. **Auth Token Injection:** SecureStore'dan (mobile) veya cookie'den (web) okunan token, `Authorization: Bearer <token>` header'ına eklenir. Token yoksa veya expired ise istek gönderilmeden önce refresh akışı tetiklenir (ADR-010 ile uyumlu).
+2. **Request Logging:** İstek bilgisi (method, URL, timestamp) Sentry breadcrumb olarak kaydedilir. Body içeriği loglanmaz (güvenlik — 27-security ile uyum).
+3. **Content-Type:** Varsayılan olarak `application/json` ayarlanır; `multipart/form-data` gereken durumlarda (file upload) çağrı noktasından override edilir.
+4. **Request ID:** Her isteğe unique `X-Request-ID` header'ı eklenir (UUIDv4). Bu ID backend loglarıyla korelasyon sağlar ve debugging sürecini hızlandırır.
+
+### Response Interceptor'ları (sıralı):
+
+1. **Error Normalization:** Backend'den gelen hata formatı (farklı yapılar olabilir) standart `AppError` formatına dönüştürülür. Böylece UI katmanı her zaman tutarlı bir hata yapısıyla çalışır.
+2. **401 Handling:** Token expired yanıtı alındığında refresh queue pattern tetiklenir — eşzamanlı birden fazla isteğin hepsi aynı refresh token yenileme sürecini bekler, yenileme sonrası tekrar gönderilir (ADR-010 ile uyumlu).
+3. **Response Timing:** İstek gönderiminden yanıt alımına kadar geçen süre Sentry performance span olarak kaydedilir. Bu veri performans anomalilerinin tespitinde kullanılır.
+4. **Rate Limit:** Backend'den 429 (Too Many Requests) yanıtı alındığında exponential backoff ile yeniden denenir. `Retry-After` header'ı varsa bekleme süresi bu değere göre ayarlanır. Kullanıcıya gerektiğinde bilgilendirme gösterilir.
+
+## 32.4. Base URL Ortam Yönetimi
+
+API base URL'i ortam değişkeninden alınır; hiçbir dosyada hardcoded URL bulunmaz.
+
+| Ortam | Base URL | Kaynak |
+|-------|---------|--------|
+| Development | `http://localhost:3000/api` | `.env.development` |
+| Staging | `https://staging-api.example.com/api` | `.env.staging` |
+| Production | `https://api.example.com/api` | `.env.production` |
+
+- **Mobile (Expo):** `EXPO_PUBLIC_API_BASE_URL` environment variable'ı kullanılır. `app.config.ts` içinde `extra` alanından okunur.
+- **Web (Vite):** `VITE_API_BASE_URL` environment variable'ı kullanılır. `import.meta.env.VITE_API_BASE_URL` ile erişilir.
+- Hardcoded URL **YASAK** — tüm ortam değişkenleri `.env` dosyalarından veya CI/CD konfigürasyonundan gelir.
+- Base URL doğrulama: `apiClient` initialization sırasında base URL'in tanımlı ve geçerli URL formatında olduğu kontrol edilir; tanımlı değilse uygulama başlatma hatası verilir.
+
+## 32.5. Request Cancellation (AbortController)
+
+- Her API çağrısında bir `AbortController` instance'ı oluşturulur ve çağrıya bağlanır.
+- Component unmount olduğunda `abort()` çağrılarak devam eden istek iptal edilir — memory leak ve state update on unmounted component hataları önlenir.
+- TanStack Query, `queryFn`'e otomatik olarak `signal` prop'u geçer; bu signal `AbortController.signal`'dır ve query iptal edildiğinde veya component unmount olduğunda otomatik cancellation sağlar.
+- Navigation değişikliğinde (ekran geçişi) önceki ekrana ait devam eden istekler iptal edilir.
+- Kullanıcı tarafından iptal edilebilir işlemler (uzun süren arama, dosya yükleme) için UI'da "İptal" butonu sağlanır ve bu buton ilgili `AbortController.abort()` çağrısını tetikler.
+
+## 32.6. Request Deduplication
+
+- TanStack Query, aynı `queryKey` ile yapılan eşzamanlı istekleri otomatik olarak dedupe eder — aynı anda 5 component aynı veriyi isterse yalnızca 1 HTTP çağrısı yapılır.
+- Custom dedup gereken durumlar: non-query API çağrıları (analytics batch gönderimi, file upload, mutation dışı özel istekler).
+- Dedup stratejisi: `queryKey` hash bazlı; ilk isteğin promise'i paylaşılır, sonraki çağıranlar aynı promise'i bekler.
+- Mutation'larda dedup varsayılan olarak uygulanmaz — aynı mutation'ın birden fazla kez tetiklenmesi UI tarafında debounce/throttle ile kontrol edilir.
+
+## 32.7. Multipart Upload
+
+- File upload işlemleri için `FormData` kullanılır; `apiClient` bu durumda `Content-Type` header'ını otomatik olarak `multipart/form-data` olarak ayarlar (boundary dahil).
+- Progress tracking: `XMLHttpRequest.upload.onprogress` veya `fetch` + `ReadableStream` ile upload yüzdesi takip edilir ve UI'a yansıtılır.
+- Büyük dosyalar (>10 MB): Chunked upload stratejisi uygulanır — dosya parçalara bölünerek sıralı veya paralel gönderilir, her chunk bağımsız olarak retry edilebilir.
+- Upload cancellation: `AbortController` ile devam eden upload iptal edilebilir.
+- Dosya boyutu ve tip doğrulaması client-side yapılır (backend doğrulamasına ek olarak, UX iyileştirmesi için).
+
+## 32.8. API Versioning
+
+- URL-based versioning tercih edilir: `/v1/users`, `/v2/users`.
+- Versiyon bilgisi `apiClient` konfigürasyonunda merkezi olarak tanımlanır; her çağrı noktasında tekrarlanmaz.
+- Versiyon değişikliği tek bir noktada yapılır ve tüm çağrılara otomatik yansır.
+- Deprecation handling: Backend `X-API-Deprecation` header'ı gönderirse, response interceptor bu durumu yakalar, `console.warn` ile geliştirici uyarısı verir ve Sentry'ye bilgi seviyesinde event gönderir.
+- Birden fazla API versiyonuyla çalışma: Geçiş dönemlerinde `apiClient` birden fazla base URL (v1, v2) destekleyebilir; endpoint bazında versiyon override mümkündür.
+
+## 32.9. Timeout Politikası
+
+| İstek Türü | Timeout | Gerekçe |
+|-----------|---------|---------|
+| Standard GET | 15s | Normal veri çekme işlemleri |
+| Standard POST/PUT | 30s | Yazma işlemleri, backend işleme süresi daha uzun olabilir |
+| File upload | 120s | Büyük dosya transferi, ağ koşullarına bağlı |
+| Health check | 5s | Hızlı bağlantı kontrolü |
+| Long-polling | 60s | Uzun bekleme gerektiren işlemler |
+
+- Timeout aşımında: `AbortError` fırlatılır → kullanıcıya "İstek zaman aşımına uğradı, lütfen tekrar deneyin" mesajı gösterilir.
+- Timeout değerleri `apiClient` konfigürasyonunda merkezi olarak tanımlanır; her çağrı noktasında override edilebilir ama varsayılan değerler yukarıdaki tabloya uygun olmalıdır.
+- Timeout'suz istek **YASAK** — her çağrının bir üst sınırı olmalıdır.
+
+## 32.10. API Client Anti-Pattern Listesi
+
+| # | Anti-pattern | Doğru Yaklaşım |
+|---|-------------|----------------|
+| 1 | Component içinde doğrudan `fetch()` veya `axios()` çağırmak | Tüm çağrılar `apiClient` üzerinden yapılır |
+| 2 | Her dosyada base URL tanımlamak | Base URL merkezi config'den, ortam değişkeninden alınır |
+| 3 | Timeout belirtmeden istek yapmak | Her istek türü için timeout politikası uygulanır |
+| 4 | Error handling'i her çağrı noktasında tekrarlamak | Error normalization interceptor'da yapılır |
+| 5 | Auth token'ı URL query parameter olarak göndermek | Token `Authorization` header'ında gönderilir |
+| 6 | Her isteğe manuel `Authorization` header eklemek | Token injection interceptor'da otomatik yapılır |
+| 7 | Upload progress'i takip etmemek | Kullanıcıya progress göstergesi sağlanır |
+| 8 | AbortController kullanmadan uzun süren istek başlatmak | Her çağrıda cancellation desteği olmalıdır |
+| 9 | API versiyonunu her endpoint'te tekrarlamak | Versiyon merkezi config'den yönetilir |
+| 10 | Request ID oluşturmamak | Debugging ve log korelasyonu için her isteğe `X-Request-ID` eklenir |

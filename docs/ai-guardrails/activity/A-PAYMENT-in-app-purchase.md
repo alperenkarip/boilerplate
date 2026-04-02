@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: zorunlu
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-PAYMENT: In-App Purchase/Subscription Guardrail
@@ -33,9 +33,26 @@ son-güncelleme: 2026-04-01
 6. Error handling: purchase failed, cancelled, deferred durumlarını ele al
 7. Restore purchases akışı implementasyonu zorunlu — kullanıcı cihaz değiştiğinde
 
+## Sandbox Test Checklist
+8. Her ödeme PR'ında aşağıdaki senaryolar sandbox ortamında test edilmeli:
+
+| Test Senaryosu | Apple Sandbox | Google Test | Beklenen Sonuç |
+|---------------|--------------|-------------|---------------|
+| Satın alma | Sandbox account | Internal testing | Başarılı purchase + entitlement |
+| Abonelik yenileme | Hızlandırılmış yenileme | License test | Otomatik yenileme + state güncelleme |
+| İptal | Sandbox'tan iptal | Play Console'dan iptal | Süre sonunda entitlement kaldırma |
+| Geri yükleme | Restore purchases | Restore purchases | Önceki satın almalar geri yüklenir |
+| Ödeme başarısızlığı | Interrupted purchase | Payment declined | Graceful error + retry seçeneği |
+| Upgrade/Downgrade | Plan değiştirme | Plan değiştirme | Proration doğru uygulanır |
+| Refund | Sandbox refund | Test refund | Entitlement kaldırılır |
+
+9. **Apple:** Settings → Sandbox Account ile test ortamı
+10. **Google:** Internal testing track + license test kullanıcıları
+11. **RevenueCat:** Sandbox mode aktif + debug logs ile doğrulama
+
 ## DoD Ek Maddeleri
 - [ ] ADR-016 uyumu sağlanmış
-- [ ] Sandbox test geçmiş
+- [ ] Sandbox test geçmiş (tüm senaryolar: satın alma, yenileme, iptal, geri yükleme, başarısızlık, upgrade/downgrade, refund)
 - [ ] Entitlement kontrolü çift taraflı (client + server)
 - [ ] Restore purchases çalışıyor
 - [ ] Fiyat locale-aware gösteriliyor

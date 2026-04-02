@@ -4,7 +4,7 @@ type: domain
 name: Platform Adaptation (Web ↔ Mobile)
 kaynak-dokümanlar: 26, ADR-001, ADR-002
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-PLT: Platform Adaptation Guardrail
@@ -92,6 +92,69 @@ son-güncelleme: 2026-04-01
 - [ ] iPadOS: Multitasking uyumu test edildi mi?
 - [ ] Web: Responsive, keyboard-first, context menu var mı?
 - [ ] AI özellikleri tüm platformlarda tutarlı mı?
+
+---
+
+## Web Responsive Breakpoint Standardı
+
+Tailwind CSS 4.x breakpoint tanımlarına dayalı responsive layout kuralları:
+
+| Breakpoint | Min-width | Hedef Cihaz | Layout |
+|-----------|-----------|-------------|--------|
+| default | 0px | Mobil (portrait) | Tek sütun, tab bar alt |
+| `sm:` | 640px | Mobil (landscape) | Tek sütun, yatay optimizasyon |
+| `md:` | 768px | Tablet | 2 sütun, sidebar opsiyonel |
+| `lg:` | 1024px | Laptop | Sidebar navigasyon, 2-3 sütun |
+| `xl:` | 1280px | Desktop | Max-width container, geniş sidebar |
+| `2xl:` | 1536px | Geniş ekran | Merkezi container, bol whitespace |
+
+### Layout Kuralları
+- [ZORUNLU] Max container genişliği: `1280px` — 2xl ekranlarda içerik merkezde, yanlar boş
+- [ZORUNLU] Navigasyon: `≤md` breakpoint'te bottom tab bar, `≥lg` breakpoint'te sidebar
+- [YAPILMALI] NativeWind responsive prefix kullan: `sm:`, `md:`, `lg:` — hardcoded media query yazma
+- [YAPILMALI] Kritik aksiyonlar (CTA butonları) her breakpoint'te erişilebilir olmalı
+- [YAPILMAMALI] Sadece desktop veya sadece mobil için tasarlama — tüm breakpoint'ler test edilmeli
+- [YAPILMAMALI] `px` bazlı sabit genişlikler kullanma — responsive utility class tercih et
+
+### Test Gereklilikleri
+- [YAPILMALI] Her breakpoint'te görsel test yap (Chrome DevTools device emulator veya Chromatic)
+- [YAPILMALI] İçerik taşması (overflow) kontrolü — her breakpoint'te metin ve görseller sığmalı
+
+---
+
+## Platform-Specific Feature Detection
+
+`Platform.OS` kontrolü yerine capability-based (yetenek tabanlı) algılama tercih edilmelidir:
+
+### Neden Capability-Based?
+- `Platform.OS === 'ios'` kontrolü cihazın gerçek yeteneğini garanti etmez
+- Simülatörde kamera yok, eski cihazda biometric yok gibi durumlar atlanır
+- Capability-based kontrol daha güvenilir ve geleceğe uyumlu
+
+### Yanlış vs Doğru Yaklaşım
+
+| İhtiyaç | Yanlış (Platform Kontrolü) | Doğru (Capability Kontrolü) |
+|---------|---------------------------|----------------------------|
+| Kamera | `Platform.OS === 'ios'` | `Camera.isAvailableAsync()` |
+| Biometric | `Platform.OS !== 'web'` | `LocalAuthentication.hasHardwareAsync()` |
+| Haptic | `Platform.OS === 'ios'` | `Haptics.isAvailableAsync()` |
+| Konum | `Platform.OS !== 'web'` | `Location.hasServicesEnabledAsync()` |
+| Bildirim | `Platform.OS !== 'web'` | `Notifications.getPermissionsAsync()` |
+
+### Hook Pattern
+```typescript
+// useCapability hook pattern
+const { available, request, error } = useCapability('camera');
+// available: boolean — yetenek mevcut mu
+// request: () => Promise<boolean> — izin iste
+// error: string | null — hata mesajı
+```
+
+### Kurallar
+1. [YAPILMALI] Yeni capability kontrolü eklerken `useCapability` hook pattern'ini kullan
+2. [YAPILMALI] Capability mevcut değilse graceful fallback tanımla — feature'ı tamamen gizleme, alternatif sun
+3. [YAPILMAMALI] `Platform.OS` ile donanım yeteneği varsayma
+4. [YAPILMAMALI] Capability kontrolünü component render'ında yapma — hook veya lazy init kullan
 
 ## Kaynak
 - Platform adaptation → docs/design-system/26-platform-adaptation-rules.md

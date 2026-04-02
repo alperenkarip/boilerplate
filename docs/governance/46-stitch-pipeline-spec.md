@@ -506,3 +506,107 @@ Bu doküman asagidaki kosullar saglandiginda "Accepted" statüsündedir:
 Stitch, boilerplate'in tasarim-kod pipeline'inda merkezi bir arac olarak konumlanir. DESIGN.md uzerinden tasarim kararlarini yapisal olarak aktarir, Stitch MCP ve stitch-to-react skill ile Claude Code entegrasyonu saglar. Ancak, token sistemi acisindan nihai otorite `22-design-tokens-spec.md`'dir. Bu doküman, bu iki kaynak arasindaki iliskiyi, donusum mekanizmasini ve kalite kapilarini tanimlar.
 
 Pipeline'in basarisi, token eslestirme adiminin titizlikle uygulanmasina baglidir. Stitch ciktisi dogrudan kullanilmaz, her zaman boilerplate token katmanlariyla eslestirilir. Eslesmeven token'lar uyari uretir ve 22'ye ekleme sureci baslatilir. Bu disiplin, tasarim tutarliliginin ve token otoritesinin korunmasini saglar.
+
+---
+
+# 10. Figma Plugin Entegrasyonu (2026-04-02 Eki)
+
+Bu bölüm, Figma Dev Mode API üzerinden Stitch pipeline'ına veri akışını ve component/token mapping sürecini tanımlar.
+
+## 10.1. Veri Akışı
+
+```
+Figma Design File
+    │
+    ▼
+Figma Dev Mode API
+    │
+    ▼
+Stitch (Token + Component çıkarımı)
+    │
+    ├── Token mapping (Figma style → semantic token)
+    │   └── 22-design-tokens-spec.md ile eşleştirme
+    │
+    └── Component mapping (Figma component → React component)
+        └── packages/ui/ ile eşleştirme
+    │
+    ▼
+DESIGN.md güncelleme
+    │
+    ▼
+PR oluşturma → Review → Merge
+```
+
+## 10.2. Token Mapping
+
+| Figma Kaynak | Stitch Çıktısı | Boilerplate Token |
+|-------------|---------------|-------------------|
+| Color Style | CSS custom property | `color.{semantic}.{variant}` |
+| Text Style | Font shorthand | `typography.{role}.{size}` |
+| Effect Style | Box shadow / blur | `shadow.{elevation}` |
+| Spacing (Auto Layout) | Gap / padding değeri | `spacing.{scale}` |
+| Corner Radius | Border radius | `radius.{size}` |
+
+- Eşleşmeyen Figma style → uyarı üretilir, `22-design-tokens-spec.md`'ye ekleme talebi açılır.
+- Eşleşme oranı %90'ın altındaysa, tasarım review gerekir.
+
+## 10.3. Component Mapping
+
+| Figma Component | React Component | Eşleşme Yöntemi |
+|----------------|----------------|-----------------|
+| Button (Figma) | `packages/ui/Button` | İsim + variant eşleştirme |
+| Input (Figma) | `packages/ui/Input` | İsim + prop eşleştirme |
+| Card (Figma) | `packages/ui/Card` | İsim eşleştirme |
+| Yeni component | Scaffold önerisi | Governance kuralları (23) ile |
+
+## 10.4. Değişiklik Algılama Akışı
+
+1. Figma dosyasında değişiklik yapılır.
+2. Stitch, Figma Dev Mode API üzerinden değişikliği algılar (webhook veya polling).
+3. Değişiklik analiz edilir: token değişikliği mi, component değişikliği mi, her ikisi mi.
+4. DESIGN.md güncellenir.
+5. Otomatik PR açılır; PR açıklamasında değişiklik özeti ve etkilenen component'ler listelenir.
+6. Review ve merge süreci başlar.
+
+---
+
+# 11. Design-to-Code Diff Raporu (2026-04-02 Eki)
+
+Bu bölüm, Stitch çıktısı ile mevcut implementasyon arasındaki uyumsuzlukların tespiti ve raporlanması mekanizmasını tanımlar.
+
+## 11.1. Amaç
+
+Figma'daki tasarım ile kod tabanındaki implementasyon arasındaki farkları görünür kılmak. Bu farklar:
+- Token değeri uyumsuzluğu (Figma'da farklı renk, kodda farklı token)
+- Component yapısı farkı (Figma'da ek variant, kodda eksik)
+- Spacing/sizing tutarsızlığı
+- Yeni eklenen ama implement edilmemiş component'ler
+
+## 11.2. Rapor Mekanizması
+
+- Stitch pipeline her çalıştığında, mevcut implementasyon ile yeni Stitch çıktısı karşılaştırılır.
+- Farklar PR comment olarak otomatik eklenir.
+- Rapor formatı:
+
+```markdown
+### Design-to-Code Diff Raporu
+
+| Tür | Öğe | Figma Değeri | Kod Değeri | Durum |
+|-----|-----|-------------|-----------|-------|
+| Token | color.primary.500 | #2563EB | #3B82F6 | ⚠️ Uyumsuz |
+| Component | Button.outline | Mevcut | Eksik | ❌ Eksik |
+| Spacing | card.padding | 24px | 20px | ⚠️ Uyumsuz |
+| Token | typography.body.lg | 18/28 | 18/28 | ✅ Eşleşiyor |
+
+**Token Eşleşme Oranı:** %87 (hedef: %90)
+**Sonuç:** Tasarım review gerekli
+```
+
+## 11.3. Eşleşme Eşikleri
+
+| Oran | Sonuç | Aksiyon |
+|------|-------|---------|
+| ≥%95 | Mükemmel | Otomatik merge için uygun |
+| %90-95 | Kabul edilebilir | PR review yeterli |
+| %80-90 | Tasarım review gerekli | Tasarımcı + geliştirici review |
+| <%80 | Blokleyici | Tasarım-kod senkronizasyonu toplantısı gerekli |

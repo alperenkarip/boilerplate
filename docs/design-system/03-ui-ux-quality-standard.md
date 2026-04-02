@@ -1036,7 +1036,159 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 27. Kısa Sonuç
+# 27. Skeleton Screen Standardı
+
+Loading state için shimmer/skeleton pattern'i, kullanıcının bekleme süresinde içerik yapısını önceden algılamasını sağlar. Spinner'ın aksine skeleton, gelen verinin yerleşim düzenini önceden gösterir ve algılanan bekleme süresini kısaltır.
+
+## 27.1. Skeleton Varyantları
+
+| Ekran Tipi | Skeleton Pattern | Animasyon |
+|-----------|-----------------|-----------|
+| Liste (FlatList) | Tekrarlayan satır placeholder (3-5 satır) | Shimmer (soldan sağa) |
+| Detay ekranı | Başlık + paragraf blokları + resim placeholder | Shimmer (soldan sağa) |
+| Form | Input field placeholder'ları (label + input kutusu) | Pulse (opacity 0.3 ↔ 0.7) |
+| Kart grid | Kart boyutunda dikdörtgen placeholder | Shimmer (soldan sağa) |
+| Profil | Avatar daire + metin satırları (2-3 satır) | Shimmer (soldan sağa) |
+
+## 27.2. Boyut ve Layout Shift Önleme
+
+Skeleton placeholder'larının boyutları gerçek içerikle eşleşmelidir. Bu kural, skeleton'dan gerçek içeriğe geçişte layout shift (CLS) oluşmasını önler.
+
+- Skeleton yüksekliği, gerçek component yüksekliğiyle aynı olmalıdır.
+- Liste skeleton'unda satır sayısı, beklenen ortalama liste boyutuna yakın tutulmalıdır (minimum 3, maksimum 5 satır).
+- Resim placeholder'ı, gerçek resmin aspect ratio'sunu korumalıdır.
+
+## 27.3. Animasyon Kuralları
+
+- **Shimmer döngü süresi:** 1.5-2 saniye (bir tam soldan sağa geçiş).
+- **Pulse animasyon süresi:** 1.5 saniye (opacity 0.3 → 0.7 → 0.3 döngüsü).
+- **Reduced motion:** `prefers-reduced-motion` aktifse animasyon durdurulur, statik placeholder gösterilir.
+- Animasyon Reanimated 3 worklet ile UI thread üzerinde çalıştırılmalıdır (JS thread bloke etmez).
+
+## 27.4. Renk Token'ları
+
+Skeleton renkleri semantic token üzerinden tanımlanır, hardcoded renk kullanılmaz:
+
+- `color-skeleton-base`: Skeleton arka plan rengi (light: `neutral-100`, dark: `neutral-800`)
+- `color-skeleton-highlight`: Shimmer parlama rengi (light: `neutral-200`, dark: `neutral-700`)
+
+## 27.5. Erişilebilirlik
+
+- Her skeleton container'ına `accessibilityLabel="Yükleniyor"` eklenir.
+- `accessibilityRole="progressbar"` atanır.
+- Screen reader kullanıcıları için skeleton sayısı değil, "İçerik yükleniyor" anonsı yeterlidir.
+
+## 27.6. Skeleton → Gerçek İçerik Geçişi
+
+- Veri geldiğinde skeleton fade-out (200ms, `easing-exit`) ile kaybolur.
+- Gerçek içerik fade-in (200ms, `easing-enter`) ile görünür.
+- Bu geçiş animasyonu layout shift'e neden olmamalıdır; skeleton ve gerçek içerik aynı boyutlarda olmalıdır.
+
+---
+
+# 28. Micro-Interaction Kataloğu
+
+Temel etkileşimlerin standart animasyon tanımları aşağıdaki tabloda belirlenmiştir. Tüm micro-interaction'lar Reanimated 3 worklet bazlı çalışır ve 60fps performans garantisi sağlar.
+
+## 28.1. Standart Etkileşim Tablosu
+
+| Etkileşim | Animasyon | Süre | Eğri | Platform Farkı |
+|-----------|----------|------|------|---------------|
+| Buton basımı | Scale down (0.96) + opacity (0.8) | 100ms | ease-out | Aynı |
+| Pull-to-refresh | Native spring animation | Platform default | spring | iOS: UIRefreshControl, Android: SwipeRefreshLayout |
+| Swipe-to-delete | Satır sola kayar, kırmızı arka plan açığa çıkar | 200ms | ease-in-out | iOS: native trailing swipe, Android: custom Reanimated |
+| Tab geçişi | Cross-fade (opacity 0→1 / 1→0) | 150ms | ease | Aynı |
+| Modal açılış | Bottom-to-top slide + backdrop fade (opacity 0→0.5) | 300ms | spring(damping: 20) | iOS: pageSheet native, Android: custom slide |
+| Toast bildirimi | Top slide-in + auto-dismiss | in: 200ms, out: 300ms, görünür kalma: 3s | ease-out | Aynı |
+| Like/unlike | Scale bounce (1.0→1.3→1.0) + renk değişimi | 300ms | spring(damping: 12) | Aynı |
+| Sayfa geçişi | Push (sağdan sola slide) | 350ms | Platform default | iOS: native stack push, Android: Reanimated slide |
+| Accordion açılış | Height expand + fade-in | 250ms | easing-standard | Aynı |
+| Checkbox toggle | Scale bounce (0.9→1.1→1.0) + renk geçişi | 200ms | spring | Aynı |
+
+## 28.2. Implementasyon Kuralları
+
+- Tüm micro-interaction'lar `react-native-reanimated` v3 worklet API'si ile implement edilir.
+- Animasyon shared value üzerinden yönetilir, `useAnimatedStyle` ile component'e bağlanır.
+- JS thread'e düşen animasyon kabul edilmez; tüm animasyonlar UI thread'de çalışmalıdır.
+- `useReducedMotion()` hook'u ile reduced motion kontrolü yapılır; aktifse animasyon atlanır veya instant geçiş uygulanır.
+
+## 28.3. Token Bağlantısı
+
+Micro-interaction süreleri `22-design-tokens-spec.md`'deki motion token'larına bağlanmalıdır:
+- Buton basımı → `duration-instant` (100ms)
+- Tab geçişi → `duration-fast` (150ms)
+- Modal açılış → `duration-slow` (350ms)
+- Accordion → `duration-standard` (250ms)
+
+---
+
+# 29. In-App Feedback ve Store Rating Prompt
+
+Bu bölüm, uygulama içi kullanıcı geri bildirimi toplama ve App Store / Google Play Store'da rating isteme stratejisini tanımlar.
+
+## 29.1. Store Rating Prompt
+
+- **Araç:** `expo-store-review` (StoreKit iOS / Play In-App Review Android)
+- Native rating dialog kullanılır — custom star-rating dialog iOS'ta App Store policy ihlali oluşturur (Apple App Store Review Guidelines 5.6.1)
+- Prompt kullanıcıya yılda max 3 kez gösterilebilir (Apple kısıtlaması — iOS bu limiti otomatik olarak enforce eder)
+- Android'de Google Play In-App Review widget'ı gösterilir
+
+## 29.2. Rating Prompt Zamanlama Stratejisi
+
+| Tetikleyici | Minimum Koşul | Bekleme Süresi |
+|------------|--------------|---------------|
+| Başarılı görev tamamlama | 3+ başarılı oturum | İlk 3 günden sonra |
+| Başarılı ödeme | 1+ ödeme | İlk ödeme anında değil, sonraki oturumda |
+| X. oturum | 10+ oturum | Uygulama 10 kez açıldıktan sonra |
+| Feature keşfi | 3+ farklı feature kullanımı | 1 hafta sonra |
+
+**Negatif anlardan KAÇIN:**
+
+- Hata/crash sonrası rating isteme
+- İlk açılışta rating isteme
+- Ödeme ekranında/akışında rating isteme
+- Form doldurma sırasında rating isteme
+- Kullanıcı bekleme yaşarken (loading) rating isteme
+
+## 29.3. Rating Analytics Event'leri
+
+| Event | Açıklama |
+|-------|----------|
+| `rating_prompt_shown` | Prompt gösterildi |
+| `rating_prompt_completed` | Kullanıcı rating verdi (sonucu bilinmez — Apple/Google API sonucu döndürmez) |
+| `rating_prompt_dismissed` | Kullanıcı prompt'u kapattı |
+
+## 29.4. In-App Feedback Form
+
+Settings veya Help ekranından erişilebilen feedback formu:
+
+- **Kategori seçimi:** Bug (hata), Öneri (feature request), Soru (destek), Diğer
+- **Mesaj alanı:** Min 20 karakter, max 2000 karakter
+- **Ekran görüntüsü ekleme (opsiyonel):** `expo-image-picker` ile galeri/kamera
+- **Email alanı (opsiyonel):** Yanıt almak isteyen kullanıcılar için
+- **Otomatik eklenen bilgiler:** Cihaz modeli, OS, app version, build number (PII değil)
+- **Submit:** Backend API'ye veya email'e gönderilir (derived project kararı)
+
+## 29.5. Bug Report (Shake-to-Report)
+
+- Cihaz sallama (shake gesture) ile hızlı bug raporu
+- Otomatik ekran görüntüsü alınır
+- Cihaz bilgisi otomatik eklenir
+- Son Sentry event ID'si eklenir (destek ekibi korelasyon yapabilir)
+- Uygulama: `DeviceEventEmitter` + Accelerometer veya `expo-sensors`
+- Aktivasyon: Development ve staging build'lerde varsayılan açık, production'da Settings'ten açılabilir
+
+## 29.6. Anti-pattern'ler
+
+- Her oturumda rating istemek (kullanıcı rahatsızlığı)
+- Custom yıldız rating dialog'u kullanmak (iOS App Store policy ihlali — Apple red)
+- Hata anında veya crash sonrası rating istemek
+- Rating sonucunu backend'e kaydetmeye çalışmak (API sonucu döndürmez)
+- Feedback form'da zorunlu email alanı (kullanıcı kaçırır)
+
+---
+
+# 30. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 
@@ -1048,3 +1200,80 @@ Bu nedenle bundan sonraki hiçbir doküman:
 - accessibility’yi ikincil alan gibi ele alamaz,
 - platform ergonomisini görmezden gelemez,
 - “çalışıyor” olmasını kalite için yeterli sayamaz.
+
+---
+
+# 31. Onboarding ve First-Time User Experience (FTUE)
+
+Bu bölüm, uygulamayı ilk kez kullanan kullanıcının karşılaştığı deneyimi, feature discovery mekanizmalarını ve onboarding stratejisini tanımlar.
+
+## 31.1. Temel İlke
+
+Onboarding, uygulamanın değer önerisini en kısa sürede göstermek ve kullanıcıyı ilk anlamlı aksiyona yönlendirmek için vardır. Onboarding sırasında kullanıcı “bu uygulama ne işe yarıyor?” sorusunun cevabını almış ve en az bir değerli aksiyon gerçekleştirmiş olmalıdır.
+
+**Anti-pattern:** Kullanıcıyı 5+ ekranlık carousel'dan geçirip sonra boş bir dashboard'a bırakmak.
+
+## 31.2. Onboarding Yaklaşımları
+
+### 31.2.1. Progressive Disclosure (Önerilen Default)
+
+Tüm bilgiyi bir anda göstermek yerine, kullanıcının ihtiyaç duyduğu anda ve bağlamında göster:
+
+- İlk açılışta yalnızca kritik bilgi (değer önerisi + ilk aksiyon)
+- İleri özellikler, kullanıcı o özelliğe ilk kez ulaştığında açıklanır
+- Her adımda kullanıcıya yalnızca bir şey öğretilir
+
+### 31.2.2. Carousel / Walkthrough (Koşullu Kullanım)
+
+Statik tanıtım ekranları yalnızca aşağıdaki koşullarda kabul edilir:
+
+- **Maksimum 3 ekran** (3'ten fazla = kullanıcı sıkılır ve skip eder)
+- Her ekranda tek bir net mesaj
+- Son ekranda actionable CTA (hesap oluştur, ilk adımı at)
+- **Skip butonu her zaman görünür** — kullanıcıyı carousel'dan çıkamaz hale getirmek yasaktır
+
+### 31.2.3. Coachmark / Tooltip Rehberlik
+
+Uygulama içi bağlamsal rehberlik:
+
+- **Spotlight:** Hedef UI elemanını vurgular, arka planı karartır
+- **Tooltip:** Kısa açıklama metni ile özelliği tanıtır
+- **Sıralı tour:** 3-5 adımlık bağlamsal tur (daha fazla kullanıcıyı bunaltır)
+- **Dismiss:** Kullanıcı herhangi bir anda turu kapatabilir
+- **Persistence:** Kapatılan tour bir daha gösterilmez (MMKV'de flag saklanır — ADR-019)
+
+## 31.3. Feature Discovery Mekanizması
+
+- **What's New ekranı:** Major update sonrası tek seferlik gösterilir
+- **Badge/indicator:** Yeni menü öğeleri veya butonlarda “Yeni” badge'i
+- **Contextual tip:** Özelliğin kullanılacağı anda kısa bir açıklama balonu
+- **Kural:** Aynı özellik için 2'den fazla feature discovery gösterimi yapılmaz
+
+## 31.4. Skip / Dismiss Politikası
+
+- Onboarding her zaman skip edilebilir olmalıdır
+- Skip eden kullanıcı, daha sonra Settings > Yardım > “Turu tekrar gör” ile erişebilir
+- Skip durumu MMKV'de saklanır; kullanıcı değişikliğinde sıfırlanır (ADR-019 cleanup policy)
+
+## 31.5. Onboarding State Persistence
+
+- Onboarding tamamlanma flag'i: `onboardingCompleted: boolean` → MMKV plain instance (ADR-019)
+- Feature discovery flag'leri: `featureDiscovery.{featureId}: boolean` → MMKV plain instance
+- Kullanıcı değişikliğinde veya logout'ta bu flag'ler temizlenir
+
+## 31.6. Ölçüm ve Metrikler
+
+| Metrik | Hedef | Ölçüm |
+|--------|-------|-------|
+| Onboarding completion rate | > %70 | Analytics event: `onboarding_completed` |
+| Onboarding skip rate | < %30 | Analytics event: `onboarding_skipped` |
+| Time to first action | < 2 dk | İlk anlamlı aksiyon event'i |
+| Feature discovery engagement | > %50 | Coachmark/tooltip tıklama oranı |
+
+## 31.7. Anti-pattern'ler
+
+- 5+ ekranlık onboarding carousel (kullanıcılar skip eder)
+- Skip butonu olmayan onboarding (kullanıcı mahsur kalır)
+- Onboarding tamamlanmadan uygulamayı kullanmaya izin vermemek
+- Aynı coachmark'ı her uygulama açılışında tekrar göstermek
+- Login/register'ı onboarding'in ilk adımı yapmak (değer görmeden kayıt istemek)

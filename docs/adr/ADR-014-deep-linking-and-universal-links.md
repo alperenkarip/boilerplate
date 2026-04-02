@@ -324,3 +324,129 @@ Bu ADR yeterli kabul edilir eğer:
 9. Alternatifler ve ret gerekçeleri dürüstçe sunulmuşsa
 10. Riskler ve risk azaltma önlemleri somutsa
 11. Bu karar, implementation ekibine deep link altyapısını kuracak netlikte baseline sağlıyorsa
+
+---
+
+# 14. Deep Link Debug Tooling Cheat Sheet
+
+Development ortamında deep link test komutları ve kullanım rehberi.
+
+## 14.1. iOS Simulator
+
+```bash
+# Custom URI scheme test
+xcrun simctl openurl booted "myapp://profile/123"
+
+# Universal Links test
+xcrun simctl openurl booted "https://example.com/profile/123"
+
+# Expo development client
+npx uri-scheme open "myapp://profile/123" --ios
+```
+
+- `booted` parametresi halihazırda çalışan simulator'ı hedefler
+- Universal Links test için `apple-app-site-association` dosyasının doğru configure edilmiş olması gerekir
+- Simulator'da Universal Links çalışmazsa: Settings → Developer → Associated Domains Development bölümünü kontrol edin
+
+## 14.2. Android Emulator
+
+```bash
+# Custom URI scheme test
+adb shell am start -a android.intent.action.VIEW -d "myapp://profile/123"
+
+# App Links test (verified domain)
+adb shell am start -a android.intent.action.VIEW -d "https://example.com/profile/123"
+
+# Expo development client
+npx uri-scheme open "myapp://profile/123" --android
+```
+
+- `adb shell am start` ile intent gönderilir; uygulama çalışmıyorsa başlatılır
+- App Links test için `assetlinks.json` dosyasının doğru sunulması gerekir
+- Doğrulama durumu kontrolü: `adb shell pm get-app-links <package-name>`
+
+## 14.3. Expo CLI
+
+```bash
+# iOS ve Android için platform-agnostic test
+npx uri-scheme open "myapp://profile/123" --ios
+npx uri-scheme open "myapp://profile/123" --android
+
+# Development server üzerinden test
+npx expo start --dev-client
+# Ardından terminal'de URL yapıştırılarak test edilir
+```
+
+## 14.4. Link Doğrulama Araçları
+
+```bash
+# Apple AASA (Apple App Site Association) doğrulama
+curl -v "https://example.com/.well-known/apple-app-site-association"
+# JSON formatında ve doğru team ID ile app ID içermeli
+
+# Google Assetlinks doğrulama
+curl -v "https://example.com/.well-known/assetlinks.json"
+# JSON formatında ve doğru package name + SHA-256 fingerprint içermeli
+
+# Google Digital Asset Links tester
+# https://developers.google.com/digital-asset-links/tools/generator
+```
+
+## 14.5. Debug Sıralaması
+
+Deep link çalışmadığında aşağıdaki sırayla kontrol edilir:
+1. URL format doğru mu? (scheme, host, path)
+2. Uygulama doğru scheme/domain için register edilmiş mi? (app.json/app.config.js)
+3. AASA/assetlinks.json dosyaları sunucuda mevcut ve doğru mu?
+4. React Navigation linking config'de path tanımlı mı?
+5. Auth gate deep link'i engelliyor mu?
+6. Development build mi yoksa Expo Go mu? (Expo Go'da custom scheme çalışmayabilir)
+
+---
+
+# 15. Deferred Deep Link Stratejisi
+
+Uygulama yüklü değilken gelen deep link'lerin yükleme sonrası hedef ekrana yönlendirmesi.
+
+## 15.1. Senaryo
+
+1. Kullanıcı bir link'e tıklar (ör. `https://example.com/product/456`)
+2. Uygulama yüklü değildir → App Store / Play Store'a yönlendirilir
+3. Kullanıcı uygulamayı yükler ve ilk kez açar
+4. Uygulama açıldığında orijinal deep link hedefine (`/product/456`) götürülür
+
+## 15.2. Implementasyon Seçenekleri
+
+### Seçenek 1: Backend Referral Tracking (Önerilen)
+
+- Web'de tıklanan link backend'e referral olarak kaydedilir (ör. `?ref=abc123` parametresi ile)
+- Uygulama yüklendikten sonra ilk açılışta kullanıcı auth sonrası backend'den referral bilgisi alınır
+- Backend referral'ı deep link hedefine çevirir ve client'a döner
+- **Avantaj:** Güvenli, privacy-friendly, platform bağımsız
+- **Dezavantaj:** Backend geliştirme gerektirir
+
+### Seçenek 2: Clipboard-Based (Privacy Concern)
+
+- Web sayfası tıklanan URL'yi clipboard'a kopyalar
+- Uygulama ilk açılışta clipboard'dan URL kontrol eder
+- **iOS 16+:** Clipboard erişiminde kullanıcıya izin sorar (UIPasteboard privacy prompt)
+- **Avantaj:** Backend gerektirmez
+- **Dezavantaj:** Kullanıcı deneyimi zayıf, privacy concern, iOS clipboard permission prompt
+
+### Seçenek 3: Third-Party Attribution Service
+
+- Branch.io, AppsFlyer gibi attribution servisleri deferred deep link desteği sunar
+- **Avantaj:** Kapsamlı attribution, cross-platform
+- **Dezavantaj:** Vendor lock-in, maliyet, SDK ekleme yükü, privacy concern
+- **Not:** Firebase Dynamic Links deprecated edilmiştir (Ağustos 2025 sonrası yeni link oluşturulamaz)
+
+## 15.3. Boilerplate Pozisyonu
+
+Deferred deep link **derived project kararıdır**. Bu boilerplate temel deep link altyapısını sağlar (URI scheme + verified links + routing). Deferred deep link ihtiyacı derived project'te kesinleştiğinde yukarıdaki seçeneklerden biri uygulanır.
+
+## 15.4. Fallback Davranışı
+
+Deferred deep link çözülemezse (referral bulunamazsa, timeout yaşanırsa):
+- Kullanıcı **onboarding flow'a** veya **home screen'e** yönlendirilir
+- Error gösterilmez; kullanıcı normal akıştan devam eder
+- Analytics'e `deferred_deep_link_fallback` event'i loglanır

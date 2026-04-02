@@ -225,6 +225,47 @@ Bu ADR’nin ana hükmü şudur:
 # 13. Onay Kriterleri
 
 <bu ADR hangi koşullarda yeterli kabul edilir?>
+
+---
+
+# 14. Migration Impact
+
+- **Mevcut Kod Etkisi:** [Yok / Düşük / Orta / Yüksek]
+- **Tahmini Efor:** [Saat / Gün / Hafta bazlı]
+- **Breaking Change:** [Evet / Hayır]
+- **Migration Adımları:** (varsa)
+  1. Etkilenen dosya ve modüllerin tespiti
+  2. Mevcut implementasyonun yeni karara göre refactor edilmesi
+  3. Test suite'in güncellenmesi ve geçirilmesi
+  4. CI pipeline'ın yeni karara uyumlu hale getirilmesi
+  5. Doküman referanslarının güncellenmesi
+- **Rollback Planı:** (karar geri alınırsa ne yapılır)
+  - Hangi dosyalar revert edilir?
+  - Dependency değişiklikleri nasıl geri alınır?
+  - Geçiş sırasında üretilen veri/artifact nasıl temizlenir?
+  - Superseded ADR ile geçiş nasıl belgelenir?
+
+Bu bölüm her ADR'de zorunludur. Migration impact değerlendirmesi yapılmadan ADR kabul edilemez.
+
+---
+
+# 15. Yeniden Değerlendirme (Revalidation)
+
+- **Revalidation Tarihi:** [YYYY-MM-DD veya "Koşullu"]
+- **Tetikleyici Koşul:** [ör. "NativeWind 5.x stable olunca", "SDK 56 release olunca", "Major dependency upgrade yapıldığında"]
+- **Değerlendirme Sorumlusu:** [Rol veya kişi — ör. "Mobile Lead", "Architecture Owner"]
+- **Değerlendirme Kapsamı:**
+  - Seçilen aracın ekosistem sağlığı (npm downloads trendi, GitHub activity, security advisories)
+  - Alternatiflerin güncel durumu (reddedilen seçeneklerde kayda değer gelişme var mı?)
+  - Kararın ürettiği teknik borç veya friction seviyesi
+  - Compatibility matrix (38) ile uyum durumu
+- **Sonuç Seçenekleri:**
+  - ✅ Karar geçerli, değişiklik gereksiz
+  - ⚠️ Karar geçerli ama addendum gerekiyor
+  - 🔄 Karar yeniden değerlendirilmeli, yeni ADR açılmalı
+  - ❌ Karar superseded, yeni ADR ile değiştirilmeli
+
+Bu bölüm her ADR'de zorunludur. Revalidation tanımlanmadan ADR "süresiz geçerli" sayılmaz; periyodik veya koşullu gözden geçirme planı olmalıdır.
 ```
 
 ---

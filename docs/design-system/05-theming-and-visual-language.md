@@ -1007,3 +1007,112 @@ Kullanıcı farklı cihazlarda aynı tema tercihini görmek isteyebilir. Bu duru
 ### 29.7.2. Yeni renk ekleme kuralı
 
 Sisteme yeni bir renk eklenirken her iki tema (light ve dark) için değer tanımlanması zorunludur. Tek tema için tanımlanan renk, diğer temada beklenmeyen görsel sonuçlar doğurur. Bu kural CI lint kuralı olarak da enforce edilmelidir.
+
+---
+
+# 30. High Contrast Mode Desteği
+
+Erişilebilirlik için yüksek kontrast tema varyantları sağlanır. Bu bölüm, görme güçlüğü yaşayan kullanıcılar için ek tema katmanını tanımlar.
+
+## 30.1. Ek Tema Varyantları
+
+Standart `light` ve `dark` temalarına ek olarak iki yüksek kontrast tema varyantı tanımlanır:
+
+- `light-high-contrast`: Açık tema üzerine yüksek kontrast override'ları
+- `dark-high-contrast`: Koyu tema üzerine yüksek kontrast override'ları
+
+## 30.2. Token Override Kuralları
+
+Yüksek kontrast temalarında aşağıdaki token override'ları uygulanır:
+
+| Alan | Normal Tema | High Contrast Tema |
+|------|-----------|-------------------|
+| Metin kontrast oranı | Minimum 4.5:1 (WCAG AA) | Minimum 7:1 (WCAG AAA) |
+| Border kalınlığı | 1px | 2px, solid, yüksek kontrast renk |
+| Focus indicator | 2px outline | 3px outline, yüksek kontrast renk, offset 2px |
+| İkon çizgi kalınlığı | Varsayılan stroke-width | Artırılmış stroke-width (+0.5px) |
+| Disabled state opacity | 0.38 | 0.5 (daha görünür disabled state) |
+| Surface ayrımı | Subtle ton farkı | Belirgin border + ton farkı |
+
+## 30.3. Otomatik Tema Geçişi
+
+OS düzeyindeki erişilebilirlik ayarları algılanarak otomatik high contrast tema geçişi sağlanır:
+
+- **iOS:** `UIAccessibility.isReduceTransparencyEnabled` ve `UIAccessibility.isDarkerSystemColorsEnabled` kontrol edilir. `expo-constants` veya custom native modül ile okunur.
+- **Android:** `Settings.Secure.ACCESSIBILITY_HIGH_TEXT_CONTRAST_ENABLED` flag'i kontrol edilir. `AccessibilityInfo` API'si veya custom native modül ile okunur.
+- **Web:** `prefers-contrast: more` CSS media query ile algılanır. `window.matchMedia('(prefers-contrast: more)')` ile JavaScript'ten okunur.
+
+## 30.4. Token Seti Yapısı
+
+High contrast token'ları ayrı bir token dosyasında tanımlanır ve tema switching mekanizması ile yüklenir:
+
+```
+packages/design-tokens/
+├── colors/
+│   ├── light.ts              # Standart açık tema
+│   ├── dark.ts               # Standart koyu tema
+│   ├── light-high-contrast.ts # Yüksek kontrast açık tema
+│   └── dark-high-contrast.ts  # Yüksek kontrast koyu tema
+```
+
+High contrast token dosyası, standart tema token'larını extend eder ve yalnızca override edilen değerleri içerir. Tüm token'ları yeniden tanımlamak gerekmez.
+
+## 30.5. Test ve Doğrulama
+
+- Tüm high-contrast token'lar Storybook'ta ayrı story olarak görselleştirilir.
+- Kontrast oranları axe-core ile otomatik kontrol edilir (CI'da WCAG AAA seviyesinde).
+- High contrast temada tüm metin, ikon ve UI bileşenlerinin okunabilirliği manuel test ile doğrulanır.
+
+---
+
+# 31. Branded Theme Türetme Rehberi
+
+Derived project'lerin kendi marka kimliğini token sistemine entegre etme adımları bu bölümde tanımlanır. Boilerplate'in tema sistemi, türetilen projelerin marka renklerini, tipografisini ve görsel dilini sistematik şekilde override etmesine olanak tanır.
+
+## 31.1. Renk Paleti Tanımlama
+
+1. **Marka renkleri belirlenir:** Primary, secondary ve accent renkleri marka kimliğinden alınır.
+2. **Shade skalası oluşturulur:** Her marka rengi için 50-900 arasında 10 kademeli shade skalası üretilir.
+   - Tint algoritması: Ana renk → beyaza doğru kademeli açılma (50-400)
+   - Shade algoritması: Ana renk → siyaha doğru kademeli koyulaşma (600-900)
+   - 500 değeri ana marka rengini temsil eder
+3. **Semantic mapping yapılır:**
+   - `color-primary` → brand primary (500)
+   - `color-primary-light` → brand primary (100)
+   - `color-primary-dark` → brand primary (700)
+   - `color-accent` → brand accent (500)
+4. **Dark mode karşılıkları tanımlanır:** Her semantic mapping hem light hem dark tema için ayrı değer alır.
+
+## 31.2. Typography Özelleştirme
+
+1. **Marka fontu yüklenir:**
+   - Mobile: `expo-font` ile async font loading
+   - Web: `@fontsource` paketi veya Google Fonts CDN
+2. **Font family token'ları override edilir:**
+   - `font-family-heading`: Marka heading fontu
+   - `font-family-body`: Marka body fontu
+   - `font-family-mono`: Varsayılan monospace korunabilir
+3. **Font weight mapping:** Marka fontunun mevcut weight'leri sisteme eşlenir. Eksik weight varsa en yakın mevcut weight kullanılır.
+4. **Fallback font stack:** Marka fontu yüklenemezse system font stack kullanılır (FOUT/FOIT önleme).
+
+## 31.3. Spacing ve Radius Özelleştirme
+
+- Spacing scale genelde boilerplate default'ları korunur; marka dilinde belirgin fark yoksa override önerilmez.
+- Marka dili "yumuşak/yuvarlak" ise: `radius-default` ve `radius-large` token'ları artırılır.
+- Marka dili "keskin/minimal" ise: Radius değerleri düşürülür veya sıfırlanır.
+- Spacing ve radius override'ları `packages/design-tokens/overrides/brand.ts` dosyasında tanımlanır.
+
+## 31.4. Logo ve Asset Değişiklikleri
+
+- Splash screen: `assets/splash.png` ve `app.json` splash konfigürasyonu güncellenir.
+- App icon: `assets/icon.png` (1024x1024) ve platform-specific varyantları değiştirilir.
+- Tab bar icon'ları: Mevcut icon naming convention korunur, asset dosyaları değiştirilir.
+- Adaptive icon (Android): `assets/adaptive-icon.png` foreground ve background ayrı sağlanır.
+
+## 31.5. Doğrulama Adımları
+
+1. Tüm override edilen renk token'ları kontrast checker'dan geçirilir (minimum 4.5:1 metin, 3:1 UI).
+2. Dark mode'da branded renklerin okunabilirliği hem açık hem koyu arka planlarda test edilir.
+3. High contrast temada branded renklerin WCAG AAA (7:1) uyumluluğu doğrulanır.
+4. Typography değişikliklerinin tüm breakpoint'lerde (compact, medium, expanded) layout'u bozmadığı kontrol edilir.
+5. Storybook'ta branded tema ile tüm component'ler görselleştirilir ve visual regression testi çalıştırılır.

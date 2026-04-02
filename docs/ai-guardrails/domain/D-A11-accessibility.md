@@ -4,7 +4,7 @@ type: domain
 name: Accessibility (Erişilebilirlik)
 kaynak-dokümanlar: 12
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-A11: Accessibility Guardrail
@@ -69,6 +69,32 @@ son-güncelleme: 2026-04-01
 33. [YAPILMALI] Reduce Transparency ayarına uyum sağla
 34. [YAPILMALI] Bold Text ayarına uyum sağla
 
+### Focus Management Kuralları (Detay)
+35. [ZORUNLU] Modal/dialog açılışında focus ilk interactive elemente taşınmalı
+36. [ZORUNLU] Modal/dialog kapanışında focus tetikleyen (trigger) elemente geri dönmeli
+37. [YAPILMALI] Sayfa geçişinde focus heading veya ilk anlamlı content'e taşınmalı
+38. [YAPILMALI] Form validation hatası sonrası focus ilk hatalı field'a taşınmalı
+39. [YAPILMALI] Toast/snackbar bildirimleri `accessibilityLiveRegion="polite"` (mobile) / `role="status"` (web) ile duyurulmalı
+40. [YAPILMALI] Tab navigation mantıksal sırayı izlemeli — görsel sıra ile DOM sırası uyumlu olmalı
+41. [YAPILMAMALI] Focus'u programatik olarak beklenmedik yere taşıma — kullanıcı beklentisine uy
+
+### accessibilityRole Zorunluluğu
+42. [ZORUNLU] Tüm interactive elementlerde accessibilityRole tanımlanmalı:
+
+| Element Türü | accessibilityRole | Açıklama |
+|---|---|---|
+| Tıklanabilir buton | `button` | Aksiyon tetikleyen öğeler |
+| Navigasyon linki | `link` | Başka bir sayfaya/URL'ye yönlendiren |
+| Onay kutusu | `checkbox` | Çoklu seçim |
+| Açma/kapama | `switch` | İki durumlu toggle |
+| Arama alanı | `search` | Arama input'u |
+| Sekme | `tab` | Tab navigation öğesi |
+| Başlık | `header` | Bölüm başlıkları |
+| Görsel | `image` | Anlamlı görseller (dekoratif değil) |
+
+43. [ZORUNLU] Dekoratif öğeler (arka plan görseli, ayırıcı çizgi, süsleme) `accessibilityElementsHidden={true}` (mobile) / `aria-hidden="true"` (web) ile gizlenmeli
+44. [YAPILMAMALI] Interactive element'te accessibilityRole tanımlamadan bırakmak
+
 ## Kalite Eşikleri
 - [MİNİMUM] WCAG AA tam uyum (gevşetilemez)
 - [MİNİMUM] Sıfır unlabeled interactive element
@@ -90,18 +116,28 @@ son-güncelleme: 2026-04-01
 8. [ZAYIF] Karmaşık gestür için alternatif yol yok
 9. [ZAYIF] Bold Text ayarı göz ardı ediliyor
 10. [ZAYIF] accessibilityLabel anlamsız metin içeriyor ("button1", "img_3")
+11. [ZAYIF] Modal kapanışında focus tetikleyen elemente dönmüyor — kayıp focus
+12. [ZAYIF] Form hatasında focus ilk hatalı field'a taşınmıyor — kullanıcı hatayı bulamıyor
+13. [ZAYIF] Toast bildirimi liveRegion olmadan gösteriliyor — screen reader duyurmuyor
+14. [ZAYIF] `<Pressable>` veya `<TouchableOpacity>` üzerinde accessibilityRole tanımsız
 
 ## Kontrol Listesi
 - [ ] Tüm interactive öğelerde role ve accessible name var mı?
+- [ ] Tüm interactive öğelerde accessibilityRole doğru tanımlı mı?
+- [ ] Dekoratif öğeler accessibilityElementsHidden/aria-hidden ile gizli mi?
 - [ ] Contrast oranları AA'yı karşılıyor mu?
 - [ ] Touch target minimum 44×44pt mi?
 - [ ] Focus sırası mantıklı mı?
+- [ ] Modal açılışta focus ilk interactive elemente mi?
+- [ ] Modal kapanışta focus tetikleyen elemente dönüyor mu?
+- [ ] Sayfa geçişinde focus heading/ilk content'e mi?
+- [ ] Form hatasında focus ilk hatalı field'a mı?
+- [ ] Toast/snackbar liveRegion="polite" ile mi?
 - [ ] Modal/dialog'da focus trap var mı?
 - [ ] Reduced motion guard var mı?
 - [ ] Form error'ları programatik ilişkili mi?
 - [ ] Dynamic Type / font scaling tüm boyutlarda test edildi mi?
 - [ ] VoiceOver/TalkBack ile tam kullanım testi yapıldı mı?
-- [ ] Dekoratif görseller aria-hidden/accessibilityElementsHidden mı?
 - [ ] Bilgi sadece renkle iletilmiyor mu? (ek ipucu var mı?)
 - [ ] Karmaşık gestürler için alternatif yol var mı?
 - [ ] Bold Text ve Reduce Transparency ayarlarına uyum var mı?

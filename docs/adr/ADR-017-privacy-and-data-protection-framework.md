@@ -434,3 +434,125 @@ Bu ADR yeterli kabul edilir eğer:
 10. CMP seçim kriterleri tanımlanmışsa (seçim yapılmasa bile)
 11. Riskler ve risk azaltma önlemleri somutsa
 12. Bu karar, implementation ekibine privacy framework'ünü kuracak netlikte baseline sağlıyorsa
+
+---
+
+# 14. Consent Management UI Pattern
+
+GDPR/KVKK uyumlu izin yönetimi ekranı tasarım ve implementasyon rehberi.
+
+## 14.1. İzin Kategorileri
+
+| Kategori | Açıklama | Devre Dışı Bırakılabilir mi? | Varsayılan (GDPR) | Varsayılan (KVKK) |
+|----------|----------|------------------------------|--------------------|--------------------|
+| **Zorunlu (Essential)** | Uygulamanın temel işlevleri için gerekli (auth, güvenlik, tercih saklama) | Hayır — toggle disabled, her zaman aktif | Aktif | Aktif |
+| **Analytics** | Kullanım istatistikleri, performans metrikleri, crash raporlama | Evet | Kapalı (opt-in) | Açık (opt-out) |
+| **Reklam/Pazarlama** | Kişiselleştirilmiş reklam, remarketing, kampanya tracking | Evet | Kapalı (opt-in) | Kapalı (opt-in) |
+| **Third-party Paylaşım** | Üçüncü taraf veri paylaşımı, partner entegrasyonları | Evet | Kapalı (opt-in) | Kapalı (opt-in) |
+
+## 14.2. UI Pattern
+
+### İlk Açılış Consent Ekranı
+- **Format:** Full-screen bottom sheet veya modal (platform convention'a uygun)
+- **İçerik:**
+  - Başlık: "Gizlilik Tercihleri"
+  - Her kategori için açıklama ve toggle
+  - Zorunlu kategorinin toggle'ı disabled ve aktif
+  - Detaylı bilgi linki (privacy policy)
+- **Kısayol butonları:**
+  - "Tümünü Kabul Et" — tüm kategorileri aktif eder
+  - "Sadece Zorunlu" — yalnızca essential aktif, diğerleri kapalı
+  - "Tercihleri Kaydet" — granüler seçimleri kaydeder
+- **Kural:** Consent ekranı dismiss edilemez; kullanıcı bir seçim yapmalıdır
+
+### Settings Ekranında Consent Yönetimi
+- Settings → Gizlilik → İzin Tercihleri yolunda her zaman erişilebilir
+- Mevcut consent durumu gösterilir
+- Kullanıcı istediği zaman tercihlerini değiştirebilir
+- Değişiklik anında uygulanır (analytics SDK kapatılır/açılır)
+
+## 14.3. Teknik Implementasyon
+
+### Consent State Saklama
+- Consent durumu **MMKV**'de saklanır (ADR-019 uyumu)
+- Yapı: `{ analytics: true, marketing: false, thirdParty: false, version: 2, timestamp: "2026-04-01T12:00:00Z" }`
+- Her consent değişikliğinde `version` artırılır ve `timestamp` güncellenir
+
+### SDK İnitialization Gate
+- Analytics SDK'lar (Sentry analytics, custom analytics) consent durumuna göre **koşullu** initialize edilir
+- Consent verilmeden SDK başlatılmaz ve veri toplanmaz
+- Consent geri çekildiğinde SDK deactivate edilir ve toplanan veri silinir (teknik olarak mümkün olduğu ölçüde)
+
+### Audit Trail
+- Her consent değişikliği timestamp + action olarak loglanır
+- Format: `{ userId, action: "consent_updated", categories: { analytics: true }, timestamp, appVersion }`
+- Bu kayıtlar GDPR/KVKK compliance kanıtı olarak **5 yıl** saklanır
+- Backend'e sync edilir (derived project sorumluluğu)
+
+## 14.4. Consent Versiyonlama
+
+Privacy policy veya consent kategorileri değiştiğinde:
+- Consent version artırılır
+- Mevcut kullanıcılara yeni consent ekranı gösterilir (re-consent)
+- Önceki consent kayıtları korunur; yeni versiyon üzerine yazılmaz
+
+---
+
+# 15. Data Retention Policy
+
+Kullanıcı verilerinin saklama süresi yönetimi ve otomatik temizlik stratejisi.
+
+## 15.1. Canonical Retention Tablosu
+
+| Veri Türü | Saklama Süresi | İşlem Sonunda | Gerekçe |
+|-----------|---------------|---------------|---------|
+| Hesap verileri (profil, tercihler) | Hesap silinene kadar | Silme talebiyle tamamen kaldırılır | Aktif kullanıcı verisi |
+| Analytics event'leri | 24 ay | Otomatik anonimleştirme → aggregate veri olarak kalır | İstatistiksel analiz için yeterli süre |
+| Crash raporları (Sentry) | 12 ay | Otomatik silme | Debug için yeterli süre |
+| Application log kayıtları | 6 ay | Otomatik silme | Operasyonel analiz süresi |
+| Oturum verileri (session) | 30 gün | Otomatik silme | Aktif oturum süresi |
+| Consent kayıtları | 5 yıl | Arşivleme | GDPR/KVKK yasal zorunluluk |
+| Push notification token'ları | Son etkileşimden 90 gün sonra | Otomatik silme | Inactive kullanıcı temizliği |
+| Backup ve geçici dosyalar | 7 gün | Otomatik silme | Geçici operasyonel ihtiyaç |
+
+## 15.2. Hesap Silme (Right to Erasure)
+
+GDPR Madde 17 ve KVKK Madde 7 kapsamında kullanıcının veri silme hakkı tam olarak desteklenir:
+
+### Silme Süreci
+1. Kullanıcı Settings → Hesap → "Hesabımı Sil" seçeneğini kullanır
+2. Onay ekranı gösterilir: "Tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz."
+3. Kullanıcı şifre veya biometric ile kimliğini doğrular
+4. Silme talebi backend'e gönderilir
+5. **30 gün** içinde tüm kişisel veri silinir (GDPR requirement)
+6. Kullanıcıya email ile silme onayı gönderilir
+
+### Silinecek Veriler
+- Profil bilgileri (isim, email, telefon, adres)
+- Kullanıcı tercihleri ve ayarları
+- Satın alma geçmişi (kişisel veri kısmı)
+- Push notification token'ları
+- Analytics event'lerindeki kullanıcı tanımlayıcıları
+- Local storage'daki tüm kullanıcı verisi (MMKV, SecureStore)
+
+### Silinemeyecek Veriler (Anonimleştirme)
+- Aggregate analytics verisi (kullanıcı tanımlayıcısı olmadan)
+- Finansal kayıtlar (yasal zorunluluk — anonimleştirilerek saklanır)
+- Consent kayıtları (yasal zorunluluk — 5 yıl arşiv)
+
+## 15.3. Anonimleştirme Standardı
+
+Anonimleştirme geri dönüşü olmayan şekilde yapılmalıdır:
+- Kullanıcı ID'si hash'lenir ve ardından silinir (one-way)
+- Email, telefon, isim gibi tanımlayıcılar tamamen kaldırılır
+- IP adresleri truncate edilir (son oktet silinir)
+- Cihaz tanımlayıcıları kaldırılır
+- Kalan veri yalnızca aggregate istatistik olarak kullanılabilir
+
+## 15.4. Backend Tetikleme
+
+Retention süresi dolan verilerin temizlenmesi **scheduled job** ile yapılır:
+- Günlük çalışan cron job expired veriyi tarar
+- Batch silme ile performans korunur
+- Silme işlemi audit log'a kaydedilir
+- Bu mekanizmanın implementasyonu **derived project sorumluluğudur**; boilerplate yalnızca retention policy ve silme API contract'ını tanımlar

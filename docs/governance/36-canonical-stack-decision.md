@@ -142,7 +142,7 @@ Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 - **Web E2E:** Playwright 1.58.x track
 - **Error tracking:** Sentry
 - **Analytics:** abstraction-first, vendor-agnostic
-- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist
+- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist, @expo/ui 1.0 stable watch
 - **Auth/session:** web cookie-preferred, mobile secure storage adapter
 - **i18n:** i18next + react-i18next
 - **Docs/governance:** ADR set + dependency policy + compatibility matrix + audit/DoD
@@ -235,6 +235,58 @@ React Compiler artık resmi stabil hat olarak görünse de bu boilerplate'te **b
 - compiler-on / compiler-off karşılaştırması yazılı audit ile doğrulanmalı.
 
 Bu yüzden React Compiler burada trend-watch / controlled adoption alanıdır; sessiz default switch değildir.
+
+## 6.5.1. Expo UI (@expo/ui) Watchlist Statüsü
+
+Expo SDK 55, SwiftUI (iOS) ve Jetpack Compose (Android) ile doğrudan native UI bileşenleri oluşturulabilmesini sağlayan `@expo/ui` kütüphanesini tanıtmıştır. Bu kütüphane, React Native'in JavaScript tabanlı bileşen modelinin ötesine geçerek platforma özgü native UI toolkit'lerini doğrudan kullanma imkanı sunar.
+
+### Ne Sunuyor?
+
+**iOS (SwiftUI) tarafında mevcut bileşenler:**
+- `DatePicker` — iOS native tarih seçici, inline, compact ve wheel modları
+- `Toggle` — iOS native switch/toggle bileşeni
+- `ProgressView` — iOS native ilerleme çubuğu (linear ve circular)
+- `Section` — iOS native gruplandırma bileşeni (Settings ekranlarındaki gibi)
+- `Form` — iOS native form container'ı (SwiftUI Form ile birebir eşleşme)
+- `Picker` — iOS native seçim bileşeni (wheel, segment, menu modları)
+
+**Android (Jetpack Compose) tarafında mevcut bileşenler (beta):**
+- Material3 `Card` — Jetpack Compose Material3 kart bileşeni
+- `LazyColumn` — Compose native virtualized liste
+- `ListItem` — Compose liste item bileşeni
+- `ModalBottomSheet` — Compose bottom sheet bileşeni
+
+**Teknik Mimari:**
+- Bileşenler functional DSL pattern ile tanımlanır
+- Her bileşen platforma özgü native view olarak render edilir (WebView veya JavaScript view değil)
+- Expo Modules API üzerinden erişilir
+- New Architecture (Fabric) ile tam uyumlu
+
+### Neden Watchlist?
+
+Bu kütüphane şu anda watchlist statüsündedir çünkü:
+
+1. **Beta aşamasında:** mid-2026'da stable 1.0 hedefleniyor; API yüzeyi değişebilir
+2. **Cross-platform parity riski:** iOS tarafı daha olgun, Android tarafı henüz beta'da. Bu boilerplate'in "platform parity" hedefiyle doğrudan çelişebilir
+3. **Design system entegrasyonu belirsiz:** Semantic token sistemi ve NativeWind ile nasıl birlikte çalışacağı henüz netleşmemiş
+4. **Component governance etkisi:** Mevcut component governance kurallarının (23-component-governance-rules.md) @expo/ui bileşenlerini nasıl kapsayacağı tanımlanmamış
+
+### Ne Zaman Canonical Baseline'a Alınabilir?
+
+1. Stable 1.0 release yayımlanmış olmalı
+2. iOS ve Android bileşen paritesi yeterli seviyeye ulaşmış olmalı
+3. Design system token entegrasyonu test edilmiş olmalı
+4. NativeWind ile birlikte çalışabilirlik doğrulanmış olmalı
+5. Component governance kurallarının @expo/ui kapsamını tanımlayan güncelleme yapılmış olmalı
+6. Bu doküman ve 38-version-compatibility-matrix.md güncellenmiş olmalı
+
+### Geçici Kullanım Kuralı
+
+@expo/ui bileşenleri, canonical baseline olmadan şu koşullarda kullanılabilir:
+- spike veya proof-of-concept çalışmalarında
+- native-feeling UI gereken ve mevcut React Native bileşenlerinin yetersiz kaldığı durumlarda
+- kullanım documented ve scoped olmalı (uygulamanın geneline yayılmamalı)
+- production feature'da kullanım ADR veya exception kaydı gerektirir
 
 ## 6.6. Sınırlar
 Bu karar:
@@ -605,7 +657,7 @@ Bu alan dependency policy ve bootstrap checklist içinde ayrıca denetlenir; anc
 
 - **Error tracking:** Sentry
 - **Analytics:** abstraction-first, vendor-agnostic
-- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist
+- **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist, @expo/ui 1.0 stable watch
 - **Logging:** structured, privacy-safe
 - **Diagnostics:** environment-aware
 
@@ -1040,4 +1092,119 @@ Bu boilerplate için canonical teknik blueprint şudur:
 - i18n: i18next
 
 Bu belge artık “nasıl seçeriz?” değil,  
-**“neyi seçtik?”** sorusunun resmi cevabıdır.
+**”neyi seçtik?”** sorusunun resmi cevabıdır.
+
+---
+
+# 28. Expo UI (@expo/ui) Watchlist Kaydı (2026-04-02 Eki)
+
+@expo/ui'nin canonical stack'teki pozisyonu ve değerlendirme yol haritası.
+
+## 28.1. Mevcut Durum
+
+- **Statü:** Watchlist
+- **Paket:** `@expo/ui`
+- **SDK 55'teki durum:** Beta, production baseline değil
+- **Hedef stable release:** Mid-2026 (Expo ekibinin tahmini)
+
+## 28.2. Ne Sağlar
+
+@expo/ui, SwiftUI (iOS) ve Jetpack Compose (Android) bileşenlerinin React Native tarafından doğrudan kullanılmasını sağlar. Bu, web'deki native HTML elementlerine (picker, date picker, context menu) karşılık gelen native UI elementlerini platform-native rendering ile sunar.
+
+Desteklediği bileşen türleri (beta):
+- Picker / SegmentedControl
+- ContextMenu / DropdownMenu
+- DateTimePicker
+- Toggle / Switch
+- BottomSheet
+- Label / Section
+
+## 28.3. Stable 1.0 Release Koşulları
+
+Canonical'a terfi için aşağıdaki koşulların sağlanması gerekir:
+
+- [ ] API surface stabil ve breaking change riski düşük
+- [ ] Tüm canonical bileşen tipleri (picker, segment, menu, date picker) destekleniyor
+- [ ] NativeWind styling entegrasyonu mümkün (className prop veya style override)
+- [ ] Expo managed workflow ile tam uyumlu
+- [ ] TypeScript type tanımları eksiksiz
+- [ ] Accessibility desteği (VoiceOver/TalkBack) yeterli
+- [ ] Community feedback olumlu (GitHub issues, npm downloads trendi)
+
+## 28.4. Canonical'a Alınma Kriteri
+
+1. Stable 1.0+ release yayımlanması
+2. 2 sprint pilot uygulama (bir shared package'ta veya örnek ekranda)
+3. ADR yazılması (mevcut atom bileşenlere etkisi, migration planı)
+4. Design system etkisi değerlendirmesi: `04-design-system-architecture.md`'deki native adapter pattern'ine geçiş
+
+## 28.5. Etki Analizi
+
+Canonical'a alınırsa:
+- Bazı atom bileşenler (Picker, Switch, DatePicker) native adapter pattern'ine geçer.
+- Platform-specific rendering kalitesi artar (Apple HIG / Material Design uyumu otomatik).
+- Bundle size etkisi pozitif olabilir (JavaScript bileşen yerine native bileşen).
+- `23-component-governance-rules.md` ve `26-platform-adaptation-rules.md` güncellenmeli.
+
+---
+
+# 29. Periyodik Stack Revalidation Takvimi (2026-04-02 Eki)
+
+Canonical stack'in düzenli yeniden değerlendirilmesi.
+
+## 29.1. Periyot
+
+- **Normal periyot:** Her çeyrek (Q1: Ocak, Q2: Nisan, Q3: Temmuz, Q4: Ekim)
+- **Tetikleyici periyot:** Major Expo SDK release sonrası (SDK 56, 57 vb.)
+- **Acil revalidation:** Canonical kütüphanede kritik güvenlik açığı veya EOL (End of Life) duyurusu
+
+## 29.2. Değerlendirme Kapsamı
+
+Her revalidation'da aşağıdaki alanlar kontrol edilir:
+
+1. **Watchlist teknolojilerin güncel durumu:**
+   - Yeni stable release var mı?
+   - Değerlendirme koşulları karşılanıyor mu?
+   - Candidate'e terfi gerekiyor mu?
+
+2. **Canonical kütüphanelerin son versiyonları:**
+   - Yeni major/minor release var mı?
+   - Breaking change var mı?
+   - Security patch gerektiriyor mu?
+   - `38-version-compatibility-matrix.md` güncellenmeli mi?
+
+3. **Community trendleri ve alternatif araçlar:**
+   - Yeni ortaya çıkan araçlar Watchlist'e alınmalı mı?
+   - Mevcut Hold teknolojilerinde durum değişikliği var mı?
+
+4. **Performance benchmark güncellemeleri:**
+   - Build süresi trendi (CI pipeline toplam süresi)
+   - Bundle size trendi (web + mobile)
+   - Startup time trendi (mobile cold start)
+
+5. **Security vulnerability taraması:**
+   - `npm audit` sonuçları
+   - Snyk / GitHub Dependabot alertleri
+   - Canonical paketlerde bilinen güvenlik açığı
+
+## 29.3. Çıktı
+
+- **Revalidation raporu:** Markdown formatında, governance/ dizinine tarih bazlı kaydedilir.
+  - Dosya adı: `revalidation-YYYY-QX.md` (ör. `revalidation-2026-Q2.md`)
+- **Değişiklik önerisi varsa:** ADR taslağı hazırlanır, teknik lider onayı alınır.
+- **Değişiklik yoksa:** “Canonical stack geçerli, değişiklik gerekmez” notu kaydedilir.
+
+## 29.4. Sorumluluk
+
+- **Başlatan:** Teknik lider veya mimari sorumlusu
+- **Katılımcılar:** Aktif geliştiriciler (review ve feedback)
+- **Onaylayan:** Proje teknik lideri
+
+## 29.5. Acil Revalidation Tetikleyicileri
+
+| Durum | Aksiyon | Süre |
+|-------|---------|------|
+| Canonical kütüphanede CVE (kritik güvenlik açığı) | Hemen patch/upgrade değerlendirmesi | 24-48 saat |
+| Canonical kütüphanede EOL duyurusu | Migration planı başlatılır | 1 çeyrek içinde |
+| Expo SDK deprecated uyarısı | Upgrade planı oluşturulur | Sonraki sprint |
+| Major ekosistem değişikliği (ör. React major release) | Compatibility revalidation | 1-2 hafta |

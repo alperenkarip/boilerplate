@@ -999,7 +999,96 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 43. Kısa Sonuç
+# 43. NativeWind 5.x Stable Readiness Kontrol Listesi
+
+NativeWind 5.x şu anda candidate track statüsündedir (36-canonical-stack-decision.md). Periyodik olarak aşağıdaki kontrol listesi değerlendirilir:
+
+## 43.1. Değerlendirme Kontrol Listesi
+
+- [ ] **Stable release çıktı mı?** npm registry’de `nativewind@5.x.x` stable tag ile yayınlandı mı? (`next`, `beta`, `rc` tag’leri yeterli değildir)
+- [ ] **Breaking change’ler mevcut token yapısını etkiliyor mu?** Mevcut `packages/design-tokens/` yapısı ve semantic token katmanı ile uyumlu mu? Token tüketim API’sında kırılma var mı?
+- [ ] **Expo SDK 55 ile tam uyumluluk doğrulandı mı?** NativeWind 5.x + Expo SDK 55.x + React Native 0.83 kombinasyonu birlikte test edildi mi?
+- [ ] **New Architecture (Fabric) uyumlu mu?** JSI tabanlı render pipeline ile sorunsuz çalışıyor mu? (ADR-018 referansı)
+- [ ] **Tailwind CSS 4.x syntax ile %100 uyumlu mu?** Web’de Tailwind CSS 4.x ile kullanılan utility class’lar mobile’da aynı şekilde çalışıyor mu? Syntax farklılıkları var mı?
+- [ ] **Migration guide mevcut mu?** NativeWind 4.x → 5.x geçişi için resmi migration guide yayınlandı mı? Breaking change listesi dokümante edildi mi?
+- [ ] **Community adoption yeterli mi?** npm haftalık downloads trendi (en az 10K+), GitHub issues/PR aktivitesi, Discord/GitHub Discussions yanıt hızı makul mü?
+- [ ] **Performans regresyonu yok mu?** NativeWind 5.x ile 4.x arasında render performansı karşılaştırması yapıldı mı?
+
+## 43.2. Değerlendirme Periyodu
+
+- **Rutin kontrol:** Her çeyrek (Ocak, Nisan, Temmuz, Ekim)
+- **Tetiklenen kontrol:** Major NativeWind release veya RC yayınlandığında
+- **Karar yetkisi:** Mobile lead veya architecture owner
+
+## 43.3. Stable Geçiş Kararı
+
+Kontrol listesinin tamamı ✅ olduğunda:
+1. `38-version-compatibility-matrix.md` güncellenir
+2. `37-dependency-policy.md`’de NativeWind versiyonu güncellenir
+3. Migration planı oluşturulur ve zaman çizelgesi belirlenir
+4. Pilot olarak 2-3 component NativeWind 5.x ile refactor edilir
+5. Başarılıysa tam migration başlatılır
+
+---
+
+# 44. Design Token CI Validation Reçetesi
+
+Token dosyalarının build aşamasında otomatik doğrulanması, design system tutarlılığının CI seviyesinde garanti altına alınmasını sağlar.
+
+## 44.1. Naming Convention Kontrolü
+
+Tüm token adları aşağıdaki kurallara uymalıdır:
+- **Format:** kebab-case (ör. `color-primary`, `spacing-md`, `font-size-body`)
+- **Semantic prefix zorunluluğu:** Her token ailesi kendi prefix’ini taşır:
+  - Renkler: `color-*` (ör. `color-surface-primary`, `color-text-secondary`)
+  - Spacing: `spacing-*` (ör. `spacing-xs`, `spacing-md`, `spacing-2xl`)
+  - Tipografi: `font-*` (ör. `font-size-body`, `font-weight-bold`, `font-family-sans`)
+  - Radius: `radius-*` (ör. `radius-sm`, `radius-full`)
+  - Border: `border-*` (ör. `border-width-thin`, `border-color-subtle`)
+- **Yasak pattern’ler:** Sayısal suffix olmadan (ör. `blue-500` gibi raw palette token’lar semantic katmanda kullanılmaz)
+
+## 44.2. Kullanılmayan Token Tespiti
+
+Kaynak kodda (`apps/`, `packages/ui/`) referansı olmayan token’lar tespit edilir ve uyarı üretilir. Bu kontrol:
+- Token dosyalarındaki her token adını çıkarır
+- Tüm kaynak dosyalarda (tsx, ts, css) bu token adını arar
+- Referansı olmayan token’lar "potentially unused" olarak raporlanır
+- **Aksiyon:** Uyarı seviyesindedir (error değil); gerçekten gereksiz olan token’lar temizlenir, henüz kullanılmamış ama planlanmış token’lar annotation ile işaretlenir
+
+## 44.3. Eksik Token Kontrolü (Light/Dark Parity)
+
+Light mode’da tanımlı olan her semantic token dark mode’da da tanımlı olmalıdır:
+- Light token set ile dark token set karşılaştırılır
+- Light’ta var ama dark’ta yok → **CI error** (dark mode’da undefined fallback riski)
+- Dark’ta var ama light’ta yok → **CI warning** (temizlenmesi gereken orphan token)
+
+## 44.4. Token Değer Aralığı Kontrolü
+
+Token değerlerinin makul aralıklarda olup olmadığı kontrol edilir:
+- Spacing: 0-128 (px veya rem karşılığı)
+- Font-size: 10-64 (px veya rem karşılığı)
+- Border-width: 0-8
+- Radius: 0-9999 (full radius için büyük değer kabul edilir)
+- Opacity: 0-1
+- Z-index: 0-9999
+
+Aralık dışı değerler **CI warning** üretir.
+
+## 44.5. Cross-Reference Kontrolü
+
+Bir token başka bir token’a referans veriyorsa (alias/reference token), hedef token’ın var olup olmadığı kontrol edilir. Kırık referans **CI error** üretir.
+
+## 44.6. CI Entegrasyonu
+
+```bash
+pnpm lint:tokens
+```
+
+Bu komut yukarıdaki tüm kontrolleri çalıştırır ve PR’da rapor üretir. Error varsa PR merge edilemez; warning’ler review sırasında değerlendirilir.
+
+---
+
+# 45. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

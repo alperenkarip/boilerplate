@@ -1034,3 +1034,114 @@ Bu repo’da katkı yapmak şu anlama gelir:
 - AI araçlarını görev eşiğine göre kullanmak ve talimat dosyalarını güncel tutmak
 
 Yani contribution, kod yazmaktan daha geniş ve daha disiplinli bir iştir.
+
+---
+
+# 24. İlk Katkı Rehberi (2026-04-02 Eki)
+
+Yeni katılımcılar için başlangıç rehberi. Bu bölüm, ilk kez katkıda bulunacak geliştiricilerin hızla üretken olmasını sağlar.
+
+## 24.1. Ortam Kurulumu
+
+| Araç | Gerekli Versiyon | Kurulum |
+|------|-----------------|---------|
+| Node.js | 22.x LTS | `nvm install 22` |
+| pnpm | 10.x | `corepack enable && corepack prepare pnpm@latest --activate` |
+| Git | 2.40+ | Platform paket yöneticisi ile |
+| VS Code | Latest | [code.visualstudio.com](https://code.visualstudio.com) |
+
+VS Code önerilen eklentiler (`.vscode/extensions.json`'da tanımlıdır):
+- ESLint
+- Prettier
+- Tailwind CSS IntelliSense
+- TypeScript Importer
+- Error Lens
+
+## 24.2. Repo Clone ve Kurulum
+
+```bash
+git clone <REPO_URL> boilerplate
+cd boilerplate
+pnpm install
+pnpm dev:web        # Web development server
+pnpm dev:mobile     # Mobile development server (Expo)
+pnpm typecheck      # TypeScript kontrolü
+pnpm lint           # Lint kontrolü
+pnpm test           # Test suite
+```
+
+Tümü hatasız geçmelidir. Sorun olursa `docs/onboarding/ilk-30-dakika.md`'ye bakın.
+
+## 24.3. İlk Görev Seçimi
+
+`good-first-issue` etiketli issue'lar yeni katılımcılar için uygundur.
+
+**Good-first-issue kriterleri:**
+- Tek dosya değişikliği yeterli
+- Test yazmayı gerektirmiyor (opsiyonel, yazılırsa bonus)
+- Doküman düzeltmesi veya küçük UI iyileştirmesi
+- Context yükü düşük (tek bir component veya modül)
+- Mevcut pattern'i takip ederek çözülebilir
+
+## 24.4. İlk PR Süreci
+
+1. **Issue'yu kendine ata:** GitHub'da "Assign yourself" butonuna tıkla.
+2. **Feature branch oluştur:** `git checkout -b feature/issue-XX-kisa-aciklama`
+3. **Değişiklikleri yap:** İlgili guardrail'leri oku, canonical kararları takip et.
+4. **Lokal doğrulama:** `pnpm typecheck && pnpm lint && pnpm test`
+5. **PR aç:** PR template'ini eksiksiz doldur. Değişiklik açıklaması, test planı ve varsa ekran görüntüsü ekle.
+6. **CI kontrollerini bekle:** Tüm CI adımları yeşil olmalı.
+7. **Review feedback'e göre düzelt:** Reviewer yorumlarını ele al, gerekli değişiklikleri yap.
+8. **Merge onayı al:** En az 1 reviewer onayı gereklidir.
+
+## 24.5. Sık Yapılan Hatalar
+
+| Hata | Doğrusu | Referans |
+|------|---------|----------|
+| Guardrail kontrolü yapmadan PR açmak | `/guardrail-check` ile kontrol et | `47-ai-guardrail-governance.md` |
+| Hardcoded renk/spacing değeri kullanmak | Semantic token kullan | `22-design-tokens-spec.md` |
+| i18n key yerine direkt metin yazmak | i18n namespace'ten key kullan | ADR-011 |
+| Test dosyası eklememek | `*.test.ts(x)` kaynak dosyanın yanına | `14-testing-strategy.md` |
+| `any` tipi kullanmak | Doğru TypeScript tipini yaz | `36-canonical-stack-decision.md` |
+| Import yönünü ihlal etmek (packages→apps) | Yalnızca apps→packages yönünde import | `07-module-boundaries-and-code-organization.md` |
+
+---
+
+# 25. AI Agent Contribution Kuralları (2026-04-02 Eki)
+
+Claude Code, Codex CLI gibi AI araçlarının PR açarken uyması gereken kurallar.
+
+## 25.1. Tanımlama Zorunluluğu
+
+- AI tarafından üretilen PR'lar açıkça belirtilir: PR description'da "AI-assisted" veya "AI-generated" notu bulunmalıdır.
+- PR label'ı: `ai-assisted` label'ı eklenir.
+- Commit mesajında AI aracı belirtilmez; ancak PR seviyesinde görünürlük sağlanır.
+
+## 25.2. Review Kuralları
+
+- AI PR'ları normal review sürecinden muaf değildir.
+- Tüm AI PR'ları en az 1 human review gerektirir. Karmaşık değişiklikler 2 reviewer.
+- Reviewer, AI'ın ürettiği kodu insan yazılmış kod standartlarıyla değerlendirir.
+- AI'ın ürettiği kodda guardrail ihlali varsa PR bloklanır.
+
+## 25.3. Boyut Limiti
+
+- AI PR boyut limiti: Maksimum 500 satır değişiklik.
+- 500 satırı aşan değişiklikler, mantıksal birimlere bölünerek ayrı PR'lar halinde açılmalıdır.
+- Bölme stratejisi: Foundation/types → Core logic → UI/tests sıralamasıyla stacked PR (bkz. `42-branching-and-merge-strategy.md`).
+
+## 25.4. Zorunlu PR Bölümleri
+
+AI PR'larında aşağıdaki bölümler description'da bulunmalıdır:
+
+1. **Değişiklik özeti:** Ne değişti, neden değişti.
+2. **Test planı:** Hangi testler eklendi/çalıştırıldı.
+3. **Guardrail kontrol sonucu:** `/guardrail-audit` çıktısı veya özeti.
+4. **Etkilenen dokümanlar:** Hangi dokümanlar güncellendi veya güncellenmeli.
+
+## 25.5. Yasaklar
+
+- AI'ın doğrudan `main` branch'e commit yapması yasaktır.
+- AI'ın force push yapması yasaktır.
+- AI'ın `.env`, credential veya secret dosyalarını okuması veya değiştirmesi yasaktır.
+- AI'ın canonical stack kararlarını değiştiren değişiklik yapması (ADR gerektiren) yasaktır; önce insan onayı gerekir.

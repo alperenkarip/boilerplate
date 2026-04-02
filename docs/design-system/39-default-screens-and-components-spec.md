@@ -28,6 +28,18 @@
 
 ---
 
+> **Modülerizasyon Planı:** Bu doküman 277KB+ boyutuyla tek dosya olarak yönetimi zorlaştırmaktadır. Gelecek iterasyonda aşağıdaki domain bazlı alt dosyalara bölünecektir:
+> - `39a-auth-screens-spec.md` — Login, register, forgot password, verification ekranları
+> - `39b-dashboard-screens-spec.md` — Ana sayfa, dashboard, feed ekranları
+> - `39c-profile-screens-spec.md` — Profil, hesap ayarları, profil düzenleme ekranları
+> - `39d-settings-screens-spec.md` — Ayarlar, bildirim tercihleri, tema ekranları
+> - `39e-shared-components-spec.md` — Paylaşımlı UI bileşenleri (modal, toast, form elements)
+> - `39f-utility-screens-spec.md` — Onboarding, error, maintenance, force update ekranları
+>
+> Bu bölünme mevcut içeriği etkilemez; sadece dosya organizasyonunu iyileştirir. Her alt dosya bu dokümanın ilgili bölümlerini birebir taşıyacak ve cross-reference bağlantıları korunacaktır.
+
+---
+
 # 1. Amaç
 
 Bu dokümanın amacı, boilerplate'in governance ve mimari belgeleri tamamlandıktan sonra ortaya çıkan **"repo bootstrap bitti, sırada ne var?"** sorusuna somut ve uygulanabilir bir cevap vermektir.

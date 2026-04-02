@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: zorunlu
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-MIGRATION: Migration Guardrail
@@ -24,9 +24,21 @@ son-güncelleme: 2026-04-01
 5. Migration script'leri idempotent olmalı (tekrar çalıştırılabilir)
 6. Büyük veri migration'ı batch olarak yap
 
+## Migration Rollback Planı
+7. Her migration PR'ında aşağıdaki 5 bilgi zorunlu olarak belgelenmeli:
+   1. **Rollback adımları** — Geri dönüş için yapılması gerekenler (adım adım)
+   2. **Veri kaybı riski** — Rollback yapılırsa veri kaybı olur mu? Hangi veriler etkilenir?
+   3. **Rollback testi** — Geri dönüş test ortamında denenmiş mi?
+   4. **Tahmini süre** — Migration ve rollback ne kadar sürer?
+   5. **Otomatik/Manuel** — Rollback otomatik mi, manuel müdahale gerektirir mi?
+8. **Veri kaybı riski varsa:** Minimum 2 reviewer zorunlu
+9. **Production öncesi:** Backup alınması zorunlu — backup olmadan production migration başlatılmaz
+
 ## DoD Ek Maddeleri
 - [ ] SPEC yazılmış
-- [ ] Rollback planı hazır
+- [ ] Rollback planı hazır (5 bölüm: adımlar, veri kaybı riski, rollback testi, süre, otomatik/manuel)
 - [ ] Test ortamında başarılı
 - [ ] Veri kaybı riski değerlendirilmiş
+- [ ] Veri kaybı riski varsa 2 reviewer onayı alınmış
+- [ ] Production öncesi backup planı var
 - [ ] Migration idempotent

@@ -4,7 +4,7 @@ type: domain
 name: Error, Empty, Loading States & Recovery
 kaynak-dokümanlar: 25
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-ERR: Error/Empty/Loading States Guardrail
@@ -72,6 +72,32 @@ son-güncelleme: 2026-04-01
 34. [YAPILMALI] Hata düzeltildiğinde otomatik temizleme
 35. [YAPILMALI] Hata kodlarını kullanıcıya değil loglara yaz
 
+### Error Boundary Nesting Stratejisi
+36. [ZORUNLU] Error boundary hiyerarşisi aşağıdaki seviyelerde uygulanmalı:
+    1. **App Boundary** — Uygulama seviyesi, yakalanmamış tüm hatalar için son savunma hattı
+    2. **Navigation Boundary** — Tab/stack navigator seviyesinde, bir tab'daki hata diğerlerini etkilemez
+    3. **Screen Boundary** — Ekran seviyesinde, ekrana özel hata gösterimi ve recovery
+    4. **Feature Boundary** — Feature/widget seviyesinde, ekrandaki bir bileşen hata verse de ekranın geri kalanı çalışır
+37. [YAPILMALI] Her boundary kendi seviyesinde hatayı yakalamalı — üst seviyeye taşırmadan uygun recovery sunmalı
+38. [YAPILMAMALI] Her component'i ayrı error boundary ile sarmak — aşırı granülarite, gereksiz karmaşıklık
+39. [YAPILMALI] Screen + Feature seviyesi boundary kullanımı önerilen minimum — App boundary zaten zorunlu
+
+### Retry Pattern Standardı
+40. [ZORUNLU] Hata tipine göre aşağıdaki retry stratejisi uygulanmalı:
+
+| Hata Tipi | Retry Yöntemi | Strateji | Max Deneme | Backoff Süreleri |
+|---|---|---|---|---|
+| Network hatası (bağlantı yok) | Otomatik | Exponential backoff | 3 | 1s → 2s → 4s |
+| 5xx (server hatası) | Otomatik | Exponential backoff | 3 | 2s → 4s → 8s |
+| 4xx (client hatası, 401 hariç) | Manuel buton | Kullanıcı tetikler | 1 | — |
+| 401 (unauthorized) | Otomatik | Token refresh + retry | 1 | — |
+| 422 (validation hatası) | Yok | Form düzeltme gerekli | — | — |
+
+41. [YAPILMALI] Otomatik retry sırasında kullanıcıya "Yeniden deneniyor..." göstergesi sunulmalı
+42. [YAPILMALI] Max retry aşıldığında kullanıcıya manuel retry butonu ve açıklayıcı hata mesajı gösterilmeli
+43. [YAPILMAMALI] 4xx hatalarında (validation, not found) otomatik retry yapmak — kullanıcı aksiyonu gerekli
+44. [YAPILMALI] 401 hatasında token refresh başarısız olursa → login ekranına yönlendir
+
 ## Anti-pattern'ler
 1. [ZAYIF] Sadece success durumu implement edilmiş — loading/error/empty atlanmış
 2. [ZAYIF] Boş beyaz ekran — loading indicator yok
@@ -83,6 +109,11 @@ son-güncelleme: 2026-04-01
 8. [ZAYIF] Alert dialog'da "Tamam" / "İptal" belirsiz buton metinleri
 9. [ZAYIF] Spinner sonsuza kadar dönüyor — timeout yok
 10. [ZAYIF] İlk kullanım (first run) empty state tasarlanmamış
+11. [ZAYIF] Her component ayrı error boundary ile sarılmış — aşırı granülarite
+12. [ZAYIF] Screen seviyesinde error boundary yok — tek hata tüm uygulamayı kırar
+13. [ZAYIF] Network hatasında retry yok — kullanıcı uygulama yeniden başlatmak zorunda
+14. [ZAYIF] 422 validation hatasında otomatik retry — gereksiz istek tekrarı
+15. [ZAYIF] 401 hatasında token refresh denenmeden login'e yönlendirme
 
 ## Kontrol Listesi
 - [ ] Loading, error, empty, success durumları handle ediliyor mu?
@@ -97,6 +128,12 @@ son-güncelleme: 2026-04-01
 - [ ] Spinner timeout'u tanımlı mı?
 - [ ] Form hataları inline (alan yanında) mı?
 - [ ] Hata düzeltildiğinde otomatik temizleme var mı?
+- [ ] Error boundary hiyerarşisi doğru mu (App → Navigation → Screen → Feature)?
+- [ ] Her boundary seviyesi uygun recovery sunuyor mu?
+- [ ] Hata tipine göre retry stratejisi uygulanıyor mu?
+- [ ] Network/5xx hatalarında otomatik retry + backoff var mı?
+- [ ] 401'de token refresh + retry uygulanıyor mu?
+- [ ] Max retry aşımında manuel retry butonu gösteriliyor mu?
 
 ## Kaynak
 - Error/empty/loading states → docs/design-system/25-error-empty-loading-states.md

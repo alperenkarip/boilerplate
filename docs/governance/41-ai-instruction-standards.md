@@ -577,3 +577,83 @@ Context bütçesi yönetilir, dosya anatomileri tanımlıdır, SPEC'ler EARS for
 Bu standartlara uyum, AI çıktı kalitesinin sürdürülebilirliğinin ön koşuludur.
 Governance olmadan talimat kalitesi zamanla bozulur; bozulan talimat kalitesi AI çıktı kalitesini bozar.
 Bu döngüyü kırmak için talimatlar da governance kapsamındadır.
+
+---
+
+# 12. CLAUDE.md Context Bütçesi (2026-04-02 Eki)
+
+Bu bölüm, CLAUDE.md ve AGENTS.md dosyalarının context bütçesini ve bu bütçenin yönetim kurallarını tanımlar.
+
+## 12.1. Bütçe Sınırları
+
+| Dosya | Maksimum Token | Gerekçe |
+|-------|---------------|---------|
+| CLAUDE.md (kök) | ≤ 4000 token | Her konuşmada context'e yüklenir; büyük dosyalar token israfıdır |
+| AGENTS.md (kök) | ≤ 2000 token | Agent talimatları; kompakt tutulmalı |
+| AGENTS.md (dizin-spesifik) | ≤ 1000 token | Sadece o dizine özgü ek talimatlar |
+
+## 12.2. Neden Bütçe Gerekli
+
+- CLAUDE.md ve AGENTS.md dosyaları **her konuşmada** otomatik olarak context'e yüklenir.
+- Büyük dosyalar, AI'ın gerçek görev için kullanabileceği context alanını daraltır.
+- 4000 token'lık bir CLAUDE.md, her oturumda ~%4 context tüketir. Kontrolsüz büyüme bu oranı %10+'a çıkarabilir.
+
+## 12.3. CI Kontrolü
+
+- CI pipeline'da CLAUDE.md ve AGENTS.md token sayısı kontrol edilir.
+- Aşım durumunda uyarı (warning) üretilir, bloklama yapılmaz.
+- Token sayımı: `wc -w` bazlı yaklaşık hesaplama (1 kelime ≈ 1.3 token).
+- Kontrol komutu: `pnpm docs:check-context-budget`
+
+## 12.4. Aşım Durumunda Yapılacaklar
+
+1. Tekrar eden talimatları kaldır (DRY prensibi).
+2. Detaylı açıklamaları referans doküman path'ine dönüştür (örn: "Detay için → `47-ai-guardrail-governance.md` bölüm 5").
+3. Tablo ve listeleri sadeleştir; sadece en kritik kuralları bırak.
+4. Koşullu bölümleri (sadece belirli iş türlerinde geçerli kurallar) ilgili AGENTS.md veya skill dosyasına taşı.
+
+## 12.5. Anti-Pattern'ler
+
+| Anti-Pattern | Neden Yanlış | Doğrusu |
+|-------------|-------------|---------|
+| CLAUDE.md'ye tüm projeyi açıklamak | Context israfı, her oturumda gereksiz yük | Referans path ver |
+| Aynı kuralı CLAUDE.md ve AGENTS.md'de tekrarlamak | Token israfı, güncelleme riski | Tek yerde yaz, diğerinden referans ver |
+| Kod örneklerini CLAUDE.md'ye koymak | Yüksek token tüketimi | Kod örneklerini doküman dosyasına koy, path ver |
+| Her yeni özellik için CLAUDE.md'ye kural eklemek | Kontrolsüz büyüme | Guardrail dokümanına ekle, CLAUDE.md'den referans ver |
+
+---
+
+# 13. Prompt Versiyonlama (2026-04-02 Eki)
+
+Bu bölüm, talimat dosyalarının (CLAUDE.md, AGENTS.md, skill dosyaları) versiyonlama stratejisini tanımlar.
+
+## 13.1. Versiyon Etiketi
+
+Her talimat dosyasının başında veya sonunda versiyon etiketi bulunur:
+
+```markdown
+<!-- v2.1.0 -->
+```
+
+## 13.2. Semantic Versioning Kuralları
+
+| Değişiklik Türü | Versiyon Etkisi | Örnek |
+|-----------------|----------------|-------|
+| Yeni kural ekleme | Minor (v2.1 → v2.2) | Yeni guardrail referansı ekleme |
+| Kural kaldırma | Major (v2.x → v3.0) | Bir güvenlik kuralının kaldırılması |
+| Kural değiştirme (davranış etkili) | Major (v2.x → v3.0) | Zorunlu kuralı opsiyonel yapma |
+| Typo düzeltme | Patch (v2.1.0 → v2.1.1) | Yazım hatası düzeltme |
+| Açıklama netleştirme | Patch (v2.1.0 → v2.1.1) | Belirsiz ifadeyi netleştirme |
+| Format/yapı değişikliği | Minor (v2.1 → v2.2) | Tablo formatına geçiş |
+
+## 13.3. Değişiklik Takibi
+
+- Versiyon değişikliği, commit mesajında belirtilir: `CLAUDE.md v2.1.0 → v2.2.0: guardrail referansları güncellendi`
+- Major versiyon değişikliği PR review gerektirir.
+- Değişiklik gerekçesi commit mesajında veya PR açıklamasında yer alır.
+
+## 13.4. Rollback Politikası
+
+- AI çıktı kalitesinde anlamlı düşüş gözlemlenirse, önceki prompt versiyonuna dönülebilir.
+- Rollback kararı, en az 3 oturumluk karşılaştırma verisine dayanmalıdır.
+- Rollback yapılırsa, kalite düşüşünün root cause analizi yapılır ve düzeltilerek yeni versiyon oluşturulur.

@@ -1953,3 +1953,368 @@ Bu bölüm, web uygulaması ve API katmanında uygulanması gereken güvenlik ba
 - Expo managed workflow’da sınırlı destek mevcuttur: `expo-device` paketi basic cihaz bilgisi sağlar.
 - Detaylı kontrol (runtime integrity check, tamper detection) için custom native modül gerekebilir.
 - Jailbreak/root detection’ın tek başına yeterli güvenlik sağlamadığı bilinmeli; defense-in-depth yaklaşımının bir katmanı olarak değerlendirilmelidir.
+
+---
+
+# 36. Supply Chain Attack Korunması (2026-04-02 Eki)
+
+Bu bölüm, npm/pnpm ekosistemindeki supply chain saldırılarına karşı savunma katmanlarını tanımlar. `37-dependency-policy.md` ve `ADR-003` ile birlikte değerlendirilmelidir.
+
+## 36.1. pnpm Supply Chain Savunma Katmanları
+
+### minimumReleaseAge
+
+- Yeni publish edilen paketlerin en az **7 gün** beklemesi zorunludur.
+- Bu süre, typosquatting ve malicious publish saldırılarının topluluk tarafından tespit edilmesi için gereken minimum penceredir.
+- pnpm konfigürasyonunda `minimumReleaseAge: 7d` olarak tanımlanır.
+- Acil güvenlik yaması gerektiren durumlar için exception mekanizması mevcuttur (`44-exception-and-exemption-policy.md`).
+
+### allowBuilds
+
+- Sadece whitelist'teki paketler postinstall/preinstall script çalıştırabilir.
+- Bilinmeyen paketlerin build script'leri otomatik olarak engellenir.
+- Whitelist, `pnpm` konfigürasyonunda açıkça tanımlanır ve her değişiklik PR review gerektirir.
+- Native code içeren paketler (esbuild, sharp vb.) build izni gerektirir; bu izin tek tek verilir.
+
+### trustPolicy
+
+- Bilinmeyen veya güvenilmeyen paketlerin otomatik kurulumu engellenir.
+- Yeni dependency eklenmesinde `pnpm audit` çıktısı PR'a dahil edilir.
+- Trust seviyesi: verified publisher > well-known scope > community package > unknown publisher.
+
+## 36.2. Lockfile Integrity
+
+- `pnpm-lock.yaml` dosyası CI'da `--frozen-lockfile` flag'i ile doğrulanır.
+- Lockfile dışı dependency resolve edilmesi CI'ı bloklar.
+- Lockfile değişikliği içeren PR'lar otomatik olarak security review etiketini alır.
+- Lockfile hash'i commit'te korunur; tampering tespiti için integrity check uygulanır.
+
+## 36.3. npm Audit
+
+- Her CI çalıştırmasında `pnpm audit --audit-level=high` komutu çalıştırılır.
+- `high` ve `critical` seviyedeki bulgular CI'ı bloklar.
+- `moderate` seviyedeki bulgular uyarı üretir, sprint içinde değerlendirilir.
+- Audit sonuçları PR comment olarak raporlanır.
+
+## 36.4. Pratik Kurallar
+
+| Kural | Açıklama | Severity |
+|-------|----------|----------|
+| Sıfır download paketi | Yıllık 0 download'lı paket kurulmaz | Blocker |
+| Bakımsız paket | Son 6 ayda commit almamış paket dikkatle değerlendirilir, alternatif araştırılır | Major |
+| Native code içeren paket | Ekstra güvenlik incelemesi gerektirir, build script'leri audit edilir | Major |
+| Tek maintainer riski | Kritik dependency'nin tek maintainer'ı varsa, fork/alternatif planı hazırlanır | Minor |
+| Scope dışı paket | `@types/*` haricinde scope'suz paket eklenmesinde maintainer geçmişi kontrol edilir | Minor |
+| Transitive dependency | Doğrudan eklenmemiş ama supply chain'e giren transitive dependency'ler `pnpm audit` ile izlenir | Minor |
+
+---
+
+# 37. Certificate Pinning Stratejisi (2026-04-02 Eki)
+
+Bu bölüm, mobile uygulamalarda MITM (Man-in-the-Middle) koruması için certificate pinning stratejisini detaylandırır. Bölüm 35.4'ü tamamlar.
+
+## 37.1. Ne Zaman Gerekli
+
+- Finansal işlem içeren uygulamalar (ödeme, bakiye sorgulama, para transferi)
+- Sağlık verisi işleyen uygulamalar (tıbbi kayıt, reçete, randevu)
+- Hassas kişisel veri aktarımı yapan uygulamalar (kimlik doğrulama, adres, TC kimlik)
+- Kurumsal/enterprise güvenlik gereksinimleri olan uygulamalar
+- Regulatory compliance gerektiren sektörler (fintech, healthtech, govtech)
+
+## 37.2. Boilerplate Pozisyonu
+
+Certificate pinning altyapısı boilerplate tarafından sağlanır, aktivasyonu derived project kararıdır. Her derived project kendi risk değerlendirmesini yaparak pinning'i aktif edip etmeyeceğine karar verir. Bu karar, derived project'in ADR'ında belgelenir.
+
+## 37.3. Implementasyon Seçenekleri
+
+| Platform | Araç | Açıklama |
+|----------|------|----------|
+| iOS | TrustKit | Open-source, well-maintained, deklaratif pin tanımı |
+| Android | OkHttp CertificatePinner | OkHttp entegrasyonu, builder pattern ile pin tanımı |
+| Cross-platform | `react-native-ssl-pinning` | React Native bridge, her iki platform desteği |
+| Expo | Custom config plugin | Managed workflow'da native modül entegrasyonu |
+
+- Pin formatı: SHA-256 SPKI hash (SubjectPublicKeyInfo)
+- Pin kaynağı: Leaf certificate veya intermediate CA certificate (intermediate tercih edilir; leaf daha sık değişir)
+
+## 37.4. Pin Rotasyonu
+
+- **Backup pin zorunludur:** Her zaman en az bir backup pin tanımlı olmalıdır. Ana sertifika yenilendiğinde backup pin devreye girer.
+- **OTA güncellenebilirlik:** Pin değerleri OTA (EAS Update) ile güncellenebilir yapıda tutulmalıdır. Hardcoded pin değişikliği store update gerektirir; bu risk azaltılmalıdır.
+- **Yenileme takvimi:** Sertifika yenilemeden en az **30 gün** önce yeni pin içeren build deploy edilmelidir.
+- **Acil durum kill-switch:** Pin rotasyonu başarısız olursa, pinning geçici olarak devre dışı bırakılabilecek bir remote config bazlı kill-switch mekanizması tanımlanmalıdır.
+
+## 37.5. Risk Yönetimi
+
+| Risk | Etki | Mitigasyon |
+|------|------|-----------|
+| Yanlış pin | Uygulamayı tamamen bloke eder | Staging'de test zorunlu, backup pin tanımlı |
+| Pin expiry | Kullanıcılar API'ya erişemez | 30 gün önceden deploy, monitoring alert |
+| Debug zorluğu | Proxy araçları çalışmaz | Debug build'de pinning devre dışı |
+| Store update gecikmesi | Yeni pin dağıtılamaz | OTA ile pin güncelleme altyapısı |
+
+## 37.6. Debug Ortamı
+
+- Development ve staging ortamlarında certificate pinning **devre dışı** bırakılır.
+- Proxy araçları (Charles Proxy, mitmproxy, Proxyman) ile debug yapılabilmesi için gereklidir.
+- `__DEV__` flag'i veya environment değişkeni ile kontrol edilir.
+- Production build'de pinning devre dışı bırakılamaz (kill-switch hariç).
+
+---
+
+# 38. WebView Güvenlik ve Entegrasyon Kuralları (2026-04 Eki)
+
+Bu bölüm, `react-native-webview` ile uygulama içi web içeriği gösteriminde uyulması gereken güvenlik kurallarını tanımlar. WebView kullanım alanları: Yasal metinler (T&C, privacy policy), 3D Secure ödeme, harici içerik gösterimi, embedded dashboard.
+
+## 38.1. URL Whitelist
+
+- WebView'de yalnızca onaylanmış domain'lere navigasyon izni verilir
+- Whitelist konfigürasyonu: Merkezi bir config dosyasında (ör. `webviewConfig.ts`) tanımlı domain listesi
+- Bilinmeyen URL: `Linking.openURL` ile harici tarayıcıya yönlendirilir
+- Scheme kontrolü: Sadece `https://` izni (`http://` development dışında **YASAK**)
+- Deep link yakalama: WebView içinden uygulamanın kendi deep link'leri yakalanır ve native navigation'a yönlendirilir
+- Örnek whitelist:
+
+```typescript
+const ALLOWED_DOMAINS = [
+  "example.com",
+  "payment.stripe.com",
+  "accounts.google.com",
+];
+```
+
+## 38.2. JavaScript Injection Koruması
+
+- `injectedJavaScript`: Sadece güvenilir, static JavaScript inject edilir
+- User input **ASLA** sanitize etmeden JavaScript olarak inject edilmez (XSS riski)
+- `postMessage` / `onMessage`: WebView ↔ Native güvenli iletişim kanalı
+- `eval()` **YASAK**: WebView içinde dinamik kod çalıştırma yapılmaz
+- Content Security Policy: WebView'e yüklenen sayfalarda CSP header'ı kontrol edilir
+
+## 38.3. Cookie Paylaşımı
+
+- `sharedCookiesEnabled`: Dikkatli kullanılmalı
+- Auth cookie'nin WebView'e sızması güvenlik riski oluşturabilir
+- **Gerekli durum:** Aynı backend'in hem native hem WebView'den erişilmesi (ör. checkout flow)
+- **Gereksiz durum:** Harici site gösterimi (T&C, blog) — cookie paylaşılmamalı
+- iOS: `WKWebsiteDataStore` ile cookie izolasyonu
+- **Kural:** Default olarak cookie paylaşımı **KAPALI**, sadece gerekli endpoint'ler için açılır
+
+## 38.4. File Upload / Download
+
+- File picker: WebView içinden dosya seçimi platform bazlı farklılıklar gösterir
+- iOS: Native file picker otomatik açılır
+- Android: `onFileDownload` handler ile download yönetimi
+- Download: Dosya indirme WebView'den çıkarılıp native download manager'a yönlendirilir
+- Upload güvenliği: Max dosya boyutu (D-MEDIA ile uyumlu: 5MB), tip kontrolü
+
+## 38.5. Navigation Interception
+
+- `onNavigationStateChange`: URL değişikliği izlenir
+- `onShouldStartLoadWithRequest` (iOS) / `shouldOverrideUrlLoading` (Android): Navigasyon öncesi URL kontrol
+- External link tespiti: Whitelist dışı URL → `Linking.openURL` ile harici tarayıcı
+- Deep link tespiti: Uygulamanın kendi scheme'i (`myapp://`) → native navigation'a yönlendirme
+- `mailto:` / `tel:` gibi scheme'ler → native handler'a yönlendirme
+
+## 38.6. 3D Secure / Ödeme Entegrasyonu
+
+- 3DS WebView akışı: Ödeme gateway URL'i WebView'de açılır → kullanıcı kimlik doğrulaması yapar → callback URL ile sonuç döner
+- Callback yakalama: `onNavigationStateChange` ile callback URL pattern tespiti
+- Tamamlanma: Callback URL tespit edilince WebView kapatılır, native ödeme sonuç ekranına geçilir
+- Güvenlik: 3DS WebView'de cookie paylaşımı gerekebilir (payment session)
+- Timeout: 5 dakika içinde tamamlanmazsa kullanıcıya "İşlem zaman aşımına uğradı" mesajı
+
+## 38.7. Anti-pattern'ler
+
+- URL filtresiz WebView açmak (phishing riski)
+- User input'u JavaScript injection ile WebView'e göndermek (XSS)
+- Auth token'ı WebView URL'inde query parameter olarak taşımak
+- Cookie paylaşımını tüm WebView'lerde açık bırakmak
+- WebView içinde uygulamanın tüm backend API'sine erişim vermek
+- Download'ları WebView içinde yönetmek (native download manager kullan)
+
+---
+
+# 39. Encryption at Rest and in Transit
+
+Bu bölüm, uygulama kapsamında verinin hem cihazda saklanırken (at rest) hem de ağ üzerinden taşınırken (in transit) nasıl korunacağını tanımlar. KVKK Madde 12 ve GDPR Madde 32, kişisel verilerin uygun teknik tedbirlerle korunmasını zorunlu kılar; şifreleme bu tedbirlerin temel taşıdır.
+
+## 39.1. Data at Rest Encryption
+
+Cihazda saklanan verinin şifrelenmesi aşağıdaki katmanlara göre yönetilir:
+
+### 39.1.1. Katman 1 — Secure Storage (En Yüksek Güvenlik)
+
+- **Araç:** Expo SecureStore (ADR-010 canonical)
+- **Backend:** iOS Keychain Services, Android Keystore
+- **Şifreleme:** Platform tarafından yönetilen hardware-backed encryption
+- **Kullanım alanı:** Auth token'ları, refresh token'lar, biometric credential'lar, API key'ler
+- **Kural:** Bu katmandaki veri asla log'a yazılmaz, debug output'a dahil edilmez ve analytics event'ine eklenmez
+
+### 39.1.2. Katman 2 — MMKV Encrypted Instance (Yüksek Güvenlik)
+
+- **Araç:** react-native-mmkv encrypted instance (ADR-019 canonical)
+- **Şifreleme:** AES-256, encryption key Keychain/Keystore'da saklanır
+- **Kullanım alanı:** Hassas kullanıcı tercihleri, draft içerikler, kişisel notlar, sağlık verisi
+- **Key yönetimi:**
+  - Encryption key uygulama ilk kurulumda oluşturulur ve Keychain/Keystore'a yazılır
+  - Key, kullanıcı kimlik doğrulaması olmadan erişilebilir (app-level encryption)
+  - Biometric-gated key kullanılması gerekiyorsa (ör: sağlık verisi), SecureStore'a taşınır
+- **Kural:** Encryption key hardcoded olamaz, kaynak kodda veya bundle'da bulunamaz
+
+### 39.1.3. Katman 3 — MMKV Plain Instance (Standart Güvenlik)
+
+- **Araç:** react-native-mmkv default instance (ADR-019 canonical)
+- **Şifreleme:** Platform disk encryption'a bağlı (iOS: Data Protection, Android: File-Based Encryption)
+- **Kullanım alanı:** UI tercihleri, tema, dil, feature flag cache, non-sensitive app state
+- **Kural:** Kişisel veri (ad, e-posta, telefon) bu katmanda saklanmaz
+
+### 39.1.4. Katman 4 — Web localStorage / IndexedDB
+
+- **Şifreleme:** Tarayıcı tarafından yönetilir, uygulama seviyesinde ek şifreleme yoktur
+- **Kullanım alanı:** Non-sensitive preferences, TanStack Query cache (non-PII)
+- **Kural:** PII (Personally Identifiable Information) localStorage'a yazılmaz. Auth artefact'ları HttpOnly cookie'de yaşar (ADR-010)
+
+### 39.1.5. Key Rotation Stratejisi
+
+- MMKV encryption key rotation **kullanıcı şifre değişikliğinde** ve **güvenlik ihlali tespitinde** tetiklenir
+- Rotation prosedürü: Yeni key oluştur → mevcut veriyi yeni key ile yeniden şifrele → eski key'i yok et
+- Rotation sırasında uygulama kilitli state'te kalır (UI'da bilgilendirme gösterilir)
+- Otomatik periyodik rotation şu an zorunlu değildir; ihtiyaç doğduğunda değerlendirilir
+
+## 39.2. Data in Transit Encryption
+
+Ağ üzerinden taşınan tüm verinin korunması aşağıdaki kurallarla sağlanır:
+
+### 39.2.1. TLS Zorunluluğu
+
+- **Minimum sürüm:** TLS 1.2 zorunlu, TLS 1.3 önerilir
+- Tüm API iletişimi HTTPS üzerinden gerçekleşir; HTTP bağlantısı üretim ortamında yasaktır
+- iOS App Transport Security (ATS) varsayılan açıktır ve kapatılmaz
+- Android Network Security Config ile cleartext traffic yasaktır (`android:usesCleartextTraffic="false"`)
+- Development ortamında localhost HTTP istisnası kabul edilir; bu istisna production build'de bulunmaz
+
+### 39.2.2. HSTS (HTTP Strict Transport Security)
+
+- Web backend HSTS header'ı döner: `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+- HSTS preload listesine kayıt değerlendirilir
+- Mobile tarafta HSTS browser davranışı geçerli değildir; ATS ve Network Security Config aynı korumayı sağlar
+
+### 39.2.3. Certificate Transparency
+
+- Backend sertifikaları Certificate Transparency (CT) log'larında yayımlanmalıdır
+- Sertifika yenileme sırasında CT log kaydı doğrulanır
+
+### 39.2.4. API Güvenlik Katmanları
+
+- Request/response body'leri TLS ile şifrelenir; uygulama seviyesinde ek şifreleme genellikle gereksizdir
+- **İstisna:** Çok hassas veri (ör: ödeme bilgisi, sağlık verisi) için end-to-end encryption (E2EE) değerlendirilebilir
+- API key'ler header'da taşınır, URL query parameter'ında taşınmaz (server log'larda görünme riski)
+
+## 39.3. KVKK/GDPR Encryption Compliance Mapping
+
+| Gereksinim | Uygulama | Referans |
+|------------|----------|----------|
+| KVKK Md. 12 — Teknik tedbirler | At rest: Katman 1-2 şifreleme, In transit: TLS 1.2+ | Bu bölüm |
+| GDPR Art. 32 — Encryption | Pseudonymization + encryption | Bu bölüm + ADR-017 |
+| GDPR Art. 34 — Breach notification muafiyeti | Şifrelenmiş veri ihlalinde bildirim yükü hafifler | ADR-017 §10 |
+| Right to erasure (silme hakkı) | Encryption key'in silinmesi = crypto-shredding | ADR-019 §15 |
+
+---
+
+# 40. Penetration Testing ve Security Audit Süreci
+
+Bu bölüm, üretim ortamına giren uygulamanın düzenli güvenlik denetiminden geçirilmesini sağlayan süreç ve takvimi tanımlar.
+
+## 40.1. Penetration Test Takvimi
+
+| Test Türü | Sıklık | Kapsam | Sorumlu |
+|-----------|--------|--------|---------|
+| Harici penetration test | Yılda en az 1 kez | API, web, mobil uygulama, auth flow | Bağımsız 3. parti güvenlik firması |
+| Dahili güvenlik taraması | Her major release öncesi | OWASP Top 10, dependency vulnerability scan | Geliştirme ekibi |
+| Otomatik DAST taraması | CI/CD pipeline'da sürekli | API endpoint'ler, bilinen zafiyet pattern'leri | CI otomasyonu |
+| Dependency audit | Haftalık (otomatik) | npm audit, Snyk veya Socket.dev | CI otomasyonu |
+
+## 40.2. Scope Tanımı
+
+Penetration test scope'u aşağıdaki alanları kapsar:
+
+1. **API katmanı:** Authentication, authorization, input validation, rate limiting, injection saldırıları
+2. **Mobil uygulama:** Reverse engineering dayanıklılığı, local storage güvenliği, certificate pinning, runtime manipulation
+3. **Web uygulaması:** XSS, CSRF, clickjacking, CORS misconfiguration, cookie güvenliği
+4. **Auth flow:** Token hijacking, session fixation, brute force, credential stuffing, MFA bypass
+5. **Third-party entegrasyonlar:** Payment gateway güvenliği, analytics SDK veri sızıntısı
+
+## 40.3. Bulgu Severity Tanımları
+
+| Severity | Tanım | Remediation SLA | Örnek |
+|----------|-------|-----------------|-------|
+| P0 — Critical | Aktif istismar edilebilir, veri sızıntısı veya tam sistem erişimi riski | 24 saat içinde fix veya workaround | SQL injection, RCE, auth bypass |
+| P1 — High | İstismar edilebilir ancak ek koşullar gerektirir | 7 gün | Stored XSS, IDOR, privilege escalation |
+| P2 — Medium | Sınırlı etki veya istismar zorluğu yüksek | 30 gün | Reflected XSS, information disclosure |
+| P3 — Low | Minimal etki, best-practice sapması | 90 gün | Missing security headers, verbose error messages |
+
+## 40.4. Bulgu Yönetimi Süreci
+
+1. **Raporlama:** Pentest firması bulguları CVSS skoruyla birlikte raporlar
+2. **Triage:** Güvenlik sorumlusu bulguları P0-P3 olarak sınıflandırır
+3. **Remediation:** Her bulgu için fix sorumlusu ve SLA atanır
+4. **Doğrulama:** Fix uygulandıktan sonra retest yapılır (P0-P1 için zorunlu)
+5. **Kapanış:** Tüm bulgular kapatıldığında veya kabul edilmiş risk olarak belgelendiğinde test turu kapanır
+6. **Arşivleme:** Pentest raporları minimum 3 yıl saklanır (KVKK denetim gereksinimi)
+
+## 40.5. Pre-Release Güvenlik Kontrol Listesi
+
+Her major release öncesi aşağıdaki kontroller tamamlanmalıdır:
+
+- [ ] `npm audit` — kritik ve yüksek seviye bulgu yok
+- [ ] Dependency vulnerability scan (Snyk/Socket.dev) temiz
+- [ ] OWASP Top 10 self-assessment tamamlandı
+- [ ] Secret scan (git-secrets veya gitleaks) temiz
+- [ ] iOS ATS ve Android Network Security Config doğrulandı
+- [ ] Sensitive data logging kontrolü yapıldı
+- [ ] Certificate pinning doğrulandı (geçerliyse)
+- [ ] Privacy manifest (iOS) ve Data Safety (Android) güncel
+
+---
+
+# 41. Certificate Pinning Implementasyon Rehberi
+
+Bu bölüm, D-SEC guardrail'de tanımlanan certificate pinning kuralının implementasyon detaylarını sağlar.
+
+## 41.1. Ne Zaman Gerekir?
+
+Certificate pinning aşağıdaki koşullarda zorunludur:
+
+- Finansal işlemler yapan uygulamalar (ödeme, transfer)
+- Sağlık verisi işleyen uygulamalar
+- Enterprise compliance gereksinimi olan projeler
+
+Genel amaçlı tüketici uygulamalarında certificate pinning opsiyoneldir.
+
+## 41.2. Pinning Stratejisi
+
+- **Pin türü:** Sertifika public key hash (SPKI) pinlenir, sertifikanın kendisi değil
+- **Pin sayısı:** Minimum 2 pin zorunlu — aktif sertifika + backup sertifika
+- **Pin formatı:** SHA-256 hash, base64 encoded
+- **Pinlenen seviye:** Intermediate CA sertifikası pinlenir (leaf sertifikadan daha kararlı)
+
+## 41.3. Pin Rotation Prosedürü
+
+1. **Backup pin zorunluluğu:** Her zaman en az 2 pin tanımlı olmalıdır
+2. **Sertifika yenileme takvimi:** Son kullanma tarihinden en az 30 gün önce yeni pin uygulamaya eklenir
+3. **OTA güncelleme:** Pin değişikliği OTA update ile dağıtılabilir (ADR-015). Native config seviyesinde pinning yapılıyorsa native build gerekir
+4. **Graceful degradation:** Pin doğrulama başarısız olduğunda uygulama çökmek yerine güvenlik uyarısı gösterir ve bağlantıyı reddeder
+5. **Emergency bypass:** Tüm pin'lerin geçersiz olduğu felaket senaryosunda remote config ile geçici devre dışı bırakma mekanizması değerlendirilmelidir
+
+## 41.4. Geliştirme ve Test Ortamı
+
+- Development ortamında certificate pinning **devre dışıdır** (proxy/debugging araçlarını engellemesi nedeniyle)
+- Staging ortamında pinning **aktiftir** ve production sertifikası ile test edilir
+
+## 41.5. Anti-pattern'ler
+
+- Leaf sertifikasını pinlemek (her yenileme sonrası pin değişir)
+- Tek pin kullanmak (sertifika değişikliğinde uygulama kilitlenir)
+- Development build'de pinning aktif bırakmak (debugging imkânsız)
+- Pin başarısızlığında sessizce HTTP'ye fallback yapmak (güvenlik ihlali)

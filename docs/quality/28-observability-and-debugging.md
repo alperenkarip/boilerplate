@@ -849,3 +849,335 @@ Bu bölüm, vendor-agnostic observability standardı olarak OpenTelemetry entegr
 - IP anonimleştirme uygulanmalıdır.
 - User ID yerine anonymous session ID kullanılabilir; kullanıcı izleme telemetry'nin amacı değildir.
 - Consent durumuna göre telemetry seviyesi ayarlanmalıdır: consent verilmemişse yalnızca crash reporting aktif olabilir, detaylı telemetry devre dışı bırakılmalıdır.
+
+---
+
+# 30. Structured Logging Standardı (2026-04-02 Eki)
+
+Bu bölüm, `console.log` yerine yapılandırılmış log kullanımını zorunlu kılan standardı tanımlar. Bölüm 29.2 ile birlikte değerlendirilmeli, bu bölüm operasyonel implementasyon detaylarını kapsar.
+
+## 30.1. Log Seviyeleri ve Kullanım Alanları
+
+| Seviye | Kullanım Alanı | Production | Development |
+|--------|---------------|------------|-------------|
+| `debug` | Geliştirici debug bilgisi, değişken değerleri, akış takibi | Tamamen çıkarılır | Aktif |
+| `info` | Normal operasyonel olaylar (kullanıcı girişi, sayfa geçişi, API çağrısı) | Aktif | Aktif |
+| `warn` | Beklenmeyen ama yönetilen durumlar (fallback kullanımı, retry, deprecation) | Aktif | Aktif |
+| `error` | Hatalar, başarısız işlemler, yakalanmamış exception'lar | Aktif | Aktif |
+
+## 30.2. JSON Format Standardı
+
+Her log kaydı aşağıdaki yapıda olmalıdır:
+
+```json
+{
+  "level": "info",
+  "message": "Kullanıcı giriş yaptı",
+  "timestamp": "2026-04-02T10:30:00.000Z",
+  "context": {
+    "userId": "usr_abc123",
+    "screen": "LoginScreen",
+    "method": "email"
+  },
+  "trace_id": "trace-xyz-789",
+  "span_id": "span-abc-456",
+  "service_name": "mobile-app",
+  "environment": "production"
+}
+```
+
+## 30.3. Logger Abstraction
+
+- Tek bir logger modülü (`packages/core/src/logger/`) tüm log çağrılarını yönetir.
+- Logger, hedef output'a göre yönlendirme yapar:
+  - Development: `console` (renkli, okunabilir format)
+  - Production (web): Sentry breadcrumb + remote logging endpoint
+  - Production (mobile): Sentry breadcrumb + async file buffer
+- Doğrudan `console.log`, `console.warn`, `console.error` çağrısı lint rule ile yasaklanır; yalnızca logger modülü üzerinden log yazılır.
+
+## 30.4. Hassas Veri Filtresi
+
+Aşağıdaki alanlar otomatik olarak maskelenir:
+
+| Alan | Maskeleme Kuralı | Örnek |
+|------|------------------|-------|
+| `password` | Tamamen `***` ile değiştirilir | `***` |
+| `token` | İlk 4 ve son 4 karakter gösterilir | `eyJh...xYz9` |
+| `creditCard` | Son 4 hane gösterilir | `****-****-****-4242` |
+| `email` | Domain gösterilir | `***@example.com` |
+| `phone` | Son 4 hane gösterilir | `***-***-1234` |
+| `tcKimlik` | Tamamen maskelenir | `***` |
+
+- Maskeleme, logger pipeline'ında otomatik olarak uygulanır.
+- Yeni hassas alan tanımı `logger/redaction-rules.ts` dosyasına eklenir.
+- Maskeleme kurallarının bypass edilmesi Blocker severity ihlaldir.
+
+## 30.5. Production Debug Kaldırma
+
+- Production build'de `debug` seviyesindeki log'lar tamamen çıkarılır (tree-shaking veya build-time elimination).
+- `__DEV__` flag'i ile kontrol edilen debug bloklarının production bundle'a girmediği CI'da doğrulanır.
+- Bundle analizi raporunda debug log string'lerinin varlığı kontrol edilir.
+
+---
+
+# 31. User Session Replay Değerlendirmesi (2026-04-02 Eki)
+
+Bu bölüm, kullanıcı oturumu kaydı (session replay) araçlarının değerlendirmesini ve boilerplate pozisyonunu tanımlar.
+
+## 31.1. Araç Karşılaştırması
+
+| Araç | Avantaj | Dezavantaj | Platform | Durum |
+|------|---------|-----------|----------|-------|
+| Sentry Session Replay | Mevcut Sentry entegrasyonu, ek SDK gerektirmez | Web-only (React Native desteği yok) | Web | Değerlendir |
+| LogRocket | React Native desteği, Redux/Zustand entegrasyonu | Ek maliyet, SDK boyutu | Web + Mobile | Watchlist |
+| UXCam | Mobile-focused, gesture heatmap | Web desteği yok | Mobile | Watchlist |
+| FullStory | Cross-platform, güçlü arama | Yüksek maliyet, data residency | Web + Mobile | Watchlist |
+
+## 31.2. Boilerplate Pozisyonu
+
+- Session replay aracı seçimi derived project kararıdır.
+- Boilerplate, session replay entegrasyonu için abstraction katmanı sağlar.
+- Sentry Session Replay, mevcut Sentry entegrasyonu nedeniyle web tarafında en düşük maliyetli seçenektir.
+- Mobile tarafında araç seçimi, derived project'in bütçe ve gereksinim analizine bağlıdır.
+
+## 31.3. Privacy Gereksinimleri
+
+- **Hassas alan maskeleme:** Form input'ları, şifre alanları, kişisel bilgi alanları otomatik maskelenir.
+- **GDPR consent zorunlu:** Session replay, kullanıcı consent'i olmadan aktifleştirilmez (ADR-017 ile uyumlu).
+- **Sampling oranı:** Production'da %10 sampling önerilir. Tüm oturumların kaydedilmesi gereksiz veri birikimi ve maliyet yaratır.
+- **Data retention:** Session replay verileri en fazla 30 gün saklanır.
+- **Opt-out:** Kullanıcıya session replay'den çıkma imkanı sunulmalıdır.
+
+---
+
+# 32. Diagnostics ve Health Check (2026-04-02 Eki)
+
+Bu bölüm, uygulama düzeyinde diagnostik veri toplama, health check mekanizması, diagnostik rapor oluşturma ve ağ teşhis araçlarını tanımlar. Amaç, hata raporlarının bağlam zenginliğini artırmak, destek ekibinin sorunları hızlı çözmesini sağlamak ve proaktif sağlık kontrolü ile kullanıcı deneyimini korumaktır.
+
+## 32.1. Device Info Toplama
+
+Her error report ve destek talebine otomatik olarak eklenen cihaz ve ortam bilgileri:
+
+| Bilgi | Kaynak | Örnek |
+|-------|--------|-------|
+| Cihaz modeli | `expo-device` | "iPhone 15 Pro" |
+| OS ve versiyonu | `expo-device` | "iOS 18.2" |
+| App versiyonu | `expo-constants` | "1.2.3" |
+| Build numarası | `expo-constants` | "42" |
+| Expo SDK versiyonu | `expo-constants` | "55.0.0" |
+| Kullanılabilir bellek | `expo-device` | "2.4 GB" |
+| Ekran boyutu | `Dimensions` API | "393x852 @3x" |
+| Locale | `expo-localization` | "tr-TR" |
+| Timezone | `expo-localization` | "Europe/Istanbul" |
+| Bağlantı tipi | `@react-native-community/netinfo` | "wifi" |
+| Aktif tema | Zustand store | "dark" |
+| Aktif dil | `i18n.language` | "tr" |
+
+**Privacy kuralları:**
+- PII (kişisel tanımlayıcı bilgi) bu verilerde bulunmaz (27-security-and-secrets-baseline ile uyum).
+- Kullanıcı adı, email, telefon numarası gibi bilgiler device info'ya dahil edilmez.
+- Sentry: Device context otomatik olarak eklenir (`Sentry.init` konfigürasyonunda `sendDefaultPii: false` ayarı ile PII gönderimi engellenir).
+
+**Web tarafı:**
+- `navigator.userAgent` parse edilerek tarayıcı ve OS bilgisi alınır.
+- `navigator.connection` API'si ile bağlantı tipi tespit edilir (destekleyen tarayıcılarda).
+- Ekran boyutu: `window.innerWidth` x `window.innerHeight` ve `devicePixelRatio`.
+
+## 32.2. Health Check Endpoint
+
+Uygulamanın backend bağlantısını doğrulamak için kullanılan health check mekanizması:
+
+**Endpoint:** `GET /api/health` veya `GET /api/status`
+
+**Kontrol zamanları:**
+- **App cold start:** Bootstrap sırasında, auth kontrolünden önce çağrılır. Backend erişilemezse offline mode'a geçilir.
+- **App foreground'a dönüş:** Background'dan foreground'a geçişte (`AppState` change event) health check tetiklenir. Uzun süre background'da kaldıktan sonra backend durumunun doğrulanması gerekir.
+- **Network reconnection:** Offline → online geçişinde (`NetInfo` change event) backend erişilebilirliği kontrol edilir.
+
+**Başarılı yanıt formatı:**
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "serverTime": "2026-04-02T10:30:00Z"
+}
+```
+
+**Konfigürasyon:**
+- **Timeout:** 5 saniye (hızlı kontrol — normal API timeout'undan kısa).
+- **Retry:** Başarısız olursa 1 kez daha denenir (exponential backoff yok, hızlı karar).
+- **Başarısız durumda:** Kullanıcıya "Sunucu bağlantısı kurulamadı" banner gösterilir, uygulama offline mode'a geçer, cache'li veriyle çalışmaya devam eder.
+- **Yanıt süresi:** Sentry performance span olarak kaydedilir — backend yavaşlamaları proaktif olarak tespit edilir.
+
+**Anti-pattern:** Health check'i periyodik olarak (her 5 saniyede) çağırmak **YASAK** — gereksiz ağ trafiği ve batarya tüketimi yaratır. Yalnızca yukarıdaki tetikleyici olaylarda çağrılır.
+
+## 32.3. Diagnostik Raporu
+
+Kullanıcının destek ekibine göndermek için oluşturabileceği kapsamlı diagnostik rapor:
+
+**Rapor içeriği:**
+- Device info (32.1'deki tüm bilgiler)
+- App version ve build numarası
+- Son 5 error log özeti (error mesajı + timestamp, stack trace hariç)
+- Ağ durumu (bağlantı tipi, son health check sonucu)
+- Aktif tema ve dil ayarları
+- Feature flag durumu (aktif/pasif flagler)
+- Son Sentry event ID'si (destek ekibi bu ID ile Sentry'de olayı eşleştirebilir)
+
+**PII filtresi (zorunlu):**
+- Auth token **dahil edilmez**
+- Kullanıcı emaili **dahil edilmez**
+- Şifre veya güvenlik sorusu **dahil edilmez**
+- Konum bilgisi (koordinat) **dahil edilmez**
+- Filtre, rapor oluşturma anında uygulanır; bypass edilmesi Blocker severity ihlaldir.
+
+**Format:** Plain text veya JSON. Kullanıcıya gösterilen özet plain text, teknik detay JSON formatında saklanır.
+
+**Paylaşma mekanizması:**
+- `expo-sharing` ile native share sheet açılır (email, mesaj, AirDrop vb.).
+- Kullanıcı dilediği kanal üzerinden destek ekibine iletebilir.
+- Paylaşım öncesi kullanıcıya rapor içeriği gösterilir (şeffaflık).
+
+**Erişim noktaları:**
+- Settings ekranında "Sorun Bildir" butonu (tüm kullanıcılar).
+- Debug menu (development/staging build'lerde) — `16-tooling-and-governance.md` bölüm 40 ile uyumlu.
+- Error boundary ekranında "Rapor Gönder" butonu (uygulama çöktüğünde).
+
+**Sentry korelasyonu:** Raporda son Sentry event ID'si bulunur. Destek ekibi bu ID'yi Sentry dashboard'da arayarak kullanıcının yaşadığı hatanın detaylı stack trace'ine, breadcrumb'larına ve session bilgilerine ulaşabilir.
+
+## 32.4. Network Diagnostics
+
+Ağ katmanındaki sorunların tespiti ve raporlanması:
+
+**API endpoint erişilebilirlik:**
+- Health check endpoint ping sonucu: erişilebilir / erişilemez / timeout.
+- Başarısız durumda kullanıcıya hangi seviyede sorun olduğu belirtilir (ağ yok vs. sunucu erişilemiyor).
+
+**Bağlantı tipi tespiti:**
+- WiFi, cellular (4G/5G), ethernet — `@react-native-community/netinfo` ile tespit edilir.
+- Bağlantı tipi değişikliği event olarak loglanır (Sentry breadcrumb).
+
+**Düşük bağlantı kalitesi:**
+- `effectiveType` değeri `"2g"` ise:
+  - Kullanıcıya "Yavaş bağlantı tespit edildi" uyarısı gösterilir.
+  - Adaptive loading aktifleştirilir: düşük kalite görsel yükleme, agresif lazy loading, gereksiz ağ isteklerinin ertelenmesi.
+- `effectiveType` değeri `"3g"` ise: Görsel kalitesi orta seviyeye düşürülür, uyarı gösterilmez.
+
+**DNS resolution süresi:**
+- Performance span olarak kaydedilir — DNS çözümleme süresi anomali tespitinde kullanılır.
+
+**Development/staging ortamında ağ denetçisi:**
+- Debug menu'den erişilebilen request/response viewer.
+- Her API çağrısının method, URL, status code, süre ve response boyutunu gösterir.
+- Bu denetçi production build'de **bulunmaz** — tree-shaking veya build-time elimination ile çıkarılır.
+
+## 32.5. Diagnostics Anti-Pattern Listesi
+
+| # | Anti-pattern | Doğru Yaklaşım |
+|---|-------------|----------------|
+| 1 | Diagnostik raporunda gerçek auth token veya şifre göstermek | PII filtresi zorunlu, hassas veriler **dahil edilmez** |
+| 2 | Health check'i her 5 saniyede çağırmak | Yalnızca tetikleyici olaylarda çağrılır (cold start, foreground, reconnection) |
+| 3 | Device info toplamadan hata raporlamak | Her error report'a otomatik device context eklenir |
+| 4 | Diagnostik verilerini analytics event olarak göndermek | Diagnostik ve analytics ayrı kanallardan akar, veri kirliği önlenir |
+| 5 | Production build'de debug network inspector bırakmak | Tree-shaking ile çıkarılır |
+| 6 | Health check timeout'unu 30 saniye yapmak | 5 saniye timeout — hızlı karar, kullanıcıyı bekletmeme |
+| 7 | Diagnostik raporunu kullanıcıya göstermeden paylaşmak | Şeffaflık: paylaşım öncesi rapor içeriği gösterilir |
+
+---
+
+# 33. Sentry React Native SDK Implementasyon Rehberi
+
+Bu bölüm, canonical error tracking aracı Sentry'nin (ADR-009) React Native + Expo ortamında kurulum, konfigürasyon ve kullanım detaylarını sağlar.
+
+## 33.1. Kurulum
+
+```bash
+npx expo install @sentry/react-native
+```
+
+Expo managed workflow'da Sentry, `app.config.ts` plugin olarak eklenir:
+
+```typescript
+// app.config.ts
+export default {
+  plugins: [
+    [
+      '@sentry/react-native/expo',
+      {
+        organization: 'your-org',
+        project: 'your-project',
+      },
+    ],
+  ],
+};
+```
+
+## 33.2. Initialization
+
+```typescript
+// app/sentry.ts
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  environment: __DEV__ ? 'development' : 'production',
+  enableAutoSessionTracking: true,
+  sessionTrackingIntervalMillis: 30000,
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  attachScreenshot: true,
+  enableNativeCrashHandling: true,
+  // PII maskeleme (ADR-017 uyumu)
+  beforeSend(event) {
+    // Hassas veri temizleme
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.ip_address;
+    }
+    return event;
+  },
+});
+```
+
+## 33.3. Source Map Yükleme
+
+EAS Build entegrasyonu ile source map'ler otomatik yüklenir:
+
+- **iOS:** dSYM dosyaları Sentry'ye otomatik upload edilir
+- **Android:** ProGuard mapping dosyaları upload edilir
+- **JavaScript:** Hermes bytecode source map'leri upload edilir
+- **Konfigürasyon:** `sentry-expo` plugin gerekli upload komutlarını build sürecine ekler
+
+## 33.4. Performance Monitoring
+
+```typescript
+// Route-level transaction
+const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
+
+// App wrapper
+export default Sentry.wrap(App);
+```
+
+### İzlenen Metrikler
+
+| Metrik | Açıklama | Hedef |
+|--------|----------|-------|
+| App Start | Cold/warm start süresi | < 1.5s |
+| Slow/Frozen Frames | UI performans sorunları | < %1 slow frame |
+| HTTP Request Duration | API çağrı süreleri | < 500ms p95 |
+| Custom Transactions | İş mantığı performansı | Proje bazlı |
+
+## 33.5. Alert Kuralları
+
+| Alert | Koşul | Kanal | Severity |
+|-------|-------|-------|----------|
+| Error spike | Son 1 saatte hata sayısı baseline'ın 3x üstüne çıktığında | Slack + email | P1 |
+| New issue | Daha önce görülmemiş hata türü | Slack | P2 |
+| Performance degradation | P95 response time %50+ artış | Email | P2 |
+| Crash-free rate drop | Crash-free oranı %99 altına düşünce | Slack + PagerDuty | P0 |
+
+## 33.6. Session Replay (Opsiyonel)
+
+- Mobile session replay aktifleştirildiğinde kullanıcı etkileşimleri kaydedilir
+- **Kural:** Session replay'de hassas UI elemanları (şifre input, kredi kartı) otomatik maskelenir
+- **Saklama süresi:** Maksimum 30 gün (KVKK uyumu)
+- **Sampling:** Production'da %1-5 session sample rate

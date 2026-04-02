@@ -408,6 +408,23 @@ TS 6.x gibi major sıçramalar compatibility re-validation olmadan baseline’a 
 | i18next | 26.x | i18n runtime baseline | Inline-string culture’ü çözmez |
 | react-i18next | 17.x | React binding baseline | i18next hattı ile birlikte düşünülmeli |
 
+### 16.1.1. React Native 0.84 Watch Notu
+
+React Native 0.84 Mart 2026'da yayımlanmıştır. Bu sürüm Hermes V1'i varsayılan engine olarak getirir, React 19.2 ile tam entegrasyon sağlar ve TurboModules performans iyileştirmeleri içerir. Ancak bu boilerplate'in canonical baseline'ı Expo SDK 55.x + React Native 0.83.x hattıdır. RN 0.84 hattı SDK 56 ile birlikte değerlendirilecek aday konumundadır.
+
+Bu sürümün getirdiği önemli değişiklikler:
+- Hermes V1 artık varsayılan ve tek desteklenen JS engine'dir (önceki sürümlerde bazı edge case'lerde JSC fallback mümkündü, 0.84'te bu imkan kaldırılmıştır)
+- React 19.2 entegrasyonu tamamlanmıştır (concurrent features, useTransition, useDeferredValue tam destekli)
+- TurboModules lazy-loading performansı iyileştirilmiştir
+- Fabric renderer'da view flattening optimizasyonları eklenmiştir
+- setNativeProps ve findNodeHandle tamamen kaldırılmıştır
+
+Canonical track'e alınma koşulları:
+1. Expo SDK 56 veya sonrası bu RN hattını referans almalı
+2. Mevcut dependency zincirinde kırılma olmamalı
+3. Compatibility revalidation süreci tamamlanmalı
+4. Bu belgenin çekirdek matrix tablosu güncellenmeli
+
 ## 16.2. Yardımcı Kütüphane Versiyon Takip Tablosu
 
 Aşağıdaki tablo, çekirdek omurganın üzerine eklenen yardımcı kütüphanelerin canonical versiyon hatlarını tanımlar. Bu kütüphaneler çekirdek stack'in parçası olmasa da, uyumluluk zincirleri nedeniyle versiyon takibi gereklidir.
@@ -774,8 +791,80 @@ Bu doküman yeterli kabul edilir eğer:
 - **React Native DevTools:** RN debugging'de birincil yüzey olarak kabul edilir; legacy standalone araçlar ikincildir.
 - **pnpm install security:** `minimumReleaseAge`, `allowBuilds` ve `trustPolicy: no-downgrade` workspace baseline'ı olarak kabul edilir; install-time güvenlik gevşetmeleri ADR/exception ister.
 - **NativeWind 5.x:** candidate track statüsü sürüyorsa bootstrap anında fallback kararı yazılı olmalıdır.
+- **React Native 0.84:** Mart 2026'da yayımlandı; Hermes V1 varsayılan, React 19.2 tam entegrasyon, TurboModules performans iyileştirmeleri içerir. SDK 56 ile birlikte canonical track adayıdır; SDK 55 baseline'ında doğrudan kullanılmaz.
+- **@expo/ui (Expo UI):** SwiftUI ve Jetpack Compose ile doğrudan native UI bileşenleri yazabilmeyi sağlayan kütüphane. SDK 55'te beta, mid-2026'da stable 1.0 hedefliyor. Stable release'e kadar watchlist statüsünde; production baseline değildir.
+- **Hermes Bytecode Diffing:** EAS Update ile entegre; OTA güncellemelerde yalnızca değişen bytecode gönderilir, bandwidth tasarrufu %60-95 (değişiklik boyutuna bağlı). ADR-015'te detaylı.
+- **EAS Build Caching:** Şubat 2026'da duyurulan build caching, sonraki build'leri %20-30 hızlandırır. 15-quality-gates §48'de detaylı.
+- **Expo Workflows:** EAS'in yeni CI/CD özelliği. Mevcut GitHub Actions CI ile birlikte veya alternatif olarak değerlendirilebilir; henüz canonical CI altyapısı olarak kabul edilmez. Stabilite ve feature parity sağlandığında yeniden değerlendirilecek.
+- **React 19.2 API'leri:** `useOptimistic`, `useFormStatus`, `useActionState`, `React.use()`, `React.cache()` — bu boilerplate'te pozisyonları ADR-004 §40, ADR-005 §47, ADR-006 §45'te belgelenmiştir. SPA-first mimari nedeniyle Server Actions/Components non-goal; client-side API'ler koşullu kabul veya non-goal olarak sınıflandırılmıştır.
 
-# 31. Kısa Sonuç
+---
+
+# 31. React Native 0.84 / Expo SDK 55 Güncel Uyumluluk Matrisi (2026-04-02 Eki)
+
+Mart 2026 itibarıyla güncel uyumluluk bilgileri.
+
+| Bileşen | Versiyon | Notlar |
+|---------|---------|--------|
+| React Native | 0.79+ (SDK 55 ile gelen) | New Architecture varsayılan, bridge opsiyonel ama deprecated |
+| React | 19.1+ | Concurrent features aktif, use() hook mevcut |
+| Hermes | V1 | Bytecode precompilation, incremental GC, %15-20 startup iyileştirmesi |
+| Expo SDK | 55.x | New Architecture kapatılamaz, expo-dev-client canonical |
+| TypeScript | 5.8+ | Strict mode zorunlu, satisfies operatörü, const type parameters |
+| Metro | 0.82+ | Tree shaking desteği (beta), symlink desteği gelişmiş |
+| Gradle | 8.x | Android build, AGP 8.x ile uyumlu |
+| Xcode | 16+ | iOS build minimum, Swift 6 desteği |
+| Node.js | 22.x LTS | Runtime, ESM native desteği |
+| pnpm | 10.x | Package manager, workspace protocol, strict peer dependencies |
+
+**Önemli notlar:**
+- RN 0.84 Mart 2026'da yayımlandı ve SDK 56 ile birlikte canonical track adayıdır. SDK 55 baseline'ında RN 0.79+ kullanılır.
+- Hermes V1, RN 0.84 ile varsayılan engine'dir. SDK 55'te Hermes güncel kararlı sürüm kullanılır.
+- New Architecture SDK 55'te varsayılan açıktır ve kapatılamaz. Tüm native modüller TurboModule/Fabric uyumlu olmalıdır.
+
+---
+
+# 32. Otomatik Uyumluluk Doğrulama (2026-04-02 Eki)
+
+`package.json` versiyonlarının compatibility matrix ile uyum kontrolü.
+
+## 32.1. CI Scripti
+
+Komut: `pnpm check:compat`
+
+Bu script aşağıdaki kontrolleri yapar:
+
+1. **Dependency versiyon kontrolü:** `package.json`'daki tüm dependency versiyonları bu matristeki aralıkta mı?
+2. **peerDependency çakışma kontrolü:** Kurulu paketler arasında peerDependency uyumsuzluğu var mı?
+3. **Node.js engine kontrolü:** `package.json` `engines.node` alanı matristeki Node.js versiyonuyla uyumlu mu?
+4. **TypeScript versiyon kontrolü:** Yüklü TypeScript versiyonu strict mode, satisfies ve const type parameters destekliyor mu?
+5. **Expo SDK versiyon kontrolü:** `expo` paket versiyonu canonical SDK aralığında mı?
+
+## 32.2. Çıktı Formatı
+
+Uyumsuzluk tespit edilirse detaylı hata mesajı ve önerilen versiyon gösterilir:
+
+```
+❌ Uyumluluk Hatası:
+  react: 18.3.0 → Beklenen: >=19.1.0 (Matris: React 19.1+)
+  typescript: 5.5.0 → Beklenen: >=5.8.0 (Matris: TypeScript 5.8+)
+
+✅ Uyumlu:
+  expo: 55.2.0 → Matris aralığında (55.x)
+  react-native: 0.79.3 → Matris aralığında (0.79+)
+
+💡 Önerilen düzeltme:
+  pnpm add react@^19.1.0 typescript@^5.8.0
+```
+
+## 32.3. CI Entegrasyonu
+
+- **Çalışma zamanı:** Her PR'da, lint ve typecheck adımlarıyla paralel.
+- **Bloklama:** Uyumsuzluk tespit edilirse PR bloklanır.
+- **Exception:** Geçiş sürecinde versiyon uyumsuzluğu kaçınılmazsa `44-exception-and-exemption-policy.md` ile exception açılır.
+- **Matrix güncelleme:** Compatibility matrix güncellendiğinde CI scripti otomatik yeni aralıkları kullanır (matrix dosyası script tarafından parse edilir).
+
+# 33. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

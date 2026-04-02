@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: zorunlu
   stitch: zorunlu
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-NEW-SCRN: Yeni Ekran Oluşturma Guardrail
@@ -39,6 +39,21 @@ son-güncelleme: 2026-04-01
 | Stitch | Zorunlu | Tasarım referansı |
 | Codex Review | Zorunlu | Kapsamlı denetim |
 
+## Screen Performance Budget
+7. Her yeni ekran için performans bütçesi tanımlanmalı:
+
+| Metrik | 3G Hedef | 4G/WiFi Hedef | Ölçüm Yöntemi |
+|--------|---------|--------------|---------------|
+| TTI (Time to Interactive) | < 3s | < 1.5s | Lighthouse / profiler |
+| FCP (First Contentful Paint) | < 2s | < 1s | Lighthouse / profiler |
+| Re-render sayısı | < 5 | < 3 | React DevTools profiler |
+| Bundle impact | — | < 50KB | size-limit |
+| API çağrısı | ≤ 2 | ≤ 3 | Network tab / interceptor |
+
+8. **Skeleton:** TTI öncesinde skeleton/placeholder gösterilmeli — beyaz ekran yasak
+9. **Lazy loading:** Ekranın alt kısmı viewport'a girince yüklensin (viewport-triggered lazy)
+10. **PR description:** Performans bütçesi değerleri belirtilmeli
+
 ## DoD Ek Maddeleri
 - [ ] SPEC yazılmış ve kabul kriterleri tanımlı
 - [ ] Loading/error/empty/success durumları implement edilmiş
@@ -46,4 +61,6 @@ son-güncelleme: 2026-04-01
 - [ ] A11y uyumu (role, label, focus, contrast)
 - [ ] Platform parity (cross-platform ise)
 - [ ] Visual proof PR'da mevcut
+- [ ] Performance budget tanımlanmış ve karşılanmış
+- [ ] Skeleton/placeholder gösteriliyor (TTI öncesi)
 - [ ] Smoke test yazılmış (önerilen)

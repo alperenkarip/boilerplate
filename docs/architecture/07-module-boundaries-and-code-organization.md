@@ -1161,6 +1161,101 @@ Hemen “export edelim geçsin” çoğu zaman yanlış çözümdür.
 
 ---
 
+# 35.5. Circular Dependency Tespit ve Önleme
+
+## 35.5.1. Neden Kritik?
+
+Circular dependency (dairesel bağımlılık), A modülünün B'yi, B'nin C'yi, C'nin tekrar A'yı import etmesi gibi döngüsel import zincirlerinin oluşmasıdır. Bu durum, runtime'da beklenmedik `undefined` değerler, module initialization hataları ve bundle boyutu artışı üretir. Daha da önemlisi, modüller arası sınırların fiilen çöktüğünü gösterir: iki modül birbirine bağımlıysa ikisi de bağımsız değiştirilemez, test edilemez ve refactor edilemez.
+
+Cross-platform projelerde bu risk daha yüksektir. Çünkü shared package'lar, feature modülleri ve app shell arasındaki import ağı doğası gereği daha karmaşıktır. Bir shared package'ın bir feature'a, o feature'ın başka bir shared package'a ve o package'ın tekrar ilk feature'a bağlanması sık görülen ve tespit edilmesi zor bir patterndir.
+
+## 35.5.2. Otomatik Tespit Mekanizması
+
+Circular dependency tespiti CI pipeline'ında zorunlu kalite kapısı olarak yer almalıdır. Aşağıdaki araçlardan biri veya birkaçı kullanılabilir:
+
+- **eslint-plugin-import `no-cycle` kuralı:** ESLint flat config'de import/no-cycle kuralı etkinleştirilir. Bu kural, dosya bazında döngüsel import'ları tespit eder. `maxDepth` parametresi ile tarama derinliği ayarlanabilir (önerilen: `maxDepth: 4`). Çok derin tarama CI süresini uzatabilir; bu nedenle derinlik ayarı proje büyüklüğüne göre optimize edilmelidir.
+
+- **dpdm (Dependencies, Parsed, and Detected Modules):** `dpdm` aracı, proje genelinde circular dependency analizi yapan ve görsel dependency graph üreten bağımsız bir CLI aracıdır. CI'da `dpdm --tree --no-warning --exit-code circular:1 src/` komutu ile çalıştırılabilir. Circular bulunduğunda non-zero exit code döner ve CI pipeline'ı durdurur.
+
+- **madge:** `madge` aracı, JavaScript/TypeScript projelerinde modül bağımlılık grafiğini analiz eder ve circular dependency'leri tespit eder. `madge --circular --extensions ts,tsx src/` komutu ile çalıştırılabilir. SVG/DOT formatında görsel dependency graph üretme yeteneği debug sürecini kolaylaştırır.
+
+## 35.5.3. CI Entegrasyonu
+
+Circular dependency kontrolü, `15-quality-gates-and-ci-rules.md`'de tanımlanan kalite kapılarına dahil edilmelidir. PR'da circular dependency tespit edildiğinde:
+
+1. CI pipeline **fail** olur ve PR merge edilemez.
+2. Hata mesajı, döngüsel zincirin tam yolunu gösterir (ör: `A → B → C → A`).
+3. PR sahibi, döngüyü kırmak için aşağıdaki çözüm stratejilerinden birini uygular.
+
+## 35.5.4. Çözüm Stratejileri
+
+Circular dependency tespit edildiğinde aşağıdaki stratejilerden biri uygulanır:
+
+1. **Interface extraction (arayüz çıkarma):** Döngüye neden olan somut implementasyon yerine, her iki modülün de bağımlı olduğu ortak bir interface/type tanımı ayrı bir dosyaya veya package'a çıkarılır. Modüller somut implementasyon yerine bu interface'e bağlanır.
+
+2. **Dependency inversion (bağımlılık tersine çevirme):** Alt seviye modül, üst seviye modülün tanımladığı interface'i implement eder. Bu sayede import yönü tek yöne dönüşür.
+
+3. **Barrel file (index.ts) kaldırma veya yeniden yapılandırma:** Barrel file'lar (her şeyi re-export eden index.ts dosyaları) circular dependency'nin en sık gizli nedenidir. Bir barrel file, modülün tüm export'larını tek dosyadan sunarken, gizli döngüsel re-export zincirleri oluşturabilir. Barrel file kaldırılıp doğrudan dosya import'ları kullanıldığında döngü çoğu zaman ortadan kalkar.
+
+4. **Modül bölme:** İki modülün karşılıklı bağımlılığı, aslında aynı modüle ait olmaları gereken kodun yanlış ayrıldığını gösterebilir. Bu durumda ya modüller birleştirilir ya da ortak parça üçüncü bir modüle çıkarılır.
+
+## 35.5.5. Zayıf Yaklaşımlar
+
+- Circular dependency uyarısını ESLint'te `off` yapmak veya `// eslint-disable-next-line` ile bastırmak.
+- `require()` ile dynamic import kullanarak döngüyü runtime'a itelemek (sorun çözülmez, sadece gizlenir).
+- "Şimdilik çalışıyor" diye döngüyü görmezden gelmek.
+
+---
+
+# 35.6. Shared Paket Büyüme Limitleri
+
+## 35.6.1. Problem
+
+Shared package'lar zamanla "her şeyi al, buraya koy" çöplüğüne dönüşme eğilimindedir. Başlangıçta 10-20 export içeren temiz bir `@project/ui` paketi, kontrol edilmezse 200+ export'a ulaşabilir. Bu noktada paket:
+
+- Import'u yavaşlar (tree-shaking bile tüm export'ları parse etmek zorundadır),
+- Ownership belirsizleşir (kim neyi ne için ekledi?),
+- Refactor riski artar (bir export değişikliği potansiyel olarak yüzlerce tüketiciyi etkiler),
+- Naming çatışmaları başlar,
+- Test kapsamı yönetilemez hale gelir.
+
+## 35.6.2. Eşik Değerleri
+
+| Metrik | Uyarı Eşiği | Zorunlu Bölünme Eşiği |
+|--------|-------------|----------------------|
+| Public export sayısı | 100 | 150 |
+| Dosya sayısı (src/ altında) | 80 | 120 |
+| Doğrudan tüketici sayısı | 15 feature modülü | — |
+| Paket boyutu (build output) | 500 KB | 1 MB |
+
+**Uyarı eşiği (100 export):** Paket sahibi, bölünme değerlendirmesi başlatır. Mevcut export'lar cohesion analizi ile gruplandırılır. Henüz bölünme zorunlu değildir ama plan oluşturulur.
+
+**Zorunlu bölünme eşiği (150 export):** Paket bölünmesi zorunludur. Bölünme planı ADR ile belgelenir ve sonraki sprint'te uygulanır. 150 export'u aşan paket, audit'te blocker bulgu olarak raporlanır.
+
+## 35.6.3. Bölünme Kriterleri
+
+Paket bölünürken aşağıdaki kriterler değerlendirilir:
+
+1. **Cohesion analizi:** Birlikte değişen, birlikte kullanılan ve aynı domain'e ait export'lar aynı pakette kalmalıdır. Birlikte değişme oranı düşük export grupları ayrı pakete taşınır.
+
+2. **Import frequency analizi:** Hangi export'ların en çok, hangi feature'lar tarafından kullanıldığı analiz edilir. Yalnızca 1-2 feature tarafından kullanılan export'lar, o feature'lara taşınmaya veya daha spesifik bir pakete ayrılmaya adaydır.
+
+3. **Domain boundary:** Export'lar domain mantığına göre gruplandırılır. UI primitives, UI patterns, form components, data utilities gibi farklı domain'ler ayrı paketlere ayrılır.
+
+## 35.6.4. Bölünme Örnekleri
+
+| Orijinal Paket | Bölünme Sonrası | Gerekçe |
+|---------------|----------------|---------|
+| `@project/ui` (150+ export) | `@project/ui-primitives` + `@project/ui-patterns` + `@project/ui-forms` | Primitives (Button, Text, Icon) her yerde kullanılır; patterns (Card, ListItem, Section) feature seviyesinde; forms (TextInput, Select, Checkbox) form akışlarında. Cohesion grupları farklıdır. |
+| `@project/utils` (100+ export) | `@project/format` + `@project/validation` + `@project/date-utils` | Formatlama, validation ve tarih işlemleri farklı domain'lere aittir ve birlikte değişme oranı düşüktür. |
+| `@project/config` (80+ export) | `@project/config-app` + `@project/config-build` | Uygulama runtime config'i ve build/tooling config'i farklı yaşam döngülerine sahiptir. |
+
+## 35.6.5. İzleme ve Audit
+
+Export sayısı izlemesi CI pipeline'ında otomatik yapılmalıdır. Basit bir script ile `index.ts` barrel file'daki export sayısı sayılabilir. Uyarı eşiği aşıldığında CI uyarı üretir (fail etmez); zorunlu bölünme eşiği aşıldığında CI fail eder. Bu metrik quarterly audit'te (`31-audit-checklist.md`) raporlanır.
+
+---
+
 # 36. Module Boundaries Anti-Pattern Listesi
 
 Aşağıdaki davranışlar bu proje kapsamında zayıf kabul edilir:

@@ -1780,3 +1780,224 @@ belgelenmelidir.
 ## 34.4. Hazırlık rehberi niteliği
 
 Bu bölüm, boilerplate için **hazırlık rehberi** niteliğindedir. Zorunlu implementasyon değildir. Amacı, ürün geliştirme sürecinde App Clips veya Instant Apps ihtiyacı doğduğunda ekibin doğru kararları hızlıca alabilmesi için temel bilgi sağlamaktır.
+
+---
+
+# 35. Tablet / iPad Layout Adaptasyonu
+
+Genis ekran cihazlarda (tablet, iPad, buyuk ekranli telefonlar) layout kuralları bu bölümde tanımlanır. Telefon-first tasarım, geniş ekranlarda boşluk israfı veya kötü oranlar üretmemelidir.
+
+## 35.1. Breakpoint Sistemi
+
+| Breakpoint | Genişlik | Tipik Cihaz | Layout Stratejisi |
+|-----------|---------|-------------|-------------------|
+| compact | <600px | Telefon (portrait) | Tek sütun, bottom tab, full-width content |
+| medium | 600-900px | Telefon (landscape), küçük tablet | 2 sütun opsiyonel, içerik genişliği sınırlı |
+| expanded | >900px | Tablet, iPad, büyük ekran | Split view, multi-column, sidebar navigator |
+
+## 35.2. Layout Pattern'leri
+
+### 35.2.1. Split View (Master-Detail)
+
+- **Kullanım:** Liste → detay ekranı akışı (mesajlar, e-posta, haberler).
+- **Expanded layout:** Sol panel liste (1/3 genişlik), sağ panel detay (2/3 genişlik). Her iki panel aynı anda görünür.
+- **Compact layout:** Klasik stack navigation (liste tam ekran → detay tam ekran push).
+- **Geçiş:** Ekran genişliği değiştiğinde (ör. iPad döndürme) layout otomatik adapte olur.
+
+### 35.2.2. Responsive Grid
+
+- **Compact:** 1 sütun kart listesi.
+- **Medium:** 2 sütun kart grid'i.
+- **Expanded:** 3 sütun kart grid'i.
+- Sütun sayısı `useWindowDimensions` hook'u ile dinamik hesaplanır.
+- Minimum kart genişliği korunarak sütun sayısı belirlenir (minWidth: 280px).
+
+### 35.2.3. Navigation Adaptasyonu
+
+- **Compact:** Bottom tab navigator (standart telefon navigasyonu).
+- **Expanded (iPad):** Sidebar (drawer) navigator. Tab bar yerine sol kenarda dikey navigasyon menüsü.
+- Geçiş breakpoint'i: 900px.
+- `Platform.isPad` ve `useWindowDimensions` birlikte kullanılarak navigator seçimi yapılır.
+
+### 35.2.4. Modal Adaptasyonu
+
+- **Compact:** Modal full-screen veya bottom sheet olarak açılır.
+- **Expanded (iPad):** Modal formSheet (merkezi, küçük boyutlu) veya popover olarak açılır.
+- Modal max genişliği tablet'te 600px ile sınırlanır (tam ekran modal iPad'de kötü UX sunar).
+
+## 35.3. Implementasyon Araçları
+
+- `useWindowDimensions`: React Native hook'u ile ekran boyutu dinamik okunur.
+- `Platform.isPad`: iPad cihaz tespiti (iOS spesifik).
+- NativeWind responsive prefix'leri: `sm:`, `md:`, `lg:` ile breakpoint bazlı conditional styling.
+- Custom `useBreakpoint()` hook'u: Breakpoint durumunu (`'compact' | 'medium' | 'expanded'`) döndürür.
+
+## 35.4. İçerik Genişliği Sınırı
+
+Geniş ekranlarda metin içeriğinin okunabilirliği için max genişlik sınırı uygulanır:
+- Metin blokları: max-width 680px (optimal okuma genişliği).
+- Form alanları: max-width 480px.
+- Sınırlı genişlikteki içerik ekranın ortasına hizalanır (`margin: auto`).
+
+---
+
+# 36. Foldable Cihaz Desteği Değerlendirmesi
+
+Katlanabilir cihazlar (Samsung Galaxy Z Fold serisi, Pixel Fold vb.) için mevcut pozisyon ve gelecek değerlendirme kriterleri bu bölümde tanımlanır.
+
+## 36.1. Mevcut Durum
+
+**Bilinçli olarak kapsam dışıdır (Nisan 2026).**
+
+## 36.2. Kapsam Dışı Bırakma Gerekçeleri
+
+1. **Pazar payı:** Katlanabilir cihazların global akıllı telefon pazarındaki payı %3 civarındadır (Nisan 2026). Bu oran, özel adaptasyon yatırımını haklı kılmak için yeterli değildir.
+2. **API stabilite:** React Native'de resmi foldable API desteği (Hinge API, flex mode algılama, app continuity) henüz stabil değildir.
+3. **Test erişimi:** Foldable cihazlara ve güvenilir emülatörlere erişim zordur; kaliteli test yapılması güçtür.
+
+## 36.3. Yeniden Değerlendirme Koşulları
+
+Aşağıdaki koşullardan en az ikisi karşılandığında foldable desteği yeniden değerlendirilir:
+
+1. React Native'de resmi foldable API desteği (Hinge API, flex mode, dual screen) stabil release olarak yayınlanması.
+2. Katlanabilir cihaz pazar payının %5+ seviyeye ulaşması.
+3. Android emülatörde güvenilir foldable simülasyon desteği ve gerçek test cihazına erişilebilirlik.
+
+## 36.4. Potansiyel Etki Alanları
+
+Foldable desteği eklendiğinde aşağıdaki alanlar etkilenecektir:
+
+- **Flex pane davranışı:** Yarı katlanmış durumda (flex mode) üst panel içerik, alt panel kontrol gösterebilir.
+- **Multi-window:** Uygulamanın yarı ekranda çalışması durumunda layout adaptasyonu.
+- **App continuity:** Cihaz katlanıp açıldığında state kaybı yaşanmaması.
+- **Hinge-aware layout:** Menteşe bölgesinde içerik gösterilmemesi.
+
+## 36.5. Ön Hazırlık
+
+Mevcut responsive breakpoint sistemi (bkz. Bölüm 35), foldable cihazların ekran genişliğine zaten uyum sağlayabilir yapıdadır. `compact` → `medium` → `expanded` breakpoint geçişleri, foldable cihazın açık/kapalı durumlarını doğal olarak kapsar. Bu nedenle ayrı bir foldable breakpoint tanımlamak şu an gerekli değildir; ihtiyaç doğduğunda breakpoint sistemi genişletilir.
+
+---
+
+# 37. AppState Lifecycle Yönetimi
+
+Bu bölüm, uygulamanın foreground/background/inactive geçişlerinde yapılması gereken işlemleri tanımlar.
+
+## 37.1. AppState Durumları
+
+| Durum | iOS | Android | Açıklama |
+|-------|-----|---------|----------|
+| `active` | Foreground | Foreground | Uygulama ekranda ve etkileşim alıyor |
+| `background` | Background | Background | Uygulama arka planda, kullanıcı görmüyor |
+| `inactive` | Inactive | — | iOS-specific: Geçiş anı (multitask switcher, Control Center açık) |
+
+## 37.2. Background'a Geçişte Yapılması Gerekenler
+
+Uygulama `active` → `background` (veya `inactive`) geçişi yaptığında:
+
+1. **WebSocket bağlantılarını kapat:** Arka planda açık WebSocket kaynak israfıdır ve iOS'ta uygulama suspend edildiğinde zaten kopar
+2. **Timer'ları durdur:** `setInterval` ve polling timer'ları durdurulur; foreground'a dönüşte yeniden başlatılır
+3. **Hassas UI'ı maskele:** iOS multitask switcher'da ekran görüntüsü alınır; hassas veri görünmemelidir. Blur overlay veya placeholder ekran gösterilir
+4. **Draft veriyi kaydet:** Kullanıcının yarım kalan form verisi veya draft içeriği MMKV'ye persist edilir (ADR-019)
+5. **Analytics session'ı kapat:** Background geçişinde session end event'i gönderilir
+6. **Medya playback'i yönet:** Ses/video oynatma durumuna göre karar: müzik devam edebilir, video duraklatılır
+
+## 37.3. Foreground'a Dönüşte Yapılması Gerekenler
+
+Uygulama `background` → `active` geçişi yaptığında:
+
+1. **Auth durumu kontrolü:** Token geçerliliği kontrol edilir; expire olduysa refresh token ile yenilenir veya login ekranına yönlendirilir
+2. **Veri yenileme:** Kritik verilerin stale olup olmadığı kontrol edilir; gerekirse TanStack Query invalidation tetiklenir
+3. **Connectivity check:** Ağ bağlantısı durumu kontrol edilir (NetInfo); offline'dan online'a geçiş olduysa pending mutation'lar replay edilir (ADR-019)
+4. **Push notification durumu:** Arka planda gelen notification'lar kontrol edilir; pending deep link varsa yönlendirme yapılır
+5. **Timer'ları yeniden başlat:** Durdurulan polling ve interval'ler yeniden aktif edilir
+6. **WebSocket bağlantısını yeniden kur:** Gerekli real-time bağlantılar yeniden açılır
+
+## 37.4. iOS Inactive State
+
+iOS'ta `inactive` durumu kısa süreli geçiş anlarında oluşur:
+
+- Multitask switcher açıldığında
+- Control Center veya Notification Center çekildiğinde
+- Gelen arama veya Face ID/Touch ID prompt'u sırasında
+- **Kural:** `inactive` durumunda ağır işlem yapılmamalıdır; yalnızca UI maskeleme uygulanır
+
+## 37.5. Implementation Pattern
+
+```typescript
+import { useEffect, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+
+function useAppStateHandler() {
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (appState.current.match(/active/) && nextState === 'background') {
+        handleBackgroundTransition();
+      }
+      if (appState.current.match(/background/) && nextState === 'active') {
+        handleForegroundTransition();
+      }
+      appState.current = nextState;
+    });
+
+    return () => subscription.remove();
+  }, []);
+}
+```
+
+## 37.6. Test Edilmesi Gereken Senaryolar
+
+- [ ] Background'a geçişte hassas veri maskeleniyor mu?
+- [ ] 10+ dakika background'da kaldıktan sonra foreground'a dönüşte auth kontrol ediliyor mu?
+- [ ] Offline → background → foreground → online geçişinde pending mutation'lar replay ediliyor mu?
+- [ ] WebSocket bağlantısı foreground'a dönüşte başarıyla yeniden kuruluyor mu?
+
+---
+
+# 38. Share API ve Clipboard Yönetimi
+
+Bu bölüm, uygulama içeriğinin paylaşılması ve pano (clipboard) işlemlerinin UX ve güvenlik kurallarını tanımlar.
+
+## 38.1. Share Sheet
+
+İçerik paylaşımı için platform native Share Sheet kullanılır:
+
+- **Araç:** React Native `Share` API veya `expo-sharing`
+- **Desteklenen içerik türleri:** Metin, URL, dosya (expo-sharing ile)
+- **UX kuralı:** Share butonu standart platform ikonuyla gösterilir (iOS: square.and.arrow.up, Android: share icon)
+
+### Deep Link ile Paylaşım
+
+- Paylaşılan URL'ler Universal Link / App Link formatında olmalıdır (ADR-014)
+- Alıcı uygulamayı yüklüyse deep link ile doğrudan içeriğe ulaşır
+- Yüklü değilse web fallback sayfası gösterilir
+
+## 38.2. Clipboard Güvenlik Kuralları
+
+### 38.2.1. Panoya Kopyalanması Yasak Veriler
+
+| Veri Türü | Neden |
+|-----------|-------|
+| Şifre / password | Pano erişimi tüm uygulamalar tarafından okunabilir |
+| Auth token / API key | Güvenlik ihlali riski |
+| Kredi kartı numarası | PCI DSS uyumsuzluğu |
+| Biyometrik veri | KVKK/GDPR hassas veri |
+
+### 38.2.2. iOS Pasteboard Expiry
+
+iOS 16+ ile clipboard içeriğine erişim kullanıcı onayı gerektirir. Hassas içerik kopyalandığında `UIPasteboard` expiry kullanılabilir (maksimum 5 dakika). Bu özellik yalnızca iOS'ta mevcuttur.
+
+## 38.3. Clipboard Okuma Kuralları
+
+- Uygulama başlatıldığında otomatik clipboard okuma **yasaktır** (privacy ihlali, App Store rejection riski)
+- **İstisna:** Kullanıcı "Yapıştır" aksiyonu yaptığında clipboard okunabilir
+
+## 38.4. Platform Farklılıkları
+
+| Özellik | iOS | Android | Web |
+|---------|-----|---------|-----|
+| Share Sheet | UIActivityViewController | ACTION_SEND intent | Web Share API (navigator.share) |
+| Dosya paylaşımı | expo-sharing | expo-sharing | File download fallback |
+| Clipboard erişim uyarısı | iOS 16+ paste banner | Yok | Permissions API (async) |
+| Clipboard expiry | UIPasteboard expiry | Desteklenmez | Desteklenmez |

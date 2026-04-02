@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: ihtiyaca göre
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-NAV: Navigation Değişikliği Guardrail
@@ -23,8 +23,16 @@ son-güncelleme: 2026-04-01
 4. Navigation state persistence gerekiyorsa tanımla
 5. Yeni tab/stack → navigation hierarchy bozma
 
+## Navigation Analytics Otomatik Entegrasyon
+6. Yeni ekran eklendiğinde `NavigationContainer` listener'da `screen_view` event kontrolü yapılmalı
+7. `screen_view` event'i D-OBS şemasına uygun şekilde otomatik gönderilmeli
+8. **CI kontrolü:** Yeni ekranda analytics mapping tanımlı mı? — tanımsız ekran tespit edilirse uyarı
+9. **PR checklist:** "screen_view event çalışıyor mu?" maddesi eklenmeli
+
 ## DoD Ek Maddeleri
 - [ ] Route tanımlı
 - [ ] Back davranışı net
 - [ ] Mevcut deep link'ler kırılmamış
 - [ ] Platform parity (web + mobile) sağlanmış
+- [ ] Yeni ekran için screen_view analytics event tanımlı
+- [ ] Navigation analytics mapping güncel

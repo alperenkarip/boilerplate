@@ -4,7 +4,7 @@ type: domain
 name: Design System, Token, Theming, Component Governance
 kaynak-dokümanlar: 04, 05, 22, 23
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-DSY: Design System Guardrail
@@ -43,6 +43,24 @@ son-güncelleme: 2026-04-01
 17. [YAPILMALI] Renk kullanımında anlam (semantic) öncelikli düşün: `color.primary`, `color.error`, `surface.background`
 18. [YAPILMAMALI] Tema geçişinde kırılan hardcoded değerler bırakılmamalı
 
+### Token Override Audit
+19. [ZORUNLU] Semantic token yerine raw/hardcoded değer kullanımı CI'da tespit edilmeli — P0 uyarı
+20. [YAPILMALI] CI'da aşağıdaki pattern'ler grep ile taranmalı:
+    - Hex renk kodu: `#[0-9a-fA-F]{3,8}` (stil dosyalarında)
+    - Piksel değeri: `[0-9]+px` (token olmadan doğrudan kullanım)
+    - Font family string: `fontFamily: '...'` (token dışı tanım)
+    - Hardcoded shadow: `shadowOffset`, `boxShadow` (token olmadan)
+21. [YAPILMALI] Tespit edilen raw değerler semantic token ile değiştirilmeli
+22. [YAPILMAMALI] Token override tespit edildiğinde göz ardı etme — hemen düzelt veya exception aç
+23. İstisna: Animasyon ara değerleri (interpolation) için geçici raw değerler kabul edilebilir — exception gerektirmez
+
+### Dark Mode Token Parity
+24. [ZORUNLU] Light ve dark theme token setleri 1:1 eşleşmeli — her light token'ın dark karşılığı olmalı
+25. [ZORUNLU] Eksik dark mode token → CI hata vermeli, build geçmemeli
+26. [ZORUNLU] Dark mode renk kontrastı WCAG AA (4.5:1 minimum) karşılamalı
+27. [YAPILMALI] Her theme değişikliğinde hem light hem dark mode Storybook story'leri güncellenip test edilmeli
+28. [YAPILMAMALI] Dark mode'da light mode token'ını doğrudan kullanmak — her mode kendi semantic token setini tüketmeli
+
 ## Kalite Eşikleri
 - [MİNİMUM] Sıfır hardcoded renk/spacing/font değeri
 - [MİNİMUM] Tüm component'ler semantic token tüketmeli
@@ -54,13 +72,22 @@ son-güncelleme: 2026-04-01
 3. [ZAYIF] `fontSize: 14` — hardcoded tipografi
 4. [ZAYIF] Aynı buton tipinin farklı ekranlarda farklı şekilde implement edilmesi
 5. [ZAYIF] Component props'unda `style` override ile DS kırma
+6. [ZAYIF] `fontFamily: 'Inter'` — hardcoded font family, token kullan
+7. [ZAYIF] `boxShadow: '0 2px 4px rgba(0,0,0,0.1)'` — hardcoded shadow, token kullan
+8. [ZAYIF] Dark mode'da light mode token'ı doğrudan kullanılıyor — parity bozuk
+9. [ZAYIF] Light'ta tanımlı token dark'ta eksik — CI hata vermeli
 
 ## Kontrol Listesi
 - [ ] Hardcoded renk/spacing/font/radius değeri yok mu?
+- [ ] Hardcoded shadow/font-family değeri yok mu?
 - [ ] Semantic token kullanıldı mı (raw token değil)?
 - [ ] Component isimlendirme PascalCase ve dosya adıyla eşleşiyor mu?
 - [ ] Yeni component açılıyorsa governance kuralları kontrol edildi mi?
 - [ ] Light/dark theme'de kırılma riski var mı?
+- [ ] Light/dark token setleri 1:1 eşleşiyor mu (parity)?
+- [ ] Dark mode kontrastı WCAG AA (4.5:1) karşılıyor mu?
+- [ ] Hem light hem dark mode Storybook story'leri mevcut mu?
+- [ ] CI'da token override grep taraması aktif mi?
 
 ## İhlal Durumunda
 - Hardcoded değer tespit edilirse semantic token ile değiştir

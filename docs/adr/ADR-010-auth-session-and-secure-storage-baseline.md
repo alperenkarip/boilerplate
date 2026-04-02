@@ -1093,6 +1093,121 @@ Biometric dogrulama basarisi otomatik olarak backend session gecerliligi anlamin
 - Biometric donanim yoksa veya kayit yapilmamissa biometric secenegi gosterilmez; fallback dogrudan sunulur
 - Kullanici cihaz ayarlarindan biometric ekler/kaldirir; uygulama bir sonraki acilista durumu yeniden kontrol eder
 
+---
+
+# 45. Passkeys (FIDO2/WebAuthn) Watchlist
+
+Passwordless authentication degerlendirmesi ve gelecek pozisyonu.
+
+## 45.1. Durum
+
+Passkeys su anda **Watchlist** statusundedir. Canonical stack'e alinmasi icin olgunluk ve ihtiyac kosullarinin karsilanmasi gerekir.
+
+## 45.2. Teknoloji
+
+FIDO2/WebAuthn standardi uzerine insa edilmis platform authenticator tabanlı kimlik dogrulama:
+
+- **Nasil calisir:** Kullanici cihazin biyometrik dogrulamasi (Face ID, Touch ID, Windows Hello) ile public key cryptography tabanli kimlik dogrulama yapar. Sifre yerine cihazda saklanan private key kullanilir.
+- **Platform destegi:** iOS 16+, Android 9+, macOS 13+, Windows 10+, modern web browsers (Chrome 108+, Safari 16+, Firefox 119+)
+- **Sync destegi:** iCloud Keychain (Apple) ve Google Password Manager ile passkey'ler cihazlar arasi senkronize edilir
+
+## 45.3. Avantajlar
+
+- **Phishing-resistant:** Domain binding sayesinde phishing sitelerde passkey kullanilamaz
+- **Kullanici deneyimi iyilesmesi:** Sifre hatirlamak ve girmek gerekmez; biyometrik ile tek dokunusla giris
+- **Sifre yonetimi gereksiz:** Sifre sifirla, guclu sifre olustur, sifre manager gibi akislar ortadan kalkar
+- **Guclu guvenlik:** Public key cryptography tabanli; sunucu tarafinda sifre saklanmaz
+
+## 45.4. Boilerplate Etkisi
+
+Passkeys eklendiginde auth flow'a asagidaki degisiklikler gelir:
+
+1. **Registration:** Kullanici kayit sirasinda passkey olusturabilir (WebAuthn `navigator.credentials.create()`)
+2. **Authentication:** Giris sirasinda passkey ile dogrulama yapabilir (WebAuthn `navigator.credentials.get()`)
+3. **Fallback:** Passkey desteklemeyen cihazlar/browserlar icin geleneksel sifre giris yolu korunur
+4. **Account recovery:** Passkey kaybedildiginde (cihaz degisikligi, factory reset) recovery mekanizmasi zorunludur
+
+## 45.5. Degerlendirme Kosulu
+
+Asagidaki kosullardan biri veya birkaci dogdugunda passkeys degerlendirmesi aktif hale gelir:
+
+- Derived project'te passwordless authentication ihtiyaci kesinlestiginde
+- Backend auth provider (ör. Firebase Auth, Auth0, Supabase) passkey destegi stable olarak sundugunda
+- Hedef kullanici kitlesinin platform dagilimi passkey destegini yeterli kildiginda (iOS 16+, Android 9+ penetrasyon orani)
+
+## 45.6. Library Adaylari
+
+- **Web:** `@simplewebauthn/browser` (client) + `@simplewebauthn/server` (backend)
+- **Mobile:** `react-native-passkey` veya Expo tarafindan saglanan future passkey modulu
+- **Cross-platform:** Credential manager API'leri ile platform-native entegrasyon
+
+## 45.7. Risk
+
+- **Platform fragmentation:** Eski cihaz ve browser'larda passkey destegi yoktur; her zaman fallback gerekir
+- **Recovery karmasikligi:** Passkey kaybedildiginde account recovery sureci karmasik olabilir
+- **Backend bagimliligi:** WebAuthn server-side implementation gerektirir; backend-agnostic boilerplate icin ek zorluk
+
+---
+
+# 46. Token Refresh Race Condition Cozumu
+
+Birden fazla eszamanli API cagrisi sirasinda token yenileme sorununu cozen queue-based pattern.
+
+## 46.1. Problem
+
+Tipik senaryo:
+1. Kullanicinin access token'i expire olur
+2. Ayni anda 3 API cagrisi 401 (Unauthorized) yaniti alir
+3. Her biri bagimsiz olarak refresh token istegi gonderir
+4. Ilk refresh basarili olur ve yeni access/refresh token pair uretilir
+5. Diger 2 istek **eski** refresh token ile refresh dener → basarisiz olur (refresh token rotate edildiyse)
+6. Kullanici beklenmedik sekilde logout edilir
+
+Bu sorun ozellikle ekran acilisinda birden fazla query'nin paralel calismasi durumunda sik yasanir.
+
+## 46.2. Cozum: Queue-Based Refresh Token Pattern
+
+### Temel Mekanizma
+
+1. Ilk 401 yaniti alindiginda **refresh lock** alinir (singleton promise olusturulur)
+2. Diger 401 yaniti alan istekler **kuyruktaki promise'i bekler** (yeni refresh istegi gondermez)
+3. Refresh basarili olunca yeni token ile **tum kuyruk replay edilir** (bekleyen istekler yeni token ile yeniden gonderilir)
+4. Refresh basarisiz olunca **tum kuyruk reject edilir** ve kullanici logout edilir
+
+### Implementation: Fetch/Axios Interceptor
+
+```typescript
+let refreshPromise: Promise<string> | null = null;
+
+async function handleUnauthorized(failedRequest: Request): Promise<Response> {
+  if (!refreshPromise) {
+    // Ilk 401 — refresh baslatilir
+    refreshPromise = refreshAccessToken()
+      .finally(() => { refreshPromise = null; });
+  }
+
+  // Tum 401'ler ayni promise'i bekler
+  const newToken = await refreshPromise;
+  // Basarili — istegi yeni token ile tekrar gonder
+  return fetch(failedRequest, { headers: { Authorization: `Bearer ${newToken}` } });
+}
+```
+
+Bu pattern ile kac tane 401 gelirse gelsin yalnizca **tek bir refresh istegi** gonderilir.
+
+## 46.3. Edge Case'ler
+
+- **Refresh sirasinda uygulama kapatilirsa:** Yeniden acilista secure storage'daki refresh token ile yeni refresh denenir. Basarili olursa session devam eder, basarisiz olursa re-auth istenir.
+- **Timeout:** Refresh istegi **10 saniye** icinde cevap gelmezse fail kabul edilir ve kullanici logout edilir. Network hatasi durumunda retry yapilmaz (refresh token'in zaten kullanilmis olma riski).
+- **Concurrent tab (web):** BroadcastChannel veya localStorage event listener ile tab'lar arasi token senkronizasyonu saglanir. Bir tab refresh yaparsa diger tab'lar yeni token'i alir.
+- **Refresh token rotation:** Her refresh sonrasi yeni refresh token uretiliyorsa (rotation), eski refresh token gecersiz hale gelir. Bu nedenle tek istek pattern'i kritiktir.
+
+## 46.4. Sentry Entegrasyonu
+
+- Token refresh failure event'i Sentry'ye raporlanir (hassas token bilgisi olmadan)
+- Refresh timeout ve network error sayilari izlenir
+- Anormal refresh pattern (ör. 1 dakikada 50+ refresh) alert uretir
+
 ## 44.8. Platform-Specific Davranis Farklari
 
 ### 44.8.1. iOS
@@ -1157,3 +1272,195 @@ Bu genisletme yeterli kabul edilir eger:
 8. Passkey hazirligi ilkeleri yazilmissa
 9. Accessibility gereksinimi (biometric kullanamayan kullanicilar icin alternatif) acikca belirtilmisse
 10. Mevcut ADR-010 kararlariyla celismedigi dogrulanmissa
+
+---
+
+# 45. Passkeys (FIDO2/WebAuthn) — Watchlist Stratejisi (2026-04 Güncellemesi)
+
+## 45.1. Passkeys Nedir?
+
+Passkeys, FIDO Alliance ve W3C tarafından standartlaştırılan, şifresiz (passwordless) kimlik doğrulama teknolojisidir. Geleneksel şifre + SMS OTP yerine cihazda saklanan kriptografik anahtar çifti (public key + private key) kullanır.
+
+Teknik olarak passkeys şu bileşenlerden oluşur:
+
+- **WebAuthn (Web Authentication API):** Tarayıcı ve uygulama tarafında kullanılan JavaScript API'si. Kullanıcı kimliğini doğrulamak için cihaz authenticator'ı ile iletişim kurar.
+- **FIDO2 protokolü:** Sunucu ile istemci arasındaki kimlik doğrulama protokolü. Challenge-response modeline dayalıdır.
+- **Platform authenticator:** Cihazın kendisi (Face ID, Touch ID, parmak izi, Windows Hello). Harici donanım token'ı gerektirmez.
+- **Discoverable credentials:** Kullanıcı adı girmeye bile gerek kalmadan, cihaz hangi credential'ın bu site/uygulama için geçerli olduğunu otomatik tespit eder.
+
+### Kullanıcı deneyimi şu şekilde çalışır:
+
+1. Kayıt (registration): Kullanıcı hesap oluştururken veya passkey eklerken, cihaz bir anahtar çifti üretir. Public key sunucuya gönderilir, private key cihazda (Secure Enclave / TEE / Keystore) kalır.
+2. Giriş (authentication): Sunucu bir challenge gönderir. Cihaz, private key ile challenge'ı imzalar ve sunucu public key ile doğrular. Şifre hiçbir zaman ağ üzerinden geçmez.
+3. Cross-device: iCloud Keychain (Apple), Google Password Manager veya Windows Hello üzerinden passkey'ler cihazlar arası senkronize olur.
+
+## 45.2. Platform Desteği (2026 Durumu)
+
+- **iOS 16+:** Tam destek. Safari ve native uygulamalar. iCloud Keychain ile senkronizasyon.
+- **Android 9+:** Tam destek. Chrome ve native uygulamalar. Google Password Manager ile senkronizasyon.
+- **Web (modern tarayıcılar):** Chrome, Safari, Firefox, Edge — WebAuthn API tam destekli.
+- **React Native:** expo-passkeys (community) veya react-native-passkeys kütüphaneleri ile entegrasyon mümkün.
+
+## 45.3. Neden Watchlist?
+
+Bu ADR passkeys'i canonical baseline'a almak yerine watchlist'e koymaktadır çünkü:
+
+1. **Backend bağımlılığı:** Passkeys, sunucu tarafında WebAuthn relying party desteği gerektirir. Bu boilerplate backend-agnostic olduğu için sunucu tarafı kararı projeden projeye değişecektir.
+2. **React Native ekosistem olgunluğu:** expo-passkeys henüz erken aşamadadır. API yüzeyi değişebilir.
+3. **Fallback zorunluluğu:** Tüm kullanıcılar passkey destekli cihaz kullanmaz. Şifre tabanlı fallback her durumda gerekli kalır.
+4. **UX karmaşıklığı:** Passkey kayıt/giriş akışı, kullanıcılara açıkça anlatılması gereken yeni bir kavramdır.
+
+## 45.4. Ne Zaman Canonical Baseline'a Alınabilir?
+
+1. expo-passkeys veya eşdeğeri stable release'e ulaşmış olmalı
+2. Backend entegrasyon rehberi yazılmış olmalı (en az bir referans backend — Firebase Auth, Clerk veya custom)
+3. Cross-platform (web + iOS + Android) passkey akışı end-to-end test edilmiş olmalı
+4. Fallback auth akışı (şifre tabanlı) ile birlikte çalıştığı doğrulanmış olmalı
+5. Bu ADR revize edilmeli ve passkeys bölümü "watchlist" yerine "conditional track" veya "canonical" statüsüne alınmalı
+
+## 45.5. Mevcut ADR-010 ile İlişki
+
+Bu ek, ADR-010'un mevcut kararlarını değiştirmez. Mevcut auth baseline şu şekilde kalır:
+- Web: Backend-managed HttpOnly cookies (tercih edilen)
+- Mobile: Expo SecureStore (secure storage adapter)
+- Biometric: expo-local-authentication (device-level biometric)
+
+Passkeys bu yapının üzerine opsiyonel bir ek katman olarak eklenebilir; mevcut auth boundary ve cleanup policy'yi bozmaz. Passkey credential'ları da auth artefact'ı olarak kabul edilir ve UI-facing auth summary'den ayrı tutulur.
+
+## 45.6. Geçici Kullanım Kuralı
+
+Passkeys, canonical baseline olmadan şu koşullarda denenebilir:
+- spike veya POC çalışmalarında
+- backend sağlayıcısı (Clerk, Firebase Auth v2 vb.) native passkey desteği sunuyorsa
+- kullanım documented ve scoped olmalı
+- production feature'da kullanım ADR uzantısı veya exception kaydı gerektirir
+
+---
+
+# 46. Social Login / Third-party Auth Providers (2026-04 Eki)
+
+Bu bölüm, social login (Apple Sign In, Google Sign In vb.) ve üçüncü taraf kimlik doğrulama sağlayıcılarının boilerplate içindeki konumunu, entegrasyon stratejisini ve mevcut ADR-010 kararlarıyla uyumunu tanımlar.
+
+## 46.1. Boilerplate Pozisyonu
+
+- Social login boilerplate tarafından "watchlist + ready-to-adopt" konumdadır
+- Boilerplate, social login altyapısını hazırlar; hangi provider'ların aktif edileceği derived project kararıdır
+- Apple Sign In: iOS uygulamasında üçüncü taraf login sunuluyorsa Apple Sign In sunulması **ZORUNLUDUR** (App Store Review Guidelines 4.8)
+- Google Sign In: Opsiyonel, yaygın kullanım nedeniyle tercih edilir
+
+## 46.2. Apple Sign In
+
+- **Zorunluluk:** iOS'ta herhangi bir social/third-party login (Google, Facebook vb.) sunuluyorsa Apple Sign In da sunulmalıdır
+- **Kütüphane:** `expo-apple-authentication` (Expo managed workflow uyumlu)
+- **Flow:** `ASAuthorizationController` → identity token + authorization code → backend doğrulama
+- **UI:** "Sign in with Apple" butonu Apple Human Interface Guidelines'a uymalıdır (siyah/beyaz tema, minimum boyut, Apple logosu)
+- **Özel durum:** Kullanıcı "Hide My Email" seçebilir → relay email adresi döner
+- **Privacy:** Apple Sign In kullanıcının gerçek email'ini paylaşmak zorunda bırakmaz
+
+## 46.3. Google Sign In
+
+- **Durum:** Opsiyonel (derived project kararı)
+- **Kütüphane seçenekleri:**
+  - `@react-native-google-signin/google-signin`: Native Google Sign In SDK
+  - `expo-auth-session`: Generic OAuth flow (daha az native ama daha basit)
+- **Flow:** Google OAuth → ID token → backend doğrulama
+- **Web:** Google Identity Services (One Tap Sign In) veya OAuth popup
+- **Scope:** Minimum gerekli scope (`profile`, `email`) — aşırı permission isteme
+
+## 46.4. OAuth Flow ve Token Mapping
+
+- Social provider'dan alınan token (identity token / ID token) doğrudan kullanılmaz
+- Token backend'e gönderilir → backend kendi session token'ını döner
+- Backend session token'ı mevcut ADR-010 auth boundary içinde yönetilir:
+  - **Web:** HttpOnly cookie
+  - **Mobile:** Expo SecureStore
+- Social provider token'ı client'ta **SAKLANMAZ** — backend doğrulaması yeterlidir
+- **Logout:** Social provider session'ı ayrıca kapatılmalıdır (revoke token)
+
+## 46.5. Expo AuthSession Kullanımı
+
+- `expo-auth-session`: Generic OAuth 2.0 / OpenID Connect flow
+- **Redirect URI:** Expo Auth Proxy veya custom scheme
+- **Platform farkları:**
+  - iOS: `ASWebAuthenticationSession` (secure browser)
+  - Android: Custom Chrome Tab
+  - Web: Popup veya redirect
+- **Avantaj:** Herhangi bir OAuth provider (GitHub, Microsoft, Twitter vb.) ile çalışır
+- **Dezavantaj:** Native SDK kadar smooth UX sağlamayabilir
+
+## 46.6. Derived Project Kararı
+
+Boilerplate auth altyapısını hazırlar (token mapping, session yönetimi, logout flow). Provider seçimi derived project'e bırakılır:
+
+- **E-commerce:** Apple + Google genellikle yeterli
+- **Enterprise:** Microsoft/Azure AD eklenebilir
+- **Sosyal platform:** Facebook, Twitter eklenebilir
+
+Her yeni provider eklenmesinde: abstraction layer (`authService.loginWith(provider)`) üzerinden, doğrudan SDK çağrısı component'te yapılmaz.
+
+## 46.7. Mevcut ADR-010 ile Uyum
+
+- Social login token'ları da "auth artefakt" kategorisindedir (bölüm 6)
+- Aynı cleanup/logout policy geçerlidir
+- UI-facing auth summary'de provider bilgisi tutulabilir: `{ provider: "apple", displayName: "..." }`
+- Biometric login social login ile birlikte çalışabilir (SecureStore'daki session token biometric ile korunur)
+
+## 46.8. Anti-pattern'ler
+
+- Social provider token'ını `localStorage`/`AsyncStorage`'a yazmak (güvenlik riski)
+- Apple Sign In sunmadan diğer social login'leri sunmak (iOS red riski)
+- Social login callback'inde error handling atlamak (silent failure)
+- Her social login butonunda farklı auth flow implementasyonu (abstraction layer kullan)
+- Kullanıcıya gereksiz permission scope istemek (veri minimizasyonu ihlali)
+
+---
+
+# 47. Passkeys (FIDO2/WebAuthn) Yol Haritası
+
+Bu bölüm, passwordless authentication için passkeys teknolojisinin bu boilerplate'teki konumunu ve geçiş stratejisini tanımlar.
+
+## 47.1. Mevcut Pozisyon: Watchlist → Pilot Candidate
+
+Passkeys (FIDO2/WebAuthn) 2026 itibarıyla iOS 16+ ve Android 9+ cihazların büyük çoğunluğunda desteklenmektedir. Bu boilerplate passkeys'i **pilot candidate** olarak değerlendirir; henüz canonical auth yöntemi olarak kabul etmez.
+
+## 47.2. Passkeys'in Avantajları
+
+- **Phishing-resistant:** Domain'e bağlı credential, sahte siteye gönderilemez
+- **Passwordless:** Kullanıcı şifre hatırlamak zorunda değil
+- **Cross-device:** iCloud Keychain (Apple) ve Google Password Manager ile cihazlar arası senkronize
+- **Biometric-backed:** Face ID, Touch ID, parmak izi ile doğrulama
+
+## 47.3. Implementasyon Yolu
+
+### Web
+
+- WebAuthn API (navigator.credentials) ile browser-native passkey desteği
+- Backend'de FIDO2 server library gereklidir (ör: SimpleWebAuthn)
+
+### Mobile (React Native)
+
+- `expo-passkeys` veya `react-native-passkeys` ile native passkey API'lerine erişim
+- iOS: ASAuthorization framework, Android: Credential Manager API
+- Expo managed workflow uyumluluğu doğrulanmalıdır
+
+## 47.4. Geçiş Stratejisi
+
+Passkeys implementasyonu aşağıdaki kademeli yaklaşımla yapılır:
+
+1. **Phase 1 — Hybrid:** Mevcut password + biometric auth korunur; passkey opsiyonel olarak sunulur
+2. **Phase 2 — Promoted:** Passkey tercih edilen yöntem olarak öne çıkarılır; password fallback korunur
+3. **Phase 3 — Primary:** Passkey varsayılan auth yöntemi; password yalnızca recovery için
+
+**Kural:** Phase 3'e geçiş ancak hedef kullanıcı tabanının %90+'ı passkey destekli cihaz kullandığında değerlendirilir.
+
+## 47.5. Canonical Stack'e Dahil Edilme Koşulları
+
+Passkeys'in canonical auth yöntemi olarak ADR-010'u güncellemesi için:
+
+1. `expo-passkeys` veya eşdeğeri stable release olmalı
+2. Backend FIDO2 server implementasyonu tamamlanmış olmalı
+3. Cross-platform (iOS + Android + Web) passkey flow'u end-to-end test edilmiş olmalı
+4. Migration stratejisi (mevcut password kullanıcıları) belgelenmiş olmalı
+5. Recovery flow (kayıp cihaz, passkey senkronizasyon sorunu) tasarlanmış olmalı
+
+Bu koşullar sağlandığında yeni bir ADR veya ADR-010 addendum'u açılır.

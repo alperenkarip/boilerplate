@@ -694,7 +694,116 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 24. Kısa Sonuç
+# 24. React Navigation 8.x Migration Checklist
+
+Watchlist'teki React Navigation 8.x stable olduğunda uygulanacak migration adımları. Bu checklist 8.x stable release + 1 ay community stabilizasyon süresi sonrasında aktif hale gelir.
+
+## 24.1. Değerlendirme Kontrol Listesi
+
+- [ ] **Static navigation API değerlendirmesi:** `createStaticNavigation` API'sinin mevcut dynamic navigation yapısına göre avantaj/dezavantaj analizi. Static API daha iyi type inference ve daha az boilerplate sunar; ancak dinamik navigator oluşturma esnekliğini kısıtlayabilir.
+- [ ] **Deep link konfigürasyonu yeni format'a migration:** 8.x'in linking config formatı değişikliklerinin mevcut deep link yapısına (ADR-014) etkisi. Yeni format ile mevcut URL şeması korunabilir mi?
+- [ ] **Screen options API değişikliklerinin uygulanması:** Header, tab bar ve drawer konfigürasyonlarında API değişiklikleri. Mevcut screen options'ların yeni API'ya uyumlanması.
+- [ ] **TypeScript tiplendirme güncellemeleri:** `RootStackParamList` ve navigation prop tiplendirmelerinin yeni type system ile uyumlanması. 8.x'in geliştirilmiş type inference'ından faydalanma.
+- [ ] **Custom navigator'ların yeni API'ya uyumlanması:** Varsa custom navigator implementasyonlarının 8.x API'sına migration edilmesi.
+- [ ] **Bottom tab bar ve drawer navigator API değişiklikleri:** Tab bar ve drawer konfigürasyonlarının yeni API ile güncellenmesi. Custom tab bar component'lerinin uyumluluğu.
+- [ ] **Test suite'in güncellenmesi ve geçirilmesi:** Navigation-aware testlerin yeni API'ya uyumlanması. Mock navigation container'ların güncellenmesi.
+- [ ] **Performance benchmark karşılaştırması:** 7.x vs 8.x arasında navigation geçiş süreleri, memory kullanımı ve startup etkisi benchmark'ı. Regression olmadığının doğrulanması.
+- [ ] **Expo SDK uyumluluğu:** 8.x'in canonical Expo SDK versiyonu ile tam uyumlu olduğunun doğrulanması.
+- [ ] **Third-party entegrasyon uyumu:** react-native-screens, react-native-safe-area-context ve diğer navigation-adjacent paketlerin 8.x ile uyumu.
+
+## 24.2. Migration Stratejisi
+
+Migration single-step değil, **kademeli** yapılır:
+1. Önce yeni bir feature branch'te 8.x kurulur ve tüm mevcut ekranlar çalıştırılır
+2. Breaking change'ler tespit edilir ve düzeltilir
+3. Deep link routing doğrulanır
+4. Performance benchmark yapılır
+5. Test suite güncellenir ve geçirilir
+6. Review sonrası merge edilir
+
+---
+
+# 25. Navigation Analytics Entegrasyonu
+
+Her ekran geçişinde otomatik tracking ile kullanıcı navigation davranışının ölçülmesi.
+
+## 25.1. Mobile: NavigationContainer onStateChange
+
+React Navigation'ın `NavigationContainer` component'inde `onStateChange` listener'ı ile her navigation state değişikliğinde `screen_view` event'i ateşlenir:
+
+```typescript
+function onNavigationStateChange(state: NavigationState) {
+  const currentScreen = getActiveRouteName(state);
+  const previousScreen = navigationRef.current?.getCurrentRoute()?.name;
+
+  analytics.track('screen_view', {
+    screen_name: currentScreen,
+    previous_screen: previousScreen,
+    timestamp: Date.now(),
+    navigation_type: determineNavigationType(state), // push, pop, tab_switch, modal_open
+  });
+}
+```
+
+## 25.2. Navigation Type Sınıflandırması
+
+| navigation_type | Tetikleyici | Açıklama |
+|----------------|------------|----------|
+| `push` | Stack'e yeni ekran eklenmesi | Kullanıcı derinleşiyor |
+| `pop` | Stack'ten ekran çıkarılması | Kullanıcı geri dönüyor |
+| `tab_switch` | Bottom tab değişikliği | Kullanıcı ana bölümler arası geçiyor |
+| `modal_open` | Modal/sheet açılması | Overlay ekran açılıyor |
+| `modal_close` | Modal/sheet kapanması | Overlay ekran kapanıyor |
+| `deep_link` | External deep link ile açılma | Dış kaynak yönlendirmesi |
+| `drawer_open` | Drawer açılması | Side menu açılıyor |
+
+## 25.3. Duration Tracking
+
+Kullanıcının bir ekranda kalma süresi ölçülür:
+- `focus` event'inde başlangıç timestamp'i kaydedilir
+- `blur` event'inde bitiş timestamp'i kaydedilir
+- Fark `duration_ms` olarak bir sonraki `screen_view` event'ine eklenir
+- Bu metrik hangi ekranların kullanıcıyı uzun süre tuttuğunu ve hangilerinin hızlı terk edildiğini gösterir
+
+## 25.4. Filtered Screens
+
+Aşağıdaki geçici ekranlar analytics'ten hariç tutulur:
+- Splash screen
+- Loading screen
+- Biometric prompt
+- Permission dialog
+- App update screen
+
+Bu ekranlar kullanıcı aksiyonu değil, sistem davranışı olduğu için analytics noise üretir.
+
+## 25.5. Web: React Router useLocation
+
+Web tarafında aynı pattern `useLocation` hook'u ile uygulanır:
+
+```typescript
+function usePageTracking() {
+  const location = useLocation();
+  const previousPath = useRef(location.pathname);
+
+  useEffect(() => {
+    analytics.track('screen_view', {
+      screen_name: location.pathname,
+      previous_screen: previousPath.current,
+      timestamp: Date.now(),
+      navigation_type: 'push', // web'de genellikle push
+    });
+    previousPath.current = location.pathname;
+  }, [location.pathname]);
+}
+```
+
+## 25.6. ADR-009 Uyumu
+
+Bu analytics event'leri ADR-009'daki vendor-agnostic analytics event şemasının `screen_view` event'i ile tam uyumludur. Payload yapısı ve naming convention ADR-009'daki standarda uyar.
+
+---
+
+# 26. Kısa Sonuç
 
 Bu ADR'nin ana çıktısı şudur:
 

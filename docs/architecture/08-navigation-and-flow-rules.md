@@ -1065,6 +1065,89 @@ Bir navigation kararı alınırken şu sorular sorulmalıdır:
 
 ---
 
+# 24.5. Deep Link Test Matrisi Sablonu
+
+Her deep link route'u icin asagidaki test matrisi uygulanmalidir. Bu matris, deep link'lerin tum giris noktalari ve uygulama durumlari icin tutarli ve guvenilir calistigini dogrulamak amaciyla kullanilir.
+
+### Test Senaryolari Tablosu
+
+| Deep Link Path | Cold Start | Background | Foreground | Auth Gerekli | Beklenen Davranis |
+|---------------|-----------|-----------|-----------|-------------|------------------|
+| `/profile/:id` | Test edilmeli | Test edilmeli | Test edilmeli | Evet | Kullanici giris yapmamissa → Login ekrani → Login sonrasi `/profile/:id` ekranina yonlendirme. Giris yapmissa → dogrudan Profile ekrani. Gecersiz ID → "Kullanici bulunamadi" ekrani. |
+| `/settings` | Test edilmeli | Test edilmeli | Test edilmeli | Evet | Giris yapmamissa → Login → Settings. Giris yapmissa → dogrudan Settings ekrani. |
+| `/invite/:code` | Test edilmeli | Test edilmeli | Test edilmeli | Hayir | Auth gerektirmez. Gecerli kod → Davet kabul ekrani. Gecersiz/suresi dolmus kod → "Davet gecersiz" mesaji + ana sayfaya yonlendirme. |
+| `/order/:id` | Test edilmeli | Test edilmeli | Test edilmeli | Evet | Giris yapmamissa → Login → Order Detail. Kullanicinin erisim yetkisi yoksa → "Erisim yetkiniz yok" mesaji. Siparis silinmisse → "Siparis bulunamadi" ekrani. |
+| `/products?category=:cat&sort=:sort` | Test edilmeli | Test edilmeli | Test edilmeli | Hayir | Belirtilen kategori ve siralama ile Products listesi acilir. Gecersiz parametreler → varsayilan degerlerle acilir, hata gosterilmez. |
+| `/reset-password/:token` | Test edilmeli | Test edilmeli | Test edilmeli | Hayir | Gecerli token → Sifre sifirlama formu. Suresi dolmus token → "Link suresi dolmus" mesaji + yeni link isteme aksiyonu. |
+
+### Giris Noktasina Gore Test Gereksinimleri
+
+Her deep link path'i, farkli giris noktalari uzerinden de test edilmelidir:
+
+| Giris Noktasi | Aciklama | Ozel Test Gereksinimleri |
+|--------------|----------|------------------------|
+| **Push notification tap** | Kullanici bildirime tiklayarak uygulamaya gelir | Notification payload'undaki deep link verisi dogru parse ediliyor mu? Cold start ve background durumlarinda notification handler calisiyor mu? |
+| **URL scheme (custom)** | `myapp://path` formati (legacy destek) | Universal Link'e yonlendirme yapiliyor mu? Custom scheme dogrudan kullanilmiyorsa uyari veya redirect var mi? |
+| **Universal Link (iOS)** | HTTPS URL'si ile iOS uygulamasi acilir | AASA dosyasi dogru yapilandirilmis mi? Safari'den tiklandiginda uygulama aciliyor mu? Uygulama yuklu degilse web fallback calisiyor mu? |
+| **App Link (Android)** | HTTPS URL'si ile Android uygulamasi acilir | assetlinks.json dogru yapilandirilmis mi? Chrome'dan tiklandiginda uygulama aciliyor mu? Disambiguasyon dialog'u cikiyor mu? |
+| **QR kod tarama** | Kullanici QR kod tarayarak linke ulasir | QR'daki URL formati deep link semasiyla uyumlu mu? |
+| **Email icindeki link** | Kullanici email'deki linke tiklar | Email client'in link'i nasil handle ettigi test edilmeli (bazi email client'lar Universal Link'leri kirabilir). |
+| **Pano'dan yapistirma (clipboard)** | Kullanici URL'yi kopyalayip tarayiciya yapistir | Web versiyonunda dogru sayfa aciliyor mu? |
+
+### Platform Bazli Ozel Test Senaryolari
+
+| Senaryo | iOS | Android | Web |
+|---------|-----|---------|-----|
+| Uygulama yuklu degil + Universal/App Link | Web fallback calismali | Web fallback calismali | Dogal olarak web acilir |
+| Uygulama yuklu + cold start | Uygulama acilip dogru ekrana gitmeli | Uygulama acilip dogru ekrana gitmeli | N/A |
+| Uygulama arka planda + deep link | Uygulamaya donup dogru ekrana gitmeli | Uygulamaya donup dogru ekrana gitmeli | Tab'a focus donmeli |
+| Auth-gated deep link + session expired | Login → original target | Login → original target | Login → original target |
+| Coklu deep link arka arkaya | Son deep link gecerli olmali | Son deep link gecerli olmali | Her biri ayri tab'ta acilabilir |
+
+---
+
+# 24.6. Navigation State Persistence
+
+## 24.6.1. Amac
+
+Kullanıcı uygulamayı arka plana attığında, uygulama sistem tarafından öldürüldüğünde veya cihaz yeniden başlatıldığında, kullanıcının son kaldığı ekrana dönebilmesi önemli bir kullanıcı deneyimi özelliğidir. Bu bölüm, navigation state'in nasıl saklanacağını, hangi koşullarda restore edileceğini ve hangi güvenlik/privacy sınırlarının uygulanacağını tanımlar.
+
+## 24.6.2. Saklama Mekanizması
+
+Navigation state snapshot'ı MMKV (react-native-mmkv) ile cihaz yerel deposunda saklanır. MMKV'nin tercih edilme nedenleri:
+
+- **Yüksek performans:** JSI tabanlı senkron okuma/yazma. AsyncStorage'a kıyasla 30-50x daha hızlıdır. Navigation state restore işlemi splash screen sırasında gerçekleşmelidir; bu nedenle senkron okuma kritiktir.
+- **Düşük overhead:** Küçük veri parçaları (navigation state JSON'u genellikle 1-5 KB) için optimize edilmiştir.
+- **Encryption desteği:** Hassas route bilgileri gerektiğinde encrypted mode kullanılabilir.
+
+## 24.6.3. Saklama ve Restore Kuralları
+
+Navigation state aşağıdaki kurallara göre saklanır ve restore edilir:
+
+| Kural | Açıklama |
+|-------|----------|
+| **Saklama zamanlaması** | Uygulama arka plana geçtiğinde (`AppState` change event'inde `active → background`) mevcut navigation state serialize edilip MMKV'ye yazılır. Her route değişiminde yazmak performans açısından gereksizdir; sadece arka plana geçiş anında yazmak yeterlidir. |
+| **Restore zamanlaması** | Uygulama cold start olduğunda (tamamen kapalıyken açıldığında), splash screen sırasında MMKV'den navigation state okunur. State geçerliyse (stale değilse, güvenli ise) navigation container bu state ile başlatılır. |
+| **Stale state kontrolü** | Saklanan navigation state'in yaşı kontrol edilir. **30 dakikadan eski state restore edilmez.** Bunun nedeni, 30 dakikadan eski bir state'in artık güncelliğini yitirmiş olması ve kullanıcıyı yanlış bağlama taşıma riskidir. Stale state tespit edildiğinde kullanıcı ana ekrandan (home) başlar. |
+| **Hassas ekran hariç tutma** | Aşağıdaki ekran türleri navigation state persistence'dan hariç tutulur ve restore edilmez: ödeme ekranları, auth flow ekranları (login, register, password reset), biometric doğrulama ekranları, hassas veri görüntüleme ekranları (ör. kredi kartı bilgileri). Bu ekranların restore edilmesi güvenlik riski oluşturur. |
+| **Deep link override** | Uygulama bir deep link ile açıldığında, persisted navigation state **görmezden gelinir** ve deep link hedefi uygulanır. Deep link, kullanıcının açık niyetini temsil eder; persisted state ise geçmiş bağlamı temsil eder. Kullanıcı niyeti her zaman önceliklidir. |
+| **Auth değişikliği** | Saklanan state, kimliği doğrulanmış kullanıcının oturumuyla ilişkilidir. Kullanıcı logout olduğunda veya farklı bir kullanıcı login olduğunda, önceki kullanıcıya ait navigation state silinir. Bu, yanlış kullanıcıya ait ekranların gösterilmesini önler. |
+| **Migration** | Navigation yapısı değiştiğinde (yeni ekranlar eklenmesi, route'ların yeniden adlandırılması), eski format ile yeni format uyumsuz olabilir. State restore sırasında format doğrulaması yapılır; uyumsuz state sessizce atılır ve kullanıcı ana ekrandan başlar. Crash kesinlikle kabul edilmez. |
+
+## 24.6.4. Web Platformu
+
+Web tarafında navigation state persistence, tarayıcının doğal URL/history mekanizması tarafından zaten sağlanır. Kullanıcı sayfayı yenilediğinde veya tarayıcıyı kapatıp açtığında, URL aynı kaldığı sürece aynı ekrana döner. Bu nedenle web'de ek navigation state persistence mekanizması gerekmez. Ancak URL'de taşınmayan geçici state (ör. filtre seçimleri, scroll pozisyonu) için sessionStorage kullanılabilir.
+
+## 24.6.5. Zayıf Yaklaşımlar
+
+- Tüm navigation state'i sınırsız süre boyunca saklamak (stale risk).
+- Ödeme ve auth ekranlarını persistence'dan hariç tutmamak (güvenlik riski).
+- AsyncStorage ile senkron olmayan okuma yapmak ve splash screen'de gecikme yaşamak.
+- Deep link geldiğinde persisted state'i deep link'in üzerine yazmak (kullanıcı niyetini yok saymak).
+- Logout sonrası önceki kullanıcının navigation state'ini temizlememek (privacy ihlali).
+
+---
+
 # 25. Sonraki Dokümanlara Etkisi
 
 ## 25.1. State management strategy

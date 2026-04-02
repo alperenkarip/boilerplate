@@ -4,7 +4,7 @@ type: domain
 name: Styling, Tailwind CSS, NativeWind
 kaynak-dokümanlar: ADR-007
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-STY: Styling Guardrail
@@ -48,6 +48,41 @@ son-güncelleme: 2026-04-01
 - [ ] Token entegrasyonu sağlanmış mı?
 - [ ] Inline style yok mu (veya gerekçeli mi)?
 - [ ] Dark mode semantic token ile mi?
+
+---
+
+## Dynamic Styling Constraint
+
+Dinamik stil değişikliklerinde performans sorunlarını önleme kuralları:
+
+### Problem
+Inline style object her render'da yeni bir JavaScript referansı oluşturur. Bu, React'in reconciliation sürecinde gereksiz re-render tetikler ve özellikle listelerde performans düşüşüne neden olur.
+
+### Çözüm Hiyerarşisi
+
+| Durum | Tercih Edilen Yöntem | Açıklama |
+|-------|---------------------|----------|
+| Statik stiller | `StyleSheet.create()` | Tek seferlik oluşturulur, referans sabit |
+| Koşullu stiller | NativeWind conditional class | `className={active ? 'bg-primary' : 'bg-secondary'}` |
+| Animasyonlu stiller | Reanimated `useAnimatedStyle` | JS thread dışında çalışır, 60fps garanti |
+| Dinamik değerler (az sayıda) | `useMemo` ile memoize | Bağımlılık değişmediğinde referans sabit |
+
+### Kurallar
+1. [ZORUNLU] Statik stiller `StyleSheet.create()` ile tanımlanmalı — inline object yasak
+2. [ZORUNLU] Animasyonlu stiller Reanimated `useAnimatedStyle` kullanmalı — JS thread'i bloke etmemeli
+3. [YAPILMALI] Koşullu stil uygulamasında NativeWind conditional class tercih et — style prop'ta ternary minimize et
+4. [YAPILMALI] 60fps altına düşen animasyonlarda Reanimated'a geç — `useNativeDriver: true` yeterli değilse
+5. [YAPILMAMALI] Style prop'ta büyük ternary object kullanma — her render'da yeni referans
+
+### Anti-pattern (Ek)
+- [ZAYIF] `style={{ padding: isActive ? 16 : 8, margin: isLarge ? 24 : 12, ... }}` — her render'da yeni object
+- [ZAYIF] `Animated.Value` ile karmaşık animasyon — Reanimated 3 worklet tercih et
+- [ZAYIF] FlatList renderItem içinde inline style — tüm liste re-render olur
+
+### Performans Ölçümü
+- React DevTools Profiler ile re-render sayısını kontrol et
+- Reanimated `useFrameCallback` ile fps ölç
+- 60fps altı sürekli yaşanıyorsa → style stratejisini gözden geçir
 
 ## Kaynak
 - Styling kararı → docs/adr/ADR-007-styling-tokens-and-theming-implementation.md

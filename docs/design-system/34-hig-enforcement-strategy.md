@@ -1002,7 +1002,101 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 33. Kısa Sonuç
+# 33. Android Material 3 vs iOS HIG Farkları Tablosu
+
+Platform-specific UI kurallarının karşılaştırması ve boilerplate'in her element için aldığı karar bu bölümde tanımlanır. Cross-platform component'ler, aynı prop interface'i arkasında platform-native davranış sunar.
+
+## 33.1. Platform UI Elementi Karşılaştırması
+
+| UI Elementi | iOS (HIG) | Android (Material 3) | Boilerplate Kararı |
+|------------|-----------|---------------------|-------------------|
+| Navigation bar | Large title desteği, blur arka plan (vibrancy), sol üst back button | TopAppBar, elevation/shadow, center-aligned veya left-aligned title | Platform native — her platform kendi navigation bar stilini kullanır |
+| Back button | Sol üst, chevron (`<`) + önceki ekran adı | Sol üst, arrow (`←`) ikonu, metin yok | Platform native — React Navigation default back button |
+| Bottom sheet | `.sheet` presentation controller, native gesture, rubber-band | BottomSheet, drag handle, M3 elevation | Platform native — iOS: native sheet, Android: Reanimated custom |
+| Date picker | Wheel picker (compact) veya inline calendar | Calendar picker (M3 DatePicker) | Platform native — `@expo/ui` stable olunca native adapter |
+| Alert dialog | UIAlertController stili (kenar köşeleri yumuşak, buton sıralaması: cancel sol) | MaterialAlertDialog stili (daha keskin köşeler, buton sıralaması: cancel sol, confirm sağ) | Platform native — React Native `Alert.alert()` |
+| Tab bar | Alt, icon + label, blur arka plan, badge desteği | Bottom navigation (M3), icon + label, elevation, badge desteği | Platform native davranış, cross-platform prop interface |
+| Swipe action | Trailing swipe (sağdan sola), kırmızı silme aksiyonu, destructive confirm | M3'te swipe dismiss veya FAB tercih edilir, swipe action yaygın değil | iOS: native swipe action, Android: long-press context menu |
+| Search | Pull-down search bar (iOS 16+), cancel butonlu | Top search bar veya SearchView, voice input desteği | Platform native search UI |
+| Segmented control | UISegmentedControl, haptic feedback | SegmentedButton (M3), outlined veya filled varyant | Platform native — `@expo/ui` stable olunca native adapter |
+| Pull-to-refresh | UIRefreshControl, native spring physics | SwipeRefreshLayout, circular progress indicator | Platform native — React Native RefreshControl |
+| Status bar | Light/dark content, transparanlık | Light/dark content, sistem çubuğu renk kontrolü | `expo-status-bar` ile platform uyumlu yönetim |
+
+## 33.2. "Platform Native" Kararının Anlamı
+
+"Platform native" kararı şu anlama gelir:
+- Component wrapper aynı prop interface'i sunar (ör. `<DatePicker value={date} onChange={setDate} />`).
+- Internal implementasyonda `Platform.select` veya conditional import ile platform-specific native bileşen kullanılır.
+- Kullanıcı, kendi platformunun alışık olduğu UX pattern'ini deneyimler.
+- Cross-platform visual parity hedeflenmez; davranış parity hedeflenir.
+
+---
+
+# 34. HIG Uyum Otomatik Lint Kuralları
+
+Apple HIG ve Material 3 tasarım kurallarından otomatik olarak enforce edilebilecek kurallar bu bölümde tanımlanır. Bu kurallar CI'da çalışarak HIG ihlallerini erken aşamada yakalar.
+
+## 34.1. Touch Target Minimum Boyut
+
+- **iOS (HIG):** Minimum dokunma alanı 44x44pt.
+- **Android (M3):** Minimum dokunma alanı 48x48dp.
+- **Enforcement:** ESLint custom rule — `Pressable`, `TouchableOpacity`, `Button` component'lerinde `minHeight` ve `minWidth` kontrolü. `hitSlop` ile genişletilmiş alan da kabul edilir.
+- **CI davranışı:** İhlal → error (blocker).
+
+## 34.2. Safe Area Kullanımı
+
+- `SafeAreaView` veya `useSafeAreaInsets` hook'u her ekranın root component'inde kullanılmalıdır.
+- **Enforcement:** ESLint custom rule — screen component dosyalarında safe area import kontrolü.
+- **CI davranışı:** İhlal → warning (blocker olmayan ama reviewer dikkatine sunulan).
+
+## 34.3. Font Minimum Boyut
+
+- **iOS (HIG):** Minimum okunabilir font boyutu 11pt.
+- **Android (M3):** Minimum okunabilir font boyutu 12sp.
+- **Enforcement:** Token validation — typography token'larında minimum font-size kontrolü.
+- **CI davranışı:** İhlal → warning.
+
+## 34.4. Kontrast Oranı
+
+- **WCAG AA:** Normal metin minimum 4.5:1, büyük metin minimum 3:1.
+- **UI bileşenleri:** Minimum 3:1 (border, icon, form control).
+- **Enforcement:** axe-core + Storybook a11y addon ile otomatik kontrol. CI'da her PR'da çalışır.
+- **CI davranışı:** İhlal → error (blocker).
+
+## 34.5. Bottom Tab Icon Boyutu
+
+- **Standart:** Tab bar icon'ları 24x24pt boyutunda olmalıdır.
+- **Enforcement:** Storybook control ile visual test + icon asset boyut kontrolü.
+- **CI davranışı:** İhlal → warning.
+
+## 34.6. Navigation Bar Yüksekliği
+
+- Platform default yüksekliğe uyum sağlanmalıdır.
+- **Enforcement:** Native component kullanımı ile otomatik sağlanır. Custom navigation bar kullanılıyorsa platform default yükseklik token'ı ile kontrol.
+- **CI davranışı:** Custom header varsa warning.
+
+## 34.7. Disabled State Opacity
+
+- **Material 3:** Disabled state opacity 0.38.
+- **HIG:** Disabled state opacity 0.3.
+- **Enforcement:** `opacity-disabled` semantic token ile enforce. Component'lerde hardcoded opacity değeri kullanılmaz.
+- **CI davranışı:** Hardcoded opacity → error (token kullanımı zorunlu).
+
+## 34.8. Lint Kuralları Özet Tablosu
+
+| Kural | Hedef | Severity | Araç |
+|-------|-------|----------|------|
+| Touch target min boyut | 44x44pt / 48x48dp | Error (blocker) | ESLint custom rule |
+| Safe area kullanımı | Her ekranda SafeArea | Warning | ESLint custom rule |
+| Font min boyut | 11pt / 12sp | Warning | Token validation |
+| Kontrast oranı | 4.5:1 / 3:1 | Error (blocker) | axe-core + CI |
+| Tab icon boyutu | 24x24pt | Warning | Asset validation |
+| Navigation bar yüksekliği | Platform default | Warning | Header kontrolü |
+| Disabled opacity | Token-first (0.38 / 0.3) | Error | Hardcoded değer tarama |
+
+---
+
+# 35. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

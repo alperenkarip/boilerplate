@@ -958,3 +958,174 @@ Bu doküman yeterli kabul edilir eğer:
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate’te dependency eklemek sıradan paket kurma işlemi değildir. Her dependency; çözdüğü problem, mimari etkisi, security/privacy yüzeyi, bakım maliyeti, compatibility durumu ve canonical stack ile uyumu üzerinden değerlendirilir. Küçük convenience paketleri, ağır UI kit’leri, yüksek riskli auth/native/analytics SDK’ları ve canonical stack’i delen alternatif araçlar yalnızca güçlü gerekçe ile kabul edilir; gerekirse ADR ister.
+
+---
+
+# 42. Dependency Health Score (2026-04-02 Eki)
+
+Her dependency için otomatik sağlık değerlendirmesi sistemi.
+
+## 42.1. Metrikler ve Ağırlıklar
+
+| Metrik | Ağırlık | Ölçüm Kaynağı | Skor Aralığı |
+|--------|---------|---------------|-------------|
+| npm weekly downloads trendi | %20 | npmjs.com API | Artış: 20, Sabit: 15, Azalış: 5 |
+| Son commit tarihi | %20 | GitHub API | <3 ay: 20, 3-6 ay: 15, 6-12 ay: 10, >12 ay: 0 |
+| Open issue / PR sayısı | %15 | GitHub API | <50: 15, 50-100: 10, 100-200: 5, >200: 0 |
+| New Architecture uyumluluğu | %20 | reactnative.directory | Tam uyumlu: 20, Kısmi: 10, Uyumsuz: 0 |
+| Bundle size etkisi | %15 | bundlephobia.com | <50KB: 15, 50-200KB: 10, >200KB: 5 |
+| Bilinen vulnerability | %10 | npm audit / Snyk | Yok: 10, Low: 7, Medium: 3, High/Critical: 0 |
+
+## 42.2. Toplam Skor ve Eşikler
+
+Toplam skor 0-100 arasında hesaplanır:
+
+| Skor Aralığı | Durum | Aksiyon |
+|-------------|-------|---------|
+| 70-100 | 🟢 Sağlıklı | Rutin bakım yeterli |
+| 50-69 | 🟡 Dikkat | 3 ay içinde alternatif araştırılır veya upstream’e katkı planlanır |
+| 0-49 | 🔴 Risk | Alternatif araştırılır, migration planı oluşturulur |
+
+## 42.3. Periyodik Kontrol
+
+- **Sıklık:** Aylık (monthly) CI job ile tüm dependency’ler taranır.
+- **Komut:** `pnpm check:dep-health` (custom script)
+- **Çıktı:** `docs/reports/dependency-health.md` otomatik güncellenir.
+- **Alert:** Skor 50 altına düşen dependency için GitHub issue otomatik açılır.
+
+## 42.4. Native Modül Ek Kontrolleri
+
+React Native native modülleri için ek metrikler:
+- Expo managed workflow desteği (config plugin mevcut mu?)
+- iOS ve Android ayrı ayrı build test sonucu
+- Son native bridge değişikliği tarihi
+
+---
+
+# 43. Dependency Upgrade Otomasyonu (2026-04-02 Eki)
+
+Otomatik güncelleme stratejisi ve araç konfigürasyonu.
+
+## 43.1. Araç Seçimi
+
+- **Tercih edilen:** Renovate Bot (daha esnek konfigürasyon, gruplandırma, monorepo desteği)
+- **Alternatif:** Dependabot (GitHub native, basit kurulum)
+- Araç seçimi `37-dependency-policy.md` kurallarına tabidir.
+
+## 43.2. Upgrade Kademeleri
+
+| Değişiklik Tipi | Otomatik Merge | Review Gereksinimi | Test Gereksinimi |
+|----------------|---------------|-------------------|-----------------|
+| Patch (x.y.Z) | Evet (CI geçerse) | Otomatik | CI suite |
+| Minor (x.Y.0) | Hayır, PR açılır | 1 reviewer onayı | CI suite + smoke test |
+| Major (X.0.0) | Hayır, PR açılır | 2 reviewer onayı + manual test | CI suite + tam regression |
+
+## 43.3. Gruplandırma Kuralları
+
+İlişkili paketler tek PR’da güncellenir:
+- `@tanstack/*` paketleri birlikte
+- `@testing-library/*` paketleri birlikte
+- `eslint` + `eslint-plugin-*` birlikte
+- `expo-*` paketleri birlikte (SDK minor güncellemelerde)
+- `@types/*` ilgili runtime paketi ile birlikte
+
+## 43.4. Schedule
+
+- **Güncelleme taraması:** Haftalık (Pazartesi 09:00 UTC)
+- **PR açılma zamanı:** Tarama sonrası otomatik
+- **Stale PR temizliği:** 14 gün review edilmemiş upgrade PR’ları otomatik kapatılır ve yeni versiyonla tekrar açılır
+
+## 43.5. Compatibility Matrix Doğrulaması
+
+Upgrade PR’ında `38-version-compatibility-matrix.md` kontrolü:
+- Yeni versiyon matristeki aralıkla uyumlu mu?
+- peerDependency çakışması var mı?
+- Matrix aralığı dışına çıkıyorsa matris güncelleme commit’i PR’a dahil edilir.
+
+## 43.6. Lockfile Yönetimi
+
+- `pnpm-lock.yaml` güncellemesi her upgrade PR’ına dahildir.
+- Lockfile-only değişiklikler (security patch vb.) otomatik merge edilebilir.
+
+## 43.7. Rollback Politikası
+
+- Major upgrade sonrası 48 saat monitoring süresi.
+- Crash rate %0.5 artarsa veya performance regression tespit edilirse revert PR açılır.
+- Revert PR: 1 reviewer onayı yeterli, hızlandırılmış merge.
+
+---
+
+# 44. License Audit ve SBOM (Software Bill of Materials)
+
+Bu bölüm, projeye eklenen bağımlılıkların lisans uyumluluğunu ve yazılım bileşen envanterini yönetir.
+
+## 44.1. Kabul Edilen Lisanslar
+
+| Lisans | Durum | Açıklama |
+|--------|-------|----------|
+| MIT | Kabul | En yaygın, kısıtlama minimum |
+| Apache-2.0 | Kabul | Patent grant içerir, ticari kullanıma uygun |
+| BSD-2-Clause / BSD-3-Clause | Kabul | MIT benzeri, minimal kısıtlama |
+| ISC | Kabul | MIT eşdeğeri |
+| 0BSD | Kabul | Public domain benzeri |
+
+## 44.2. Dikkatli Değerlendirme Gerektiren Lisanslar
+
+| Lisans | Durum | Dikkat Noktası |
+|--------|-------|----------------|
+| MPL-2.0 | Değerlendirme | Dosya-seviyesi copyleft; MPL dosyalarını değiştirirsen değişiklikleri paylaşmalısın |
+| LGPL-2.1 / LGPL-3.0 | Değerlendirme | Kütüphane olarak kullanımda genellikle sorunsuz; static linking'de dikkat |
+| CC-BY-4.0 | Değerlendirme | Attribution zorunlu; genellikle asset/data için, kod için uygun değil |
+
+Bu kategorideki lisanslar, dependency eklenmeden önce ekip sorumlusu tarafından değerlendirilir.
+
+## 44.3. Yasak Lisanslar
+
+| Lisans | Durum | Neden |
+|--------|-------|-------|
+| GPL-2.0 / GPL-3.0 | Yasak | Güçlü copyleft; tüm projenin GPL ile lisanslanmasını gerektirebilir |
+| AGPL-3.0 | Yasak | Ağ üzerinden sunulan uygulamalarda da kaynak paylaşımı zorunluluğu |
+| SSPL | Yasak | Ticari kullanımda ciddi kısıtlamalar |
+| Unlicensed / No license | Yasak | Lisans belirtilmemiş = varsayılan telif hakkı koruması |
+
+**Kural:** Yasak lisanslı bir paket keşfedildiğinde alternatif aranır. Alternatif yoksa `44-exception-and-exemption-policy.md` kapsamında exception açılır.
+
+## 44.4. CI License Gate
+
+Her CI çalışmasında otomatik lisans kontrolü yapılır:
+
+```bash
+# license-checker ile lisans tarama
+npx license-checker --production --failOn "GPL-2.0;GPL-3.0;AGPL-3.0;SSPL"
+```
+
+- **PR CI'da:** Yeni eklenen dependency'nin lisansı kontrol edilir
+- **Haftalık full scan:** Tüm dependency tree (transitive dahil) taranır
+- **Failure durumu:** Yasak lisans tespit edilirse PR merge bloklanır
+
+## 44.5. SBOM (Software Bill of Materials)
+
+SBOM, projenin kullandığı tüm yazılım bileşenlerinin envanterini oluşturur.
+
+### SBOM Formatı ve Üretim
+
+- **Standart:** CycloneDX (OWASP standardı) veya SPDX
+- **Format:** JSON
+- **Üretim aracı:** `@cyclonedx/cyclonedx-npm` veya `syft`
+
+### SBOM Üretim Takvimi
+
+| Olay | SBOM Güncelleme |
+|------|-----------------|
+| Her release tag'i | Zorunlu — release artifact'ına eklenir |
+| Major dependency upgrade | Zorunlu — değişiklik diff'i review edilir |
+| Güvenlik denetimi öncesi | Zorunlu — auditor'a teslim edilir |
+
+### SBOM Saklama
+
+- SBOM dosyaları release artifact'larıyla birlikte saklanır
+- Minimum saklama süresi: 3 yıl (KVKK denetim gereksinimi)
+
+### Enterprise Gereksinimi
+
+Türetilen projelerde müşteri veya regülasyon SBOM zorunluluğu getirebilir. Bu durumda SBOM üretimi CI'da zorunlu hale getirilir.

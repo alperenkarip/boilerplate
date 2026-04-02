@@ -660,7 +660,99 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 30. Kısa Sonuç
+# 29.1. New Architecture Zorunluluğu ve Etkileri (2026-04 Güncellemesi)
+
+## 29.1.1. New Architecture Artık Kapatılamaz
+
+Expo SDK 55 ve React Native 0.82+ ile birlikte New Architecture (Fabric renderer + JSI + TurboModules + Hermes V1) artık opsiyonel bir özellik değil, kapatılamayan varsayılan gerçekliktir. Bu, ADR-002'nin "baseline" tanımını doğrudan etkiler:
+
+- **Fabric renderer** artık tek ve varsayılan render motorudur. Eski UIManager kaldırılmıştır.
+- **JSI (JavaScript Interface)** eski JSON-tabanlı bridge'in yerini almıştır. Native modüllerle iletişim artık C++ seviyesinde doğrudan obje erişimi ile sağlanır.
+- **TurboModules** eski NativeModules'ın yerini almıştır. Native modüller lazy-loaded olarak yüklenir ve Codegen ile compile-time tip güvenliği sağlar.
+- **Hermes V1** zorunlu ve varsayılan JavaScript engine'dir. V8 veya JavaScriptCore seçeneği yoktur.
+
+Bu durum şu sonuçları doğurur:
+
+1. app.json veya app.config.js'te `newArchEnabled: false` artık geçersizdir; bu ayar yok sayılır.
+2. Tüm third-party native modüllerin New Architecture uyumlu olması gerekir.
+3. `setNativeProps` ve `findNodeHandle` gibi eski API'ler kaldırılmıştır; bunları kullanan kod çalışmaz.
+4. Bridge-only paketler (npm ekosisteminin yaklaşık %15'i) doğrudan kullanılamaz; uyumlu alternatif aranmalı veya sarmalayıcı (wrapper) yazılmalıdır.
+
+## 29.1.2. Hermes V1 Zorunluluğu
+
+Hermes V1, React Native 0.83+ ve Expo SDK 55+ ile zorunlu JavaScript engine'dir. Bu karar şu gerekçelere dayanır:
+
+- **Bytecode precompilation:** JavaScript kaynak kodu derleme zamanında (build time) bytecode'a çevrilir. Bu sayede uygulama açılışında kaynak kod parse etme ve derleme adımı atlanır ve cold start süresi dramatik biçimde kısalır (benchmark'larda %30-43 iyileşme gözlemlenmiştir).
+- **Daha düşük bellek tüketimi:** Hermes, V8 ve JSC'ye göre daha az RAM kullanır. Bu özellikle düşük ve orta segment cihazlarda kritiktir.
+- **Geliştirilmiş garbage collection:** Hermes V1'in garbage collector'ı daha verimli çalışır ve GC pause'ları kısadır, bu da UI thread'inin daha az etkilenmesi anlamına gelir.
+- **Expo ve React Native ekosistemiyle tam uyum:** Hermes, Meta ve Expo tarafından birincil engine olarak geliştirilmektedir.
+
+## 29.1.3. Paket Uyumluluk Değerlendirme Zorunluluğu
+
+Bootstrap öncesinde ve her yeni native dependency eklendiğinde şu doğrulama adımları zorunludur:
+
+1. Paketin New Architecture uyumluluğunu kontrol et (reactnativepackagedb.com veya paket README/changelog)
+2. Paketin Fabric renderer ile çalıştığını doğrula
+3. Paketin JSI tabanlı veya TurboModule uyumlu olduğunu doğrula
+4. Bridge-only paket tespit edilirse: uyumlu alternatif araştır, bulunamazsa wrapper yazımını veya fork'u değerlendir
+5. expo-doctor raporunda ilgili paket uyarı vermemeli
+
+Bu doğrulama süreci dependency policy (37) ve compatibility matrix (38) ile entegre çalışır. Detaylı strateji ADR-018'de tanımlanmıştır.
+
+## 29.1.4. Bootstrap Doğrulama Kapısı Güncelleme
+
+Bölüm 6.2.7'deki bootstrap doğrulama kapısına ek olarak, New Architecture bağlamında şu kontroller de zorunludur:
+
+- `expo-doctor` New Architecture uyumsuzluğu bildirmemeli
+- Development build'de Fabric renderer aktif olmalı (React DevTools'ta "Fabric: true" görünmeli)
+- TurboModules lazy-loading çalışıyor olmalı
+- Hermes V1 aktif olmalı (`global.HermesInternal` mevcudiyeti ile doğrulanabilir)
+- Bridge-only dependency kalmamış olmalı
+
+---
+
+# 30. Expo UI (@expo/ui) Watchlist Pozisyonu
+
+## 30.1. Durum
+
+@expo/ui paketi şu anda **Watchlist** statüsündedir. Stable 1.0 release beklenmektedir. Canonical stack’e alınması için aşağıdaki koşulların karşılanması gerekir.
+
+## 30.2. Ne Sağlar?
+
+@expo/ui, SwiftUI (iOS) ve Jetpack Compose (Android) bileşenlerinin React Native içinden doğrudan kullanılmasını sağlayan bir köprü katmanıdır. Bu, platform-native UX kalitesini gerektiren belirli bileşenler için özellikle değerlidir:
+
+- **DatePicker / TimePicker:** Platform-native tarih/saat seçici, her platformun kendi UX convention’ına uygun
+- **SegmentedControl:** iOS’ta UISegmentedControl, Android’de MaterialSegmentedButton doğrudan kullanımı
+- **ContextMenu:** iOS’ta native context menu (long press), Android’de popup menu
+- **Picker / Wheel:** Platform-native döndürme ve seçim bileşenleri
+- **SearchBar:** Platform-native arama çubuğu entegrasyonu
+
+## 30.3. Canonical Olma Koşulları
+
+@expo/ui’ın canonical stack’e alınabilmesi için şu koşulların tümü karşılanmalıdır:
+
+1. **Stable API:** 1.0 veya üzeri stable release yayınlanmış olmalı; breaking change riski düşük olmalı
+2. **NativeWind uyumu:** @expo/ui bileşenleri NativeWind (ADR-007) ile birlikte sorunsuz çalışabilmeli; token consumption desteği olmalı
+3. **Design system entegrasyonu:** Mevcut design token katmanı ile uyumlu theming ve styling mümkün olmalı
+4. **Expo SDK uyumu:** Canonical Expo SDK 55.x ile tam uyumlu olmalı
+5. **New Architecture desteği:** Fabric renderer ve JSI ile tam uyumlu olmalı (ADR-018)
+6. **Community adoption:** Yeterli npm downloads, GitHub stars ve production kullanımı gözlemlenmiş olmalı
+7. **Test edilebilirlik:** Testing Library veya benzeri araçlarla test yazılabilir olmalı
+
+## 30.4. Riskler
+
+- **Platform-specific API yüzeyi artışı:** @expo/ui bileşenleri platforma özgü prop’lar ve davranışlar getirebilir; cross-platform tutarlılık kaybı riski
+- **Design system kontrolü:** Platform-native bileşenler kendi görsel dilini taşır; boilerplate’in token-first yaklaşımı ile çelişebilir
+- **Test karmaşıklığı:** Native bileşenlerin unit/integration testleri daha karmaşık olabilir
+- **NativeWind çakışması:** Styling katmanında NativeWind ile @expo/ui’ın kendi styling mekanizması çakışabilir
+
+## 30.5. Karar
+
+@expo/ui stable release sonrası ADR-002 addendum olarak değerlendirilecektir. Değerlendirme sırasında yukarıdaki koşullar tek tek doğrulanacak ve pilot olarak 1-2 bileşen (ör. DatePicker, SegmentedControl) ile deneme yapılacaktır.
+
+---
+
+# 31. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

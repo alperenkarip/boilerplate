@@ -143,3 +143,89 @@ Artık çalışan bir sisteminiz var. Şimdi rolünüze göre belgeleri okuyun:
 | 8 | Test yazmadan PR açma | İlgili test türünü yaz | `14-testing-strategy.md` |
 | 9 | Canonical stack dışı kütüphane ekleme | ADR sürecini başlat | `17-technology-decision-framework.md` |
 | 10 | `.env` değerini koda hardcode etme | Environment variable kullan | `27-security-and-secrets-baseline.md` |
+
+---
+
+## İlk Görev Rehberi — Hands-on Onboarding
+
+Bu bölüm, yeni katılan geliştiricinin ilk 30 dakikada yapması gereken somut adımları tanımlar.
+
+### Adım 1: Ortam Doğrulama (İlk 5 dk)
+
+```bash
+# Node versiyonunu doğrula (22.x olmalı)
+node --version
+
+# pnpm versiyonunu doğrula (10.x olmalı)
+pnpm --version
+
+# VS Code extensions kontrolü
+# Zorunlu: ESLint, Prettier, Tailwind CSS IntelliSense
+# Önerilen: Error Lens, GitLens, Todo Tree
+code --list-extensions | grep -i "eslint\|prettier\|tailwind"
+```
+
+Herhangi biri eksikse:
+- Node: `nvm install 22`
+- pnpm: `corepack enable && corepack prepare pnpm@latest --activate`
+- Extensions: VS Code'da Extensions panelinden kur
+
+### Adım 2: Projeyi Çalıştır ve Tanı (İlk 15 dk)
+
+```bash
+# Bağımlılıkları kur
+pnpm install
+
+# Web development server başlat
+pnpm dev:web
+# Tarayıcıda http://localhost:5173 açılmalı
+
+# (Ayrı terminal) Kalite kontrollerini çalıştır
+pnpm typecheck && pnpm lint
+```
+
+Bu sırada şu dokümanları tara:
+1. `CLAUDE.md` — Proje talimatlarını oku (~5 dk)
+2. `docs/maps/35-document-map.md` — Doküman haritasını incele (~5 dk)
+3. Rolüne göre `docs/onboarding/rol-bazli-okuma-rehberi.md`'den başlangıç listeni belirle
+
+### Adım 3: İlk Değişiklik ve PR (İlk 30 dk)
+
+**Görev:** Mevcut bir component'e Storybook story ekle ve token değiştir.
+
+```bash
+# 1. Yeni branch oluştur
+git checkout -b feature/onboarding-ilk-gorev
+
+# 2. Mevcut bir component'i bul
+ls packages/ui/src/
+
+# 3. Component'e story ekle (varsa güncelle, yoksa oluştur)
+# Örnek: packages/ui/src/Button/Button.stories.tsx
+
+# 4. Design token değişikliği yap (semantic token kullan!)
+# packages/design-tokens/ altında bir değer değiştir
+
+# 5. Kalite kontrollerini çalıştır
+pnpm typecheck
+pnpm lint
+pnpm test
+
+# 6. Değişiklikleri commit et
+git add -A
+git commit -m "onboarding: ilk görev tamamlandı"
+```
+
+### Kontrol Listesi
+
+İlk 30 dakika sonunda aşağıdakilerin hepsi tamamlanmış olmalı:
+
+- [ ] Node 22 ve pnpm 10 kurulu ve doğrulandı
+- [ ] VS Code zorunlu extensions kurulu
+- [ ] `pnpm install` hatasız tamamlandı
+- [ ] `pnpm dev:web` çalışıyor, tarayıcıda sayfa görünüyor
+- [ ] CLAUDE.md okundu
+- [ ] Doküman haritası incelendi
+- [ ] Bir component'e story eklendi veya güncellendi
+- [ ] `pnpm typecheck` ve `pnpm lint` hatasız geçiyor
+- [ ] İlk commit yapıldı

@@ -878,6 +878,171 @@ Bir state alanı eklerken şu sorular sorulmalıdır:
 
 ---
 
+# 32.5. Zustand Store Bolme Rehberi
+
+## 32.5.1. Amac
+
+Zustand (ADR-004 ile canonical olarak secilmistir) kullanirken en sik sorulan soru "tek store mi, cok store mu?" sorusudur. Bu bolum, store'un ne zaman bolunmesi gerektigine dair pratik kurallar ve karar kriterleri tanimlar.
+
+## 32.5.2. Tek Store Yaklasimi Ne Zaman Dogru?
+
+Asagidaki kosullarin cogu saglaniyorsa tek store (veya tek store + birkaç slice) yaklasimi yeterlidir:
+
+- Store 5'ten az slice iceriyorsa
+- Toplam selector sayisi 20'yi gecmiyorsa
+- Tum state tek bir domain'e aitse (ör. yalnizca kullanici tercihleri)
+- Store'un tukettigi ve urettigi veri birbiriyle siki iliskiliyse
+- Farkli feature'lar ayni state parcalarini sik sik birlikte kullaniyorsa
+
+Bu durumda gereksiz store bolmesi, import karmasikligi ve gereksiz abstraction uretir.
+
+## 32.5.3. Bolunme Tetikleyicileri
+
+Asagidaki sinyallerden biri veya birkaci goruldugunde store bolunmesi degerlendirilmelidir:
+
+1. **Store 5+ slice iceriyorsa:** Slice sayisi arttikca store dosyasi buyur, okunabilirlik duser ve farklı domain'lere ait state'ler birbirine karisir. 5 slice pratik bir esik degeridir.
+
+2. **Farkli domain'ler ayni store'da birlesiyorsa:** Ornegin `auth` state'i, `cart` state'i, `ui` state'i ve `notification` state'i ayni store'da yasiyorsa, bunlar farkli domain'lerdir ve farkli yaşam döngülerine sahiptir. Auth state logout'ta sifirlanir, cart state siparis tamamlandiginda sifirlanir, UI state route degisiminde sifirlanir. Bu farkli lifecycle'lar ayni store'da yonetildiginde reset mantigi karmasiklasir.
+
+3. **Selector karmasikligi artiyorsa:** Selector'lar giderek daha fazla `state.deeply.nested.field` seklinde derin erişim gerektiriyorsa veya ayni selector'da birbirleriyle ilişkisiz birden fazla state parcasi kullanılıyorsa, bu store'un cok fazla sorumluluk tasıdığının sinyalidir.
+
+4. **Rerender optimizasyonu zorlaşıyorsa:** Bir slice degistiginde, o slice ile ilgisi olmayan component'ler de gereksiz yere rerender oluyorsa, store cok genis ve selector'lar yeterince dar degildir. Ayri store'lar bu sorunu dogal olarak cozer.
+
+5. **Test izolasyonu zorlasiyorsa:** Tek bir slice'i test etmek icin tum store'u setup etmek gerekiyorsa, store cok buyuk ve cok baglasiktir.
+
+## 32.5.4. Bolunme Pattern'i: Domain Bazli
+
+Store bolunmesi domain bazli yapilir. Her store tek bir domain'in state'ini yonetir:
+
+| Store | Sorumluluk | Ornek State |
+|-------|-----------|-------------|
+| `useAuthStore` | Kullanici oturumu ve yetkilendirme | `user`, `isAuthenticated`, `sessionExpiry` |
+| `usePreferencesStore` | Kullanici tercihleri | `theme`, `locale`, `density`, `onboardingCompleted` |
+| `useUIStore` | Gecici UI durumlari | `isSidebarOpen`, `activeModal`, `toastQueue` |
+| `useCartStore` | Alisveris sepeti (eger e-commerce ise) | `items`, `total`, `appliedCoupon` |
+| `useNotificationStore` | Bildirim yonetimi | `unreadCount`, `lastFetchedAt` |
+
+## 32.5.5. Anti-Pattern: Asiri Parcalama
+
+Her component icin ayri store olusturmak da yanlıştır. Ornegin `useButtonLoadingStore`, `useModalVisibilityStore`, `useTooltipStore` gibi cok kucuk store'lar gereksiz karmasiklik uretir. Bu tip state'ler ya component-local (`useState`) ya da en yakin feature/UI store'unda yasamamalidir.
+
+**Pratik kural:** Bir store'un var olmasi icin en az 3 tüketici component'e sahip olmasi ve en az 2 state alani yönetmesi beklenir. Bunun altindaki state, `useState` veya context ile yonetilebilir.
+
+## 32.5.6. Slice Arasi Iletisim
+
+Ayri store'lar birbirleriyle iletisim kurmak zorunda kalabilir. Bu durumlarda su yaklasimlar kullanilir:
+
+- **`subscribe` pattern'i:** Bir store, baska bir store'un state degisikliklerini `subscribe` ile dinleyebilir. Ornegin `useAuthStore`'daki `logout` aksiyonu tetiklendiginde, `useCartStore` sepeti temizler. Bu, `useAuthStore.subscribe` ile saglanir.
+
+- **Middleware yaklasimi:** Zustand middleware'i ile store aksiyonlari intercept edilebilir. Ornegin bir `logoutMiddleware`, logout aksiyonu calistiginda tum ilgili store'larin reset fonksiyonlarini cagirir.
+
+- **Olay tabanlı iletisim (event bus):** Karmasik cross-store iletisim gerektiren durumlarda basit bir event emitter kullanilabilir. Ancak bu yaklasim dikkatli kullanilmalidir; aksi takdirde implicit bagimliliklar olusur.
+
+**Kacinilmasi gereken yaklasim:** Bir store'un dogrudan baska bir store'u import edip `getState()` ile okuması veya `setState()` ile yazması. Bu, store'lar arasinda siki baglasim (tight coupling) yaratir ve test izolasyonunu bozar.
+
+---
+
+# 32.6. MMKV ile Zustand Persistence Pattern
+
+## 32.6.1. Amac
+
+Offline-first destek, kullanici tercihlerinin korunmasi ve draft veri saklama gibi senaryolar icin Zustand store state'inin cihaz yerel deposunda persist edilmesi gerekir. Bu bolum, `zustand/middleware` persist ile react-native-mmkv entegrasyonunun nasil yapilacagini, hangi verilerin persist edilip hangilerinin edilmeyecegini ve migration stratejisini tanimlar.
+
+## 32.6.2. Custom MMKV Storage Adapter
+
+Zustand'in `persist` middleware'i varsayilan olarak `localStorage` (web) veya `AsyncStorage` (React Native) kullanir. Ancak MMKV, JSI tabanli senkron erisim, yuksek performans ve encryption destegi ile daha uygun bir alterniftir. Custom storage adapter asagidaki interface'i implement eder:
+
+```typescript
+// mmkv-storage-adapter.ts
+import { MMKV } from 'react-native-mmkv'
+import type { StateStorage } from 'zustand/middleware'
+
+const storage = new MMKV()
+
+export const mmkvStorage: StateStorage = {
+  getItem: (name: string) => {
+    const value = storage.getString(name)
+    return value ?? null
+  },
+  setItem: (name: string, value: string) => {
+    storage.set(name, value)
+  },
+  removeItem: (name: string) => {
+    storage.delete(name)
+  },
+}
+```
+
+## 32.6.3. Hangi Store'lar Persist Edilmeli?
+
+| Persist Edilecek State | Ornek | Gerekce |
+|----------------------|-------|---------|
+| Kullanici tercihleri | `theme`, `locale`, `density`, `sortPreference` | Kullanici her acilista ayni tercihleri gormelidir. Guvenlik riski dusuktur. |
+| Onboarding/egitim tamamlanma flag'leri | `onboardingCompleted`, `featureXSeen` | Kullaniciya ayni bilgi tekrar gosterilmemelidir. |
+| Draft veri (taslak) | `draftProfileForm`, `draftComment` | Kullanici form doldururken uygulama kapanirsa, kaldigii yerden devam edebilmelidir. |
+| Offline kuyrugu | `pendingSyncQueue` | Baglanti kesildiginde yapilan islemler baglanti geldiginde gonderilmelidir. |
+
+## 32.6.4. Hangi Store'lar Persist Edilmemeli?
+
+| Persist Edilmeyecek State | Ornek | Gerekce |
+|--------------------------|-------|---------|
+| UI state | `isModalOpen`, `isSidebarExpanded`, `toastQueue` | UI state gecicidir; uygulama tekrar acildiginda modal acik veya toast gosteriliyor olmamalidir. |
+| Loading state | `isLoading`, `isFetching`, `isSubmitting` | Loading state islem surecine bagli gecici durumlardir; persist edilmeleri anlamsizdir. |
+| Error state | `error`, `lastError`, `errorCount` | Error state olusum anina ozeldir; eski hatalarin persist edilmesi kullaniciyi yaniltir. |
+| Server state kopyasi | `userList`, `orderDetails` | Server state TanStack Query cache'inde yasar; Zustand'da duplicate kopyasi olusturulmamalidir. |
+| Auth token'lari | `accessToken`, `refreshToken` | Auth artifact'lari MMKV'de degil, platform-secure storage'da (Expo SecureStore, Keychain) saklanmalidir (ADR-010). |
+
+## 32.6.5. Migration Stratejisi
+
+Store schema'si zamanla degisir (yeni alanlar eklenir, eskiler kaldirilir, tipler degisir). Persist edilen verinin yeni schema ile uyumsuz olmasi durumunda uygulama crash edebilir. Bu riski yonetmek icin `version` + `migrate` fonksiyonu kullanilir:
+
+```typescript
+// Ornek migration pattern
+persist(
+  (set, get) => ({
+    // store state ve aksiyonlar
+  }),
+  {
+    name: 'preferences-store',
+    storage: createJSONStorage(() => mmkvStorage),
+    version: 2, // mevcut schema versiyonu
+    migrate: (persistedState, version) => {
+      if (version === 0) {
+        // v0 → v1: locale alani eklendi
+        return { ...persistedState, locale: 'tr' }
+      }
+      if (version === 1) {
+        // v1 → v2: density alani eklendi, theme 'auto' degeri 'system' olarak yeniden adlandirildi
+        const state = persistedState as PersistedStateV1
+        return {
+          ...state,
+          density: 'comfortable',
+          theme: state.theme === 'auto' ? 'system' : state.theme,
+        }
+      }
+      return persistedState
+    },
+  }
+)
+```
+
+**Kural:** Her store schema degisikliginde version numarasi arttirilir ve migrate fonksiyonuna ilgili donusum eklenir. Migration fonksiyonu idempotent (tekrar calistirdiginda ayni sonucu ureten) ve defensive (beklenmedik veri seklinde crash etmeyen) olmalidir.
+
+## 32.6.6. Encryption: Hassas Veriler Icin
+
+Hassas tercih verileri (orn. bildirim tercihleri, privacy ayarlari) icin MMKV'nin encryption mode'u kullanilabilir:
+
+```typescript
+const encryptedStorage = new MMKV({
+  id: 'sensitive-preferences',
+  encryptionKey: 'guclu-sifreleme-anahtari', // gercek uygulamada Keychain'den alinir
+})
+```
+
+Ancak auth token'lari gibi yuksek hassasiyetli veriler icin MMKV encryption bile yeterli degildir; bu veriler Expo SecureStore veya platform Keychain'de saklanmalidir (ADR-010).
+
+---
+
 # 33. Sonraki Dokümanlara Etkisi
 
 ## 33.1. Data fetching / cache / sync

@@ -286,6 +286,24 @@ Bu dokümanın ve ilk faz boilerplate charter’ının kapsamı dışında kalan
 
 Bu ayrım kritik. Çünkü boilerplate kapsamı ile ürün kapsamı birbirine karıştırılırsa sistem gereksiz şişer.
 
+## 6.3. Kapsam Dışı Alanlar (Anti-Scope)
+
+Bu boilerplate'in bilinçli olarak kapsam dışı bıraktığı alanlar aşağıda listelenmiştir. Bu alanlar "henüz yapılmadı" anlamına gelmez; yapılması planlanmayan, boilerplate'in mimari kararları ve odak alanıyla uyumsuz veya derived project'e bırakılması gereken konulardır. Her madde, kapsam dışı bırakılma gerekçesiyle birlikte sunulmaktadır.
+
+| Alan | Gerekçe |
+|------|---------|
+| **Backend / API geliştirme** | Boilerplate frontend-only mimari kararıyla sınırlandırılmıştır. Backend teknolojisi (Node.js, Go, Python, .NET vb.) derived project'in iş gereksinimlerine ve ekip yetkinliğine göre belirlenir. Boilerplate yalnızca API contract standardını (`10-data-fetching-cache-sync.md` Bölüm 5.5) tanımlar; backend implementasyonuna karışmaz. |
+| **CMS / Admin panel** | Admin paneli, ürüne özgü veri yönetim ihtiyaçlarına göre şekillenir ve boilerplate seviyesinde genelleştirilemez. Boilerplate'in sunduğu form mimarisi, validation stratejisi ve design system altyapısı admin panel geliştirmek için temel sağlasa da, CMS seçimi veya admin panel scaffold'u derived project sorumluluğundadır. |
+| **Backend-as-a-Service tam entegrasyonu** | Firebase, Supabase, Appwrite gibi BaaS platformlarının tam entegrasyonu kapsam dışıdır. Firebase yalnızca auth/push notification referans implementasyonu olarak ADR'lerde (ADR-010, ADR-013) yer alır. Tam BaaS entegrasyonu derived project'in veri modeli ve ölçek kararına bağlıdır. |
+| **E-commerce altyapısı** | Ödeme akışı, sepet yönetimi, stok takibi, fiyatlandırma motoru gibi e-commerce domain mantığı ürüne özgüdür. Boilerplate yalnızca in-app purchase entegrasyonu için RevenueCat referansını (ADR-016) sunar; e-commerce backend ve domain mantığı kapsam dışıdır. |
+| **Masaüstü uygulamalar (Electron, Tauri)** | Boilerplate web (tarayıcı) + mobil (iOS/Android) hedefler. Masaüstü uygulama ihtiyacı farklı dağıtım, güncelleme, dosya sistemi erişimi ve pencere yönetimi gereksinimleri doğurur. Bu karmaşıklık, cross-platform web+mobil odağını sulandırır. İhtiyaç doğarsa ayrı bir ADR ile değerlendirilir. |
+| **Wearable (watchOS, Wear OS)** | Wearable platformları tamamen farklı UI paradigması (glance, complication, küçük ekran), farklı SDK (WatchKit, Wear OS Compose) ve farklı yaşam döngüsü gerektirir. Companion app ihtiyacı doğarsa ayrı bir ADR açılmalı ve bağımsız bir modül olarak ele alınmalıdır. |
+| **TV platformları (tvOS, Android TV)** | TV platformları focus-driven navigation, 10-foot UI, D-pad/remote kontrol ve farklı içerik sunumu gerektiren özel bir alan olup touch-first/pointer-first yaklaşımla çelişir. Media/streaming uygulaması ihtiyacı doğarsa ayrı değerlendirilir. |
+| **Oyun motoru entegrasyonu** | Boilerplate standart uygulama UI/UX'i hedefler. Oyun motoru (Unity, Unreal) veya canvas-based render mantığı tamamen farklı bir mimari paradigmadır ve React/React Native ekosistemiyle doğrudan uyumlu değildir. |
+| **Blockchain / Web3 entegrasyonu** | Cüzdan bağlantısı, smart contract etkileşimi, token yönetimi gibi Web3 gereksinimleri özel SDK'lar, güvenlik modelleri ve kullanıcı deneyimi pattern'leri gerektirir. Bu alan boilerplate'in genel amaçlı frontend odağıyla uyumsuz olup derived project'te ihtiyaç duyulursa bağımsız olarak ele alınmalıdır. |
+
+Bu anti-scope listesi sabit değildir. İş gereksinimleri veya teknoloji evrimi nedeniyle bir alanın kapsama alınması gerektiğinde, önce ilgili ADR açılmalı, maliyet-fayda analizi yapılmalı ve charter revizyonu tetiklenmelidir.
+
 ---
 
 # 7. Hedef Kullanım Alanı
@@ -399,6 +417,25 @@ Aşağıdaki durumlar başarısızlık göstergesi olarak kabul edilmelidir:
 * platform ilişkisi hâlâ belirsizse,
 * kalite kapıları yalnızca niyet düzeyinde kalmışsa,
 * boilerplate düzeyinde gereksiz soyutlama veya gereksiz basitlik oluşmuşsa.
+
+## 9.4. Başarı Metrikleri (KPI'lar)
+
+Boilerplate'in başarısını somut ve ölçülebilir biçimde değerlendirmek için aşağıdaki anahtar performans göstergeleri (KPI) tanımlanmıştır. Her KPI için hedef değer, ölçüm yöntemi ve değerlendirme periyodu belirtilmiştir.
+
+| KPI | Hedef Değer | Ölçüm Yöntemi | Periyot |
+|-----|-------------|----------------|---------|
+| **Derived project bootstrap süresi** | < 2 saat | Boilerplate'ten fork/clone sonrası `pnpm install` + `pnpm dev:web` + `pnpm dev:mobile` çalışır hale gelene kadar geçen süre. Adım 1-3 (`43-derived-project-creation-guide.md`) toplam süresi ölçülür. Otomasyon script'i varsa script çalışma süresi baz alınır. | Her derived project oluşturulduğunda |
+| **İlk feature'dan production'a süre** | < 1 hafta | Vertical slice (ilk anlamlı feature) implementasyonunun başlangıcından, tüm kalite kapılarını (typecheck, lint, test, build, a11y) geçerek production-ready hale gelmesine kadar geçen süre. `32-definition-of-done.md` kriterlerinin tamamının sağlanması zorunludur. | İlk vertical slice tamamlandığında |
+| **Derived project sayısı** | İlk yıl ≥ 2 | Bu boilerplate'ten başarıyla türetilmiş ve aktif geliştirme sürecinde olan proje sayısı. `BOUNDARY.md` dosyası mevcut ve quarterly audit'ten geçmiş projeler sayılır. | Yıllık |
+| **Boilerplate sapma (deviation) oranı** | < %15 | Derived project'teki boilerplate zorunlu miras kurallarından sapma sayısı / toplam zorunlu kural sayısı. `45-boilerplate-project-boundary-contract.md` audit sonuçları ile ölçülür. `44-exception-and-exemption-policy.md` ile belgelenmiş sapmalar kabul edilir, belgelenmemiş sapmalar ihlal sayılır. | Quarterly audit |
+| **Yeni geliştirici onboarding süresi** | < 1 iş günü | Yeni bir geliştiricinin projeye katılmasından itibaren lokal geliştirme ortamını kurup ilk anlamlı PR açabilecek duruma gelmesine kadar geçen süre. Ölçüm self-report veya mentor gözlemi ile yapılır. Doküman okunabilirliği, README netliği ve `43-derived-project-creation-guide.md` kalitesi doğrudan etkiler. | Her yeni geliştirici eklendiğinde |
+| **CI pipeline ilk çalışma süresi** | < 15 dakika | Derived project oluşturulduktan sonra CI pipeline'ının (typecheck + lint + test + build) ilk başarılı çalışmasına kadar geçen süre. `.github/workflows/` altındaki workflow dosyalarının boilerplate'ten doğru aktarıldığını ve ilk push'ta çalıştığını doğrular. | Her derived project oluşturulduğunda |
+| **Kalite kapısı pass oranı** | > %95 | Main branch'e merge edilen PR'ların CI kalite kapılarını (typecheck, lint, test, build, boundary check) ilk denemede geçme oranı. Düşük oran, boilerplate kurallarının yeterince açık olmadığını veya geliştirici deneyiminin iyileştirilmesi gerektiğini gösterir. | Aylık |
+| **Doküman-implementasyon tutarlılığı** | %100 | Quarterly audit'te tespit edilen doküman-kod çelişki sayısı. Doküman bir davranış tanımlıyor ama kod farklı çalışıyorsa veya doküman güncellenmiş ama kod güncellenmemişse tutarsızlık sayılır. Hedef sıfır tutarsızlıktır. | Quarterly audit |
+
+### Ölçüm ve İzleme Sorumluluğu
+
+Bu KPI'lar pasif metrik değildir; aktif olarak izlenmelidir. Her derived project oluşturulduğunda bootstrap ve CI süresi kaydedilir. Quarterly audit'lerde sapma oranı ve doküman tutarlılığı değerlendirilir. KPI'ların hedef değerin altına düşmesi durumunda root cause analizi yapılır ve iyileştirme eylemi planlanır. KPI sonuçları `31-audit-checklist.md` kapsamında raporlanır.
 
 ---
 

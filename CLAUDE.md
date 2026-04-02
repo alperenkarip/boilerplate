@@ -2,13 +2,11 @@
 
 ## Proje Kimliği
 - Cross-platform boilerplate: React + React Native (Expo)
-- Monorepo: pnpm 10.x + Turborepo 2.x (ADR-003)
-- Install Security: pnpm minimumReleaseAge + allowBuilds + trustPolicy (ADR-003 / 37)
 - Documentation-first, spec-first yaklaşım
 - Apple HIG uyumlu, design system merkezli
 
 ## Canonical Kararlar — BUNLAR AÇILAMAZ
-Bu kararlar ADR-001 → ADR-017 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
+Bu kararlar ADR-001 → ADR-019 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
 Alternatifleri tartışma, sorgulatma veya bypass etme.
 
 - Web runtime: React + Vite + React Router 7.x, SPA-first (ADR-001)
@@ -22,7 +20,9 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Testing: Vitest 4.x (web) + Jest 30.x (mobile) + Testing Library + Playwright 1.58.x E2E (ADR-008)
 - Component Lab: Storybook 10.x + Storybook Test (web)
 - Observability: Sentry + vendor-agnostic analytics abstraction (ADR-009)
-- Watchlist: React Compiler controlled opt-in, Biome 2.x pilot/watchlist
+- New Architecture: Fabric + JSI + TurboModules + Hermes V1 zorunlu, kapatılamaz (ADR-018)
+- Local Storage: MMKV canonical default + Expo SecureStore (hassas veri) + Zustand persist (ADR-019)
+- Watchlist: React Compiler controlled opt-in, Biome 2.x pilot/watchlist, @expo/ui 1.0 stable watch
 - Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) + Biometric (expo-local-authentication) (ADR-010)
 - i18n: i18next 26.x, namespace-based (ADR-011)
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile) (ADR-012)
@@ -31,6 +31,11 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - OTA Update: EAS Update (ADR-015)
 - In-App Purchase: RevenueCat (react-native-purchases) (ADR-016)
 - Privacy/Compliance: GDPR + KVKK uyum çerçevesi (ADR-017)
+
+## SDK Upgrade Kuralları
+- Expo SDK major upgrade için docs/governance/48-expo-sdk-upgrade-strategy.md zorunlu referanstır
+- expo-doctor temiz geçmeden SDK upgrade merge edilmez
+- runtimeVersion değişikliği OTA uyumluluk etkisiyle birlikte değerlendirilir
 
 ## Dependency Kuralları
 - Yeni dependency eklemeden önce docs/governance/37-dependency-policy.md kontrol et
@@ -74,6 +79,9 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - AI Guardrail governance → docs/governance/47-ai-guardrail-governance.md
 - AI workflow → docs/governance/40-ai-workflow-and-tooling.md
 - AI instruction standards → docs/governance/41-ai-instruction-standards.md
+- New Architecture migration → docs/adr/ADR-018-new-architecture-migration-and-readiness-strategy.md
+- Local storage/offline-first → docs/adr/ADR-019-local-storage-and-offline-first-strategy.md
+- SDK upgrade stratejisi → docs/governance/48-expo-sdk-upgrade-strategy.md
 
 ## Kodlama Standartları
 - TypeScript strict mode zorunlu — `any` tipi yasak
@@ -130,13 +138,14 @@ Skill'ler kullanıcı müdahalesi BEKLEMEDEN otomatik tetiklenir.
 | File upload/media | A-MEDIA | D-SEC, D-PRF |
 | Real-time/WebSocket/push | A-REALTIME | D-DAT, D-SEC, D-PRF |
 | Analytics/event tracking | A-ANALYTICS | D-OBS, D-SEC |
-| Offline/cache/persistence | A-OFFLINE | D-DAT, D-PLT |
+| Offline/cache/persistence | A-OFFLINE | D-DAT, D-PLT, D-OFL |
 | AI/ML feature entegrasyonu | A-AI-FEAT | D-AIX, D-UIX, D-SEC, D-PLT |
 | Push notification geliştirme | A-NOTIFICATION | D-NTF, D-SEC, D-PRI |
 | Deep link implementasyonu | A-DEEPLINK | D-DPL, D-NAV, D-SEC |
 | Ödeme/abonelik entegrasyonu | A-PAYMENT | D-PAY, D-SEC, D-PRI |
 | OTA güncelleme | A-OTA | D-SEC, D-OBS, D-PLT |
 | Gizlilik uyum çalışması | A-PRIVACY | D-PRI, D-SEC, D-OBS |
+| SDK/Framework major upgrade | A-SDK-UPGRADE | D-PLT, D-PRF, D-TST, D-SEC, D-3RD, D-OFL |
 | Doküman/ADR yazımı | A-DOCS | 41, 18 |
 
 Tam liste ve detay: `docs/governance/47-ai-guardrail-governance.md`

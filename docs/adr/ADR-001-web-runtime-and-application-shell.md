@@ -605,7 +605,90 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 28. Kısa Sonuç
+# 28. SSR/SSG Gelecek Değerlendirmesi
+
+SPA-first kararının bilinçli sınırları ve gelecek değerlendirme çerçevesi:
+
+## 28.1. Şu Anki Pozisyon
+
+Bu boilerplate SPA-first yaklaşımı canonical baseline olarak kabul etmiştir. Server-side rendering (SSR) veya static site generation (SSG) v1 canonical kapsamda yoktur. Bu bilinçli bir tercihtir ve aşağıdaki ürün profillerine uygundur:
+
+- Dashboard ve admin panel uygulamaları
+- Internal tool ve SaaS ürünleri
+- Auth-gated tüm uygulama yüzeyleri
+- SEO gereksinimi düşük veya sıfır olan ürünler
+
+## 28.2. SEO Gereksinimleri Doğarsa
+
+Derived project’te public-facing landing page veya content-heavy site ihtiyacı çıkarsa aşağıdaki değerlendirme sırası uygulanır:
+
+1. **React Router 7.x SSR modu:** Mevcut stack ile en uyumlu seçenek. `ssr: true` ile mevcut route yapısı korunarak server rendering eklenebilir. `clientLoader` / `loader` ayrımı ile hangi route’ların SSR alacağı kontrol edilir.
+2. **Vite SSR plugin ekosistemi:** vite-plugin-ssr veya benzeri plugin ile daha granüler SSR/SSG kontrolü. Mevcut Vite build pipeline korunur.
+3. **Hybrid yaklaşım:** SPA-first korunur, yalnızca SEO gerektiren route’lar (ör. `/blog`, `/pricing`, `/features`) SSR veya prerender alır. Uygulama shell’i SPA olarak kalır.
+4. **Full SSR framework (Next.js, Remix):** Tüm web uygulamasının framework’e taşınması. Bu seçenek major migration gerektirir ve yeni ADR ile kapatılmalıdır. Boilerplate kapsamı dışında, derived project kararıdır.
+
+## 28.3. Karar Tetikleyicisi
+
+Bu değerlendirme şu koşullardan biri doğduğunda aktif hale gelir:
+- Derived project’te public-facing, indexlenmesi gereken sayfa ihtiyacı kesinleştiğinde
+- Core Web Vitals (LCP, FID, CLS) SPA mimarisinde kabul edilemez seviyeye ulaştığında
+- Content marketing veya SEO-driven growth stratejisi benimsendiğinde
+
+---
+
+# 29. React 19 Concurrent Features Entegrasyonu
+
+React 19’un SPA mimarisine etkisi ve canonical kullanım rehberi:
+
+## 29.1. useTransition
+
+Ağır state güncellemelerinde UI responsiveness’ı korumak için kullanılır. Özellikle büyük liste filtreleme, tab geçişi veya kompleks form state değişikliklerinde ana thread’in bloklanmasını önler.
+
+- **Canonical kullanım alanı:** Route geçişlerinde loading indicator gösterme, büyük veri setlerinde filtreleme sırasında UI’ın donmamasını sağlama
+- **Kural:** Her state güncellemesi transition’a sarılmaz; yalnızca kullanıcının fark edeceği gecikme üreten güncellemeler için kullanılır
+
+## 29.2. useDeferredValue
+
+Sık güncellenen UI’larda (arama kutusu, gerçek zamanlı filtreleme) render önceliğini düşürmek için kullanılır. Input’un kendisi anında güncellenir, sonuç listesi ertelenir.
+
+- **Canonical kullanım alanı:** Search-as-you-type pattern’lerinde arama sonuçları, büyük listelerde canlı filtreleme
+- **Kural:** useDeferredValue ve debounce birlikte değil, durum bazında tercih edilir. Network isteği gerektiren aramalarda debounce, yalnızca client-side filtreleme yapılan yerlerde useDeferredValue tercih edilir.
+
+## 29.3. useOptimistic
+
+Form submit sırasında optimistic UI göstermek için canonical pattern. Kullanıcı submit’e bastığında UI anında güncellenir, mutation başarısız olursa rollback yapılır.
+
+- **Canonical kullanım alanı:** Like/unlike toggle, yorum ekleme, liste öğesi silme gibi hızlı geri bildirim gerektiren aksiyonlar
+- **Kural:** Optimistic update’ler ADR-005’teki mutation lifecycle ile uyumlu kurulmalıdır. Rollback senaryosu her zaman düşünülmelidir.
+
+## 29.4. Suspense Boundaries
+
+Route-level ve component-level lazy loading stratejisi:
+
+- **Route-level Suspense:** Her route modülü `React.lazy` ile yüklenir, route geçişinde skeleton/loading gösterilir
+- **Component-level Suspense:** Ağır component’ler (grafik, harita, editör) lazy load edilir
+- **Nested Suspense:** Sayfa skeleton’u üst boundary’de, bağımsız veri blokları iç boundary’lerde yönetilir
+- **Fallback standardı:** Suspense fallback’leri design system’deki loading state standardına (25-error-empty-loading-states.md) uymalıdır
+
+## 29.5. use() Hook
+
+Promise ve context okuma için yeni API. Data fetching pattern’lerine etkisi:
+
+- **Potansiyel kullanım:** Route loader’dan dönen promise’lerin component içinde okunması
+- **Dikkat:** use() hook’u TanStack Query’nin yerini almaz; query cache lifecycle, invalidation ve retry TanStack Query ile yönetilmeye devam eder (ADR-005)
+- **Karar:** use() hook’unun TanStack Query ile birlikte kullanım pattern’leri bootstrap aşamasında belirlenecektir
+
+## 29.6. React Compiler (Watchlist)
+
+React Compiler şu anda controlled opt-in ile watchlist’tedir (36-canonical-stack-decision.md):
+
+- **Potansiyel:** useMemo, useCallback, React.memo gibi manuel memo pattern’lerinin otomatik hale gelmesi
+- **Risk:** Zustand selector optimizasyonları ve third-party hook’larla potansiyel çakışma
+- **Strateji:** Compiler stable olunca sınırlı scope’ta (ör. tek bir shared component) pilot deneme yapılır. Performans benchmark’ı sonrası genişletme kararı verilir. Manuel memo kaldırma ancak Compiler’ın kararlı çalıştığı doğrulandıktan sonra yapılır.
+
+---
+
+# 30. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

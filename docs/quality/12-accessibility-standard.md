@@ -1339,7 +1339,101 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 39. Kısa Sonuç
+# 39. Screen Reader Test Prosedürü
+
+VoiceOver (iOS) ve TalkBack (Android) ile manuel test rehberi bu bölümde tanımlanır. Otomatik a11y testleri (axe-core) yapısal sorunları yakalar; ancak gerçek screen reader deneyimini doğrulamak için manuel test zorunludur.
+
+## 39.1. Test Edilecek Kritik Akışlar
+
+Aşağıdaki akışlar her release öncesinde screen reader ile test edilmelidir:
+
+1. **Login → Ana sayfa navigasyonu:** Form alanlarına erişim, submit, başarılı giriş sonrası yönlendirme.
+2. **Tab bar geçişleri:** Tab'lar arasında gezinme, aktif tab'ın anons edilmesi.
+3. **Form doldurma ve submit:** Label-input eşleşmesi, validation hata mesajlarının okunması, submit butonu erişimi.
+4. **Modal açma/kapama:** Modal açıldığında focus trap, modal içeriğine erişim, kapatma eylemi.
+5. **Liste scrolling ve item seçimi:** FlatList'te item'lar arasında gezinme, seçim eylemi.
+6. **Hata durumları ve feedback:** Error boundary ekranı, toast bildirimleri, inline hata mesajları.
+
+## 39.2. VoiceOver (iOS) Test Adımları
+
+1. **Aktivasyon:** Settings → Accessibility → VoiceOver → ON. Alternatif: Siri'ye "Turn on VoiceOver" denir.
+2. **Sıralı element gezintisi:** Sağa swipe ile bir sonraki elemana geçilir. Solda swipe ile önceki elemana dönülür. Tüm etkileşimli elementlerin sıralı okunduğu doğrulanır.
+3. **Aktivasyon (Double-tap):** Seçilen element üzerinde double-tap ile aksiyon tetiklenir (buton basma, link açma).
+4. **Magic tap (İki parmak double-tap):** Ekrandaki primary action'ın magic tap ile çalıştığı doğrulanır (ör. müzik çalar'da play/pause).
+5. **Escape gesture (İki parmak Z çizme):** Modal kapatma, önceki ekrana dönme işleminin çalıştığı doğrulanır.
+6. **Heading navigation:** Rotor'u "Headings" moduna çevirerek başlıklar arası hızlı gezinme test edilir.
+7. **Form input:** Input alanına gelince label, placeholder ve input tipinin (ör. "e-posta adresi, metin alanı") okunduğu doğrulanır.
+
+## 39.3. TalkBack (Android) Test Adımları
+
+1. **Aktivasyon:** Settings → Accessibility → TalkBack → ON. Alternatif: Ses seviyesi tuşlarına 3 saniye basılı tutma.
+2. **Element gezintisi:** Sağa swipe ile sonraki element, sola swipe ile önceki element. Tüm etkileşimli elementlerin sıralı okunduğu doğrulanır.
+3. **Aktivasyon (Double-tap):** Seçilen element üzerinde double-tap ile aksiyon tetiklenir.
+4. **Global actions:** Aşağı-sağ swipe ile global aksiyonlar menüsü açılır (geri, home, bildirimler).
+5. **Explore by touch:** Parmağı ekranda gezdirerek elementlerin okunması test edilir.
+6. **Heading navigation:** Reading controls menüsünden "Headings" seçilerek başlıklar arası gezinme test edilir.
+
+## 39.4. Test Raporlama
+
+Her test edilen akış için aşağıdaki format kullanılır:
+
+| Akış | Platform | Sonuç | Sorun (varsa) | Öncelik |
+|------|---------|-------|---------------|---------|
+| Login → Ana sayfa | iOS VoiceOver | Geçti / Kaldı | Sorun açıklaması | P0/P1/P2 |
+| Login → Ana sayfa | Android TalkBack | Geçti / Kaldı | Sorun açıklaması | P0/P1/P2 |
+
+Rapor her sprint sonunda `docs/quality/a11y-test-reports/` dizinine eklenir.
+
+---
+
+# 40. Renk Körlüğü Simülasyon CI Adımı
+
+Otomatik renk erişilebilirliği kontrolü ile renk körlüğü olan kullanıcılar için bilgi kaybı önlenir.
+
+## 40.1. Storybook Erişilebilirlik Addon'u
+
+- `@storybook/addon-a11y` her component'e otomatik erişilebilirlik kontrolü uygular.
+- axe-core kuralları component render sonrası çalıştırılır.
+- Kontrast oranı ihlali, eksik label, role hatası gibi sorunlar component story'sinde görünür.
+
+## 40.2. axe-core CI Entegrasyonu
+
+- axe-core kuralları CI pipeline'ında her PR'da çalışır.
+- Kontrast oranı ihlali **blocker** olarak işaretlenir (merge engeller).
+- Eksik `accessibilityLabel` veya `accessibilityRole` uyarı olarak raporlanır.
+
+## 40.3. Renk Körlüğü Simülasyon Kontrolleri
+
+CI ve/veya Storybook'ta aşağıdaki renk körlüğü simülasyonları uygulanır:
+
+| Simülasyon Tipi | Açıklama | Etkilenen Nüfus |
+|----------------|---------|----------------|
+| Protanopia | Kırmızı körlüğü — kırmızı tonları algılanamaz | Erkeklerin ~%1'i |
+| Deuteranopia | Yeşil körlüğü — yeşil tonları algılanamaz | Erkeklerin ~%6'sı |
+| Tritanopia | Mavi körlüğü — mavi-sarı ayrımı zorlaşır | Çok nadir (~%0.01) |
+| Achromatopsia | Tam renk körlüğü — yalnızca gri tonları | Çok nadir (~%0.003) |
+
+## 40.4. Temel Kural
+
+**Bilgi sadece renkle iletilmez.** Her renk ile iletilen bilgi, en az bir ek kanal ile desteklenmelidir:
+
+- İkon eşlikçisi (ör. hata mesajı yanında uyarı ikonu)
+- Şekil farkı (ör. başarılı: daire tik, hata: üçgen ünlem)
+- Metin açıklaması (ör. "Başarılı", "Hata oluştu")
+- Pattern/doku farkı (grafik ve chart'larda)
+
+## 40.5. Minimum Kontrast Oranları
+
+| Element Türü | Minimum Kontrast (WCAG AA) |
+|-------------|--------------------------|
+| Normal metin (<18pt / <14pt bold) | 4.5:1 |
+| Büyük metin (>=18pt / >=14pt bold) | 3:1 |
+| UI bileşenleri (border, icon, form) | 3:1 |
+| Dekoratif element, disabled element | Kontrast zorunluluğu yok |
+
+---
+
+# 41. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

@@ -390,7 +390,93 @@ Bu belge aşağıdaki koşullar sağlandığında onaylı kabul edilir:
 
 ---
 
-# 12. Referanslar
+# 12. Stacked PR Workflow (2026-04-02 Eki)
+
+Bu bölüm, büyük değişikliklerin bölünerek yönetilmesi için stacked PR (zincirleme PR) workflow'unu tanımlar.
+
+## 12.1. Ne Zaman Kullanılır
+
+- 500+ satır değişiklik içeren PR'lar
+- Birden fazla mantıksal commit gerektiren işler
+- Farklı reviewer'lar tarafından incelenmesi gereken bağımsız parçalar
+- Hem altyapı hem feature değişikliği içeren işler
+
+## 12.2. Araç
+
+- **graphite** (önerilen): Stacked PR yönetimini otomatikleştiren CLI aracı
+- **git rebase bazlı** (alternatif): Manuel branch yönetimi ile stacking
+
+## 12.3. Akış
+
+```
+main
+ └── feature/ISSUE-123-part-1-veritabani-sema (base: main)
+      └── feature/ISSUE-123-part-2-api-katmani (base: part-1)
+           └── feature/ISSUE-123-part-3-ui-entegrasyonu (base: part-2)
+```
+
+- Her PR bağımsız review alır ve bağımsız CI çalıştırır.
+- Alt PR merge olunca üst PR'lar otomatik rebase edilir (graphite ile otomatik, manuel workflow'da elle yapılır).
+- Her PR'ın kendi başına mantıklı ve test edilebilir olması zorunludur.
+
+## 12.4. Naming Convention
+
+```
+feature/ISSUE-XXX-part-N-kisa-aciklama
+```
+
+Örnek:
+- `feature/ISSUE-123-part-1-veritabani-sema`
+- `feature/ISSUE-123-part-2-api-katmani`
+- `feature/ISSUE-123-part-3-ui-entegrasyonu`
+
+## 12.5. Kurallar
+
+- Part-1 review almadan part-2 açılabilir, ancak part-2 merge edilmesi part-1'in merge edilmesine bağlıdır.
+- Her part PR'ı tek bir mantıksal değişikliğe odaklanır.
+- Toplam part sayısı 5'i geçmemelidir; geçiyorsa iş tanımı daraltılmalıdır.
+- PR açıklamasında stack dizisi belirtilir: `Stack: part 1/3 → part 2/3 → part 3/3`
+
+---
+
+# 13. Merge Queue Entegrasyonu (2026-04-02 Eki)
+
+Bu bölüm, concurrent merge çakışmalarını önlemek için GitHub merge queue entegrasyonunu tanımlar.
+
+## 13.1. Problem
+
+Birden fazla PR aynı anda merge edilmeye çalışıldığında:
+- Son merge edilen PR, önceki merge ile çakışabilir.
+- CI tüm PR'lar için ayrı ayrı yeşil gösterse bile, birleşik durumda kırılma olabilir.
+- Bu durum özellikle monorepo'larda shared package değişikliklerinde yaşanır.
+
+## 13.2. Çözüm: GitHub Merge Queue
+
+- GitHub repository ayarlarında merge queue aktifleştirilir.
+- PR'lar merge queue'ya eklenir; queue sırasıyla her PR'ı main'in güncel haliyle test eder.
+- Test başarılıysa merge yapılır, başarısızsa PR queue'dan çıkarılır.
+
+## 13.3. Konfigürasyon
+
+| Ayar | Değer | Gerekçe |
+|------|-------|---------|
+| Merge method | Squash merge | Temiz history |
+| Queue timeout | 60 dakika | Uzun CI süreleri için yeterli |
+| Max batch size | 5 | Reasonable throughput |
+| Require branches to be up to date | Evet | Stale branch merge koruması |
+| Branch protection | Require merge queue | Direct merge engellenir |
+
+## 13.4. Workflow
+
+1. PR review tamamlanır ve approved olur.
+2. PR merge queue'ya eklenir ("Merge when ready" butonu).
+3. Queue, PR'ı main'in güncel haliyle birleştirerek CI çalıştırır.
+4. CI yeşilse merge yapılır, kırmızıysa PR owner bilgilendirilir.
+5. Başarısız PR düzeltilip tekrar queue'ya eklenir.
+
+---
+
+# 14. Referanslar
 
 | Belge | İlişki |
 |---|---|

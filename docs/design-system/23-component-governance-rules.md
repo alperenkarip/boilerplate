@@ -1337,7 +1337,106 @@ Bu doküman yeterli kabul edilir eğer:
 
 ---
 
-# 34. Kısa Sonuç
+# 34. Component Health Scorecard
+
+Her design system component'i için otomatik kalite skoru hesaplanır. Bu skor, component'in bakım durumunu, erişilebilirlik uyumunu ve platform paritesini ölçülebilir hale getirir.
+
+## 34.1. Metrik Tanımları
+
+| Metrik | Ağırlık | Ölçüm Yöntemi | Veri Kaynağı |
+|--------|---------|---------------|-------------|
+| Test coverage | %25 | Vitest (web) / Jest (mobile) coverage raporu, satır bazlı | CI coverage raporu |
+| A11y uyumu | %25 | axe-core otomatik tarama + `accessibilityRole` varlık kontrolü | Storybook a11y addon + CI |
+| Platform parity | %20 | Web + iOS + Android render testi, üç platformda da hatasız render | CI platform test matrix |
+| Doküman durumu | %15 | Storybook story var mı? Props tablosu dokümante mi? README mevcut mu? | Dosya varlık kontrolü |
+| Visual regression | %15 | Son 5 PR'da Chromatic visual diff var mı? Onaylanmamış diff var mı? | Chromatic raporu |
+
+## 34.2. Skor Hesaplama
+
+- Her metrik 0-100 arasında normalize edilir.
+- Toplam skor: Her metriğin normalize skoru x ağırlığı toplamı.
+- Maksimum skor: 100.
+
+## 34.3. Sağlık Eşikleri
+
+| Skor Aralığı | Durum | Renk | Aksiyon |
+|-------------|-------|------|---------|
+| 80-100 | Sağlıklı | Yeşil | Bakım devam |
+| 60-79 | Dikkat | Sarı | Sonraki sprint'te iyileştirme planla |
+| 0-59 | Kritik | Kırmızı | Acil müdahale, PR'da blocker uyarı |
+
+## 34.4. Dashboard ve CI Entegrasyonu
+
+- Skor raporu `packages/ui/HEALTH.md` dosyasına otomatik yazılır (CI job sonrası).
+- CI: Score 60 altına düşen component için PR'da otomatik uyarı comment'i oluşturulur.
+- Trend izleme: Sprint bazlı ortalama component health score'u izlenir; düşüş trendi varsa design system bakım sprint planlanır.
+
+## 34.5. Örnek Health Raporu
+
+```markdown
+# Component Health Report — 2026-04-02
+
+| Component | Test | A11y | Parity | Docs | Visual | Toplam | Durum |
+|-----------|------|------|--------|------|--------|--------|-------|
+| Button    | 95   | 100  | 100    | 90   | 100    | 97     | Sağlıklı |
+| Input     | 80   | 85   | 90     | 70   | 80     | 82     | Sağlıklı |
+| Card      | 60   | 70   | 80     | 40   | 50     | 62     | Dikkat |
+| Avatar    | 40   | 50   | 60     | 20   | 30     | 42     | Kritik |
+```
+
+---
+
+# 35. Deprecation Pipeline
+
+Component yaşam döngüsü sonu yönetimi, kontrollü ve izlenebilir bir pipeline ile gerçekleştirilir. Bu pipeline, eski component'lerin güvenli şekilde kaldırılmasını ve tüm kullanım yerlerinin migrate edilmesini garanti eder.
+
+## 35.1. Pipeline Aşamaları
+
+### Aşama 1: Deprecated (Sprint N)
+- Component `@deprecated` JSDoc etiketi ile işaretlenir.
+- `console.warn` uyarısı eklenir (development-only):
+  ```typescript
+  if (__DEV__) {
+    console.warn(
+      '[Deprecated] OldCard component v3.0.0 itibarıyla kaldırılacaktır. ' +
+      'Yerine SurfaceCard kullanın. Rehber: docs/migration/surface-card.md'
+    );
+  }
+  ```
+- CHANGELOG'a deprecation kaydı yazılır.
+
+### Aşama 2: Warning (Sprint N+1 → N+2)
+- Tüm kullanım yerleri kaynak kodda tespit edilir (`grep` veya AST tarama ile).
+- Migration rehberi hazırlanır: prop mapping, import değişikliği, davranış farkları.
+- Feature ekiplere bildirim gönderilir.
+
+### Aşama 3: Migration (Sprint N+3 → N+4)
+- Tüm kullanım yerleri yeni component'e geçirilir.
+- Mümkünse jscodeshift codemod ile otomatik migration yapılır.
+- Migration sonrası tüm testler (unit, visual, a11y) çalıştırılır.
+
+### Aşama 4: Removed (Sprint N+5)
+- Deprecated component koddan kaldırılır.
+- Removal öncesi CI kontrolü: Deprecated component'i import eden dosya kalmadığı doğrulanır.
+- CHANGELOG'a removal kaydı yazılır.
+- İlgili Storybook story'leri ve test dosyaları da kaldırılır.
+
+## 35.2. CI Kontrolleri
+
+- **Deprecated import uyarısı:** Deprecated component'i import eden kod PR'da sarı uyarı üretir (bloklamaz, ama reviewer'ın dikkatini çeker).
+- **Removal öncesi kontrol:** `pnpm lint:deprecated` komutu, deprecated component'i import eden dosya kalmadığını doğrular. Kalan import varsa removal commit'i bloklanır.
+- **Timeline tracking:** Her deprecated component'in deprecation tarihi ve planlanan removal tarihi izlenir. Süre aşımı durumunda otomatik uyarı üretilir.
+
+## 35.3. Codemod Standartları
+
+- Her major component değişikliğinde mümkünse jscodeshift transform'u sağlanır.
+- Transform dosyası: `packages/ui/codemods/<component-name>-migration.ts`
+- Test dosyası: `packages/ui/codemods/__tests__/<component-name>-migration.test.ts`
+- Çalıştırma: `pnpm codemod:run <component-name>-migration`
+
+---
+
+# 36. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

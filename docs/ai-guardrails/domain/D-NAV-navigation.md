@@ -4,7 +4,7 @@ type: domain
 name: Navigation, Routing, Deep Linking
 kaynak-dokümanlar: 08, ADR-012
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-NAV: Navigation Guardrail
@@ -78,6 +78,68 @@ son-güncelleme: 2026-04-01
 - [ ] Navigation bar Large Title → Inline geçişi var mı?
 - [ ] Hamburger menü kullanılmıyor mu?
 - [ ] Arama: öneriler ve son aramalar gösteriliyor mu?
+
+---
+
+## Tab Bar Badge Standardı
+
+Tab bar öğelerinde bildirim ve durum gösterimi için badge kuralları:
+
+### Sayısal Badge
+- 1-99 arası sayıyı doğrudan göster
+- 99 üzerinde `99+` kısaltması kullan
+- Font: Caption 2 boyutu, bold weight
+- Arka plan: `color-badge-notification` semantic token
+- Metin: Beyaz, minimum 16×16pt boyut
+
+### Dot Badge
+- İçerik bilgisi olmadan yenilik gösterimi için küçük kırmızı nokta
+- Boyut: 8×8pt, tam yuvarlak
+- Renk: `color-badge-notification` semantic token
+- Sayısal bilgi gereksizse dot tercih et
+
+### Animasyon ve Davranış
+- [YAPILMALI] Badge göründüğünde scale bounce animasyonu uygula (200ms, spring)
+- [YAPILMALI] İlgili tab'a geçildiğinde badge sıfırla veya güncelle
+- [YAPILMAMALI] Badge'i sayfa yüklenene kadar sıfırlamayı erteleme — tab seçimiyle temizle
+- [YAPILMAMALI] Aynı anda hem dot hem sayısal badge gösterme
+
+### Erişilebilirlik
+- [ZORUNLU] A11y label badge bilgisini içermeli: `"Bildirimler, 5 yeni"` formatı
+- [ZORUNLU] Dot badge için `"Bildirimler, yeni içerik var"` label kullan
+- [YAPILMALI] Badge değiştiğinde `accessibilityLiveRegion="polite"` ile duyur
+
+---
+
+## Modal Presentation Karar Ağacı
+
+İçerik türüne göre doğru sunum yüzeyini seçme rehberi:
+
+| İçerik Türü | Sunum Şekli | Platform Detayı |
+|-------------|-------------|-----------------|
+| Kritik uyarı / onay | `Alert.alert()` (native) | iOS: native alert, Android: native dialog |
+| Kısa form (1-3 alan) | Bottom sheet — partial | Snap point: %50 medium |
+| Tam form (4+ alan) | Full screen modal | iOS: `pageSheet`, Android: `slide` |
+| Bilgi / açıklama | Bottom sheet — medium | Snap point: %50, dismiss kolay |
+| Seçim listesi | Bottom sheet — tall | Snap point: %90, scroll aktif |
+| Medya önizleme | Full screen modal | Transparan arka plan, close buton |
+
+### Snap Point Standardı
+- **Peek:** %25 — kısa bilgi, teaser
+- **Medium:** %50 — kısa form, bilgi kartı
+- **Tall/Expanded:** %90 — uzun form, tam liste
+
+### Dismiss Mekanizmaları
+- [ZORUNLU] Her modal/sheet en az bir dismiss mekanizmasına sahip olmalı
+- [YAPILMALI] Üç dismiss yöntemi destekle: drag down + backdrop tap + close butonu
+- [YAPILMALI] Form içeriyorsa unsaved changes guard ekle — yanlışlıkla kapanmayı önle
+- [YAPILMAMALI] Sadece backdrop tap ile dismiss — close butonu her zaman görünür olmalı
+- [YAPILMAMALI] Nested modal/sheet zincirleri oluşturma — modal içinde modal yasak
+
+### Platform Farklılıkları
+- iOS `pageSheet`: Üstten yuvarlak köşe, drag indicator, yarı saydam arka plan
+- Android `slide`: Alttan kayma, tam ekran, back button ile dismiss
+- Web: Centered dialog veya side panel, ESC tuşu ile dismiss
 
 ## Kaynak
 - Navigation kuralları → docs/architecture/08-navigation-and-flow-rules.md

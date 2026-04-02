@@ -4,7 +4,7 @@ type: domain
 name: Observability, Logging, Analytics, Debugging
 kaynak-dokümanlar: 28, ADR-009
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-OBS: Observability Guardrail
@@ -50,6 +50,67 @@ son-güncelleme: 2026-04-01
 - [ ] Analytics vendor abstraction kullanılıyor mu?
 - [ ] Log'larda PII yok mu?
 - [ ] Event naming tutarlı mı?
+
+---
+
+## Custom Performance Span
+
+Kritik kullanıcı akışlarında uçtan uca performans ölçümü için Sentry span tanımları:
+
+### Tanımlanması Gereken Span'ler
+
+| Akış | Span Adı | Ölçüm Aralığı |
+|------|----------|----------------|
+| Giriş | `auth.login` | Giriş butonu tıklama → ana ekran render |
+| Ödeme | `payment.checkout` | Ödeme başlat → onay ekranı |
+| Arama | `search.query` | Arama submit → sonuç listesi render |
+| Kayıt | `auth.register` | Kayıt butonu → hoş geldin ekranı |
+| Sayfa yükleme | `screen.{name}.load` | Navigation start → content visible |
+
+### Span Metadata
+- [ZORUNLU] Her span'e şu metadata ekle: `userId` (hash'lenmiş), `platform` (ios/android/web), `networkType` (wifi/cellular/offline)
+- [YAPILMALI] Ek context: `screenName`, `appVersion`, `deviceModel`
+- [YAPILMAMALI] Span metadata'ya PII ekleme (email, telefon, ad-soyad)
+
+### Alerting
+- [ZORUNLU] p95 hedefin 2x üzerine çıkarsa Sentry alert tetikle
+- [YAPILMALI] Trend bazlı alert: Haftalık p95 %20 artarsa uyar
+- [YAPILMALI] Platform bazlı segmentasyon ile alert — iOS/Android/Web ayrı değerlendir
+
+### Anti-pattern
+- [ZAYIF] Span başlatılıp bitirilmemiş — memory leak ve yanlış metrik
+- [ZAYIF] Tüm API çağrılarına span açma — yalnızca kritik kullanıcı akışları
+
+---
+
+## Log Sampling Stratejisi
+
+Production ortamında log hacmi ve maliyeti kontrol altında tutmak için sampling kuralları:
+
+### Seviye Bazlı Sampling (Production)
+
+| Log Seviyesi | Sampling Oranı | Açıklama |
+|-------------|---------------|----------|
+| `error` | %100 | Her hata yakalanır |
+| `warn` | %100 | Her uyarı yakalanır |
+| `info` | %10 | Örnekleme ile azalt |
+| `debug` | %0 (kapalı) | Production'da debug log açılmaz |
+
+### Akıllı Sampling Stratejileri
+
+**Session-based sampling:**
+- Rastgele %10 session tam olarak loglanır (tüm seviyeler)
+- Geri kalan %90 yalnızca error + warn
+
+**Error-triggered sampling:**
+- Bir session'da hata oluşursa, son 5 dakikalık tüm log buffer'ı gönderilir
+- Ring buffer: Son 5dk info + debug log'ları bellekte tut, hata olursa flush et
+
+### Maliyet Kontrolü
+- [ZORUNLU] Aylık log hacmini izle — bütçe sınırı tanımla
+- [YAPILMALI] Sınır aşıldığında info sampling oranını otomatik düşür (%10 → %5 → %1)
+- [YAPILMAMALI] Maliyet kontrolü için error/warn sampling'i düşürme — bunlar her zaman %100
+- [YAPILMAMALI] Log mesajına büyük JSON payload ekleme — özet bilgi yeterli
 
 ## Kaynak
 - Observability → docs/quality/28-observability-and-debugging.md

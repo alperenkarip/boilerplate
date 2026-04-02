@@ -1297,98 +1297,154 @@ Bu metrikler sprint retrospective'de veya aylık teknik sağlık toplantısında
 
 ---
 
-# 32. Feature Flag Standardı
+# 32. Feature Flags ve Remote Config Stratejisi
 
-## 32.1. Nedir ve neden gerekli?
+## 32.1. Feature Flag Nedir?
 
-Feature flag (özellik anahtarı), bir uygulamadaki belirli özelliklerin runtime'da (çalışma zamanında) açılıp kapatılabilmesini sağlayan bir mekanizmadır. Kod deploy edilir ama özellik henüz kullanıcıya gösterilmez. Ayrı bir kontrol mekanizması ile özellik istenilen zamanda, istenilen kullanıcı grubuna açılır.
+Feature flag (diger adlariyla feature toggle, feature switch veya feature gate), kodda yeni bir ozelligi acip kapatmayi saglayan bir mekanizmadir. Ozellik kodu deploy edilmis olsa bile flag kapaliysa kullanici bu ozelligi gormez. Flag acilinca ozellik aktif olur.
 
-Feature flag'ler şu problemleri çözer:
-
-1. **Trunk-based development desteği**: Tüm geliştiriciler ana branch'e (main/trunk) sık sık merge yapar. Tamamlanmamış bir feature, flag ile gizlendiği için merge edilmesi güvenlidir. Uzun yaşayan feature branch'lere gerek kalmaz.
-
-2. **Gradual rollout (kademeli yayın)**: Yeni özellik önce %5 kullanıcıya açılır, sorun yoksa %25, %50, %100'e çıkılır. Problem çıkarsa geri alınır. Deploy geri almak (rollback) yerine flag kapatmak çok daha hızlı ve güvenlidir.
-
-3. **A/B test**: İki farklı UI veya iş mantığı varyantını farklı kullanıcı gruplarına gösterip hangi varyantın daha iyi performans gösterdiğini ölçmek.
-
-4. **Kill switch (acil durdurma)**: Production'da bir özellik sorun çıkarıyorsa, deploy yapmadan flag'i kapatarak anında devre dışı bırakmak.
-
-5. **Kullanıcı segmentasyonu**: Premium kullanıcılara, beta tester'lara veya belirli bölgelere özel özellikler açmak.
-
-## 32.2. Flag türleri
-
-Feature flag'ler kullanım amacına ve ömrüne göre dört kategoriye ayrılır:
-
-### Release flag (kısa ömür)
-
-Henüz tamamlanmamış veya henüz yayınlanmak istenmeyen bir özelliği gizlemek için kullanılır. Özellik tamamlanıp kararlı hale geldiğinde flag kaldırılır. Tipik ömrü: birkaç sprint.
-
-Örnek: Yeni profil sayfası geliştiriliyor. Kod merge edilir ama `new-profile` flag'i kapalıdır. Tamamlanınca flag açılır, kararlı çalıştığı doğrulandıktan sonra flag tamamen kaldırılır.
-
-### Experiment flag (orta ömür)
-
-A/B test veya multivariate test için kullanılır. İki veya daha fazla varyantı farklı kullanıcı gruplarına gösterir. Test sonuçları belirlenene kadar yaşar. Tipik ömrü: 2-6 hafta.
-
-Örnek: Onboarding akışının A ve B varyantı test ediliyor. `onboarding-variant` flag'i ile kullanıcılar rastgele A veya B grubuna yönlendirilir. Test tamamlandığında kazanan varyant kalır, flag kaldırılır.
-
-### Operational flag (uzun ömür)
-
-Kill switch veya performans düzenleme amaçlı kullanılır. Production'da bir sorun çıktığında hızlı müdahale sağlar. Süresiz yaşayabilir.
-
-Örnek: `enable-real-time-sync` flag'i. Normalde açıktır, ama WebSocket sunucusu sorun çıkarırsa flag kapatılarak polling moduna düşülür.
-
-### Permission flag (kalıcı)
-
-Kullanıcı segmentasyonu için kullanılır. Belirli kullanıcı gruplarına (premium, beta, enterprise) özel özellikler açar. Kalıcıdır, kaldırılmaz (ta ki özellik herkese açılana kadar).
-
-Örnek: `premium-analytics` flag'i. Yalnızca premium aboneliği olan kullanıcılara açıktır.
-
-## 32.3. Implementasyon
-
-Feature flag implementasyonu projenin büyüklüğüne ve olgunluğuna göre iki aşamada düşünülür:
-
-### (a) Proje başlangıcı: Build-time flag
-
-Projenin ilk aşamalarında karmaşık bir feature flag altyapısına gerek yoktur. Ortam değişkenleri (environment variables) yeterlidir.
+En basit haliyle bir feature flag sudur:
 
 ```typescript
-// .env dosyası
+if (featureFlags.isEnabled('new-checkout-flow')) {
+  return <NewCheckoutFlow />;
+} else {
+  return <OldCheckoutFlow />;
+}
+```
+
+Ama modern feature flag sistemleri bunun cok otesine gecer: kullanici segmentasyonu, gradual rollout, A/B testing, remote config ve instant rollback imkani sunar.
+
+## 32.2. Neden Feature Flag Gerekli?
+
+1. **Trunk-based development destegi:** Bu boilerplate trunk-based development stratejisi kullanir (42-branching-and-merge-strategy.md). Bu modelde uzun omurlu feature branch'ler yerine, tamamlanmamis ozellikler flag arkasinda main branch'e merge edilir. Flag kapaliyken ozellik production'da gorunmez, tamamlaninca flag acilir.
+
+2. **Guvenli deployment:** Yeni ozellik sorun cikarirsa flag kapatilarak aninda geri alinir. Rollback icin yeni deploy gerekmez.
+
+3. **Gradual rollout:** Ozellik once %5 kullaniciya, sonra %25'e, sonra %100'e acilir. Sorun erken tespit edilir.
+
+4. **A/B testing altyapisi:** Iki farkli ozellik varyanti farkli kullanici gruplarina gosterilir, metrikler karsilastirilir.
+
+5. **Platform-specific feature gating:** Ayni ozellik iOS'ta acik, Android'de kapali olabilir. Veya web'de acik, mobile'da kapali.
+
+6. **Operasyonel guvenlik:** Sistem yogunlugu yuksekse agir ozellikler flag ile kapatilabilir (kill switch).
+
+## 32.3. Feature Flag Turleri
+
+### Release flag (kisa omurlu)
+
+Yeni ozellik deploy edildiginde kapali baslar. Test ve dogrulama sonrasi acilir. Ozellik stable olduktan sonra flag kodu kaldirilir.
+
+- **Omur:** 1-4 hafta
+- **Ornek:** Yeni profil sayfasi gelistiriliyor. Kod merge edilir ama `new-profile` flag'i kapalidir. Tamamlaninca flag acilir, kararli calistigi dogrulandiktan sonra flag tamamen kaldirilir.
+
+### Experiment flag (orta omurlu)
+
+A/B test icin olusturulur. Iki veya daha fazla varyant barindirir. Test sonuclandiginda kazanan varyant kalir, flag kaldirilir.
+
+- **Omur:** 2-8 hafta
+- **Ornek:** Onboarding akisinin A ve B varyanti test ediliyor. `onboarding-variant` flag'i ile kullanicilar rastgele A veya B grubuna yonlendirilir. Test tamamlandiginda kazanan varyant kalir, flag kaldirilir.
+
+### Ops flag (uzun omurlu)
+
+Operasyonel kontrol icin kullanilir (kill switch, maintenance mode). Sistemde kalici olarak bulunur.
+
+- **Omur:** suresiz
+- **Ornek:** `enable-real-time-sync` flag'i. Normalde aciktir, ama WebSocket sunucusu sorun cikarirsa flag kapatilarak polling moduna dusulur.
+
+### Permission flag (uzun omurlu)
+
+Kullanici planina veya rolune gore ozellik erisimi kontrol eder. Premium/freemium ayrimi saglar.
+
+- **Omur:** suresiz
+- **Ornek:** `premium-analytics` flag'i. Yalnizca premium aboneligi olan kullanicilara aciktir.
+
+## 32.4. Canonical Arac Degerlendirmesi
+
+Bu boilerplate canonical feature flag araci konusunda su anda acik karar vermemistir. Aday araclar ve degerlendirmeleri:
+
+### Firebase Remote Config
+- **Avantajlar:** Ucretsiz, Firebase ekosistemiyle entegre, Expo SDK uyumlu, real-time guncelleme
+- **Dezavantajlar:** UI/dashboard zayif, segmentasyon sinirli, analytics entegrasyonu dolayli
+- **Boilerplate uyumu:** Firebase zaten ekosistemde (D-FIR), ek dependency yok
+
+### PostHog
+- **Avantajlar:** Feature flags + analytics + session replay tek pakette, acik kaynak, self-host imkani
+- **Dezavantajlar:** Ucretli (olcege gore), React Native SDK olgunlugu orta
+- **Boilerplate uyumu:** Vendor-agnostic analytics karari (ADR-009) ile uyumlu
+
+### LaunchDarkly
+- **Avantajlar:** Enterprise-grade, guclu segmentasyon, real-time, React Native SDK mevcut
+- **Dezavantajlar:** Pahali, vendor lock-in riski yuksek
+- **Boilerplate uyumu:** Enterprise projelerde aday, boilerplate default olarak agir
+
+### Custom Cozum (JSON config + API)
+- **Avantajlar:** Tam kontrol, vendor bagimliligi yok, basit projeler icin yeterli
+- **Dezavantajlar:** Gradual rollout, segmentasyon, real-time guncelleme altyapisi yazilmali
+- **Boilerplate uyumu:** Basit flag ihtiyaci icin makul, karmasik senaryolarda yetersiz
+
+## 32.5. Boilerplate Icin Onerilen Yaklasim
+
+1. **Abstraction-first:** Tipki analytics kararinda (ADR-009) oldugu gibi, feature flag vendor'ina dogrudan baglanma. Vendor-agnostic abstraction layer olustur:
+
+   ```typescript
+   // packages/shared/src/feature-flags/types.ts
+   interface FeatureFlagProvider {
+     isEnabled(flagKey: string): boolean;
+     getVariant(flagKey: string): string | undefined;
+     getAllFlags(): Record<string, boolean>;
+   }
+   ```
+
+2. **Varsayilan implementasyon:** Bootstrap asamasinda basit JSON-based flag sistemi yeterli. Production'da vendor entegrasyonu projeye gore secilir.
+
+3. **Flag lifecycle:** Her flag olusturuldugunda:
+   - olusturma tarihi
+   - beklenen kaldirma tarihi
+   - sahip (owner)
+   - tur (release/experiment/ops/permission)
+
+   kaydedilmeli.
+
+## 32.6. Implementasyon Detaylari
+
+### (a) Proje baslangici: Build-time flag
+
+Projenin ilk asamalarinda karmasik bir feature flag altyapisina gerek yoktur. Ortam degiskenleri (environment variables) yeterlidir.
+
+```typescript
+// .env dosyasi
 VITE_FEATURE_NEW_PROFILE=true
 VITE_FEATURE_DARK_MODE=false
 ```
 
 ```typescript
-// Kullanım
+// Kullanim
 const isNewProfileEnabled = import.meta.env.VITE_FEATURE_NEW_PROFILE === 'true';
 ```
 
-Bu yaklaşımın özellikleri:
-- Basittir, ek bağımlılık gerektirmez.
-- Flag değişikliği yeni deploy gerektirir (build-time'da değer sabitlenir).
-- Kullanıcı bazlı segmentasyon yapılamaz.
-- Küçük ekip ve az sayıda flag için yeterlidir.
+Bu yaklasimin ozellikleri:
+- Basittir, ek bagimlilik gerektirmez.
+- Flag degisikligi yeni deploy gerektirir (build-time'da deger sabitlenir).
+- Kullanici bazli segmentasyon yapilamaz.
+- Kucuk ekip ve az sayida flag icin yeterlidir.
 
-### (b) Büyüdükçe: Remote config
+### (b) Buyudukce: Remote config
 
-Proje büyüdüğünde, flag sayısı arttığında veya kullanıcı bazlı segmentasyon gerektiğinde remote config (uzaktan yapılandırma) sistemine geçilir.
+Proje buyudugunde, flag sayisi arttiginda veya kullanici bazli segmentasyon gerektiginde remote config (uzaktan yapilandirma) sistemine gecilir.
 
-Araç seçenekleri:
-- **LaunchDarkly**: Endüstri standardı feature flag platformu. SDK'lar, segmentasyon, A/B test, audit log.
-- **Unleash**: Açık kaynak alternatif. Self-hosted veya cloud. Temel flag yönetimi.
-- **Firebase Remote Config**: Firebase ekosistemi kullanılıyorsa entegre çözüm. Mobil ve web desteği.
+Remote config'in avantajlari:
+- Deploy etmeden flag degistirilebilir (aninda etki).
+- Kullanici bazli, bolge bazli, yuzde bazli segmentasyon mumkundur.
+- Flag degisiklik gecmisi (audit log) tutulur.
+- A/B test altyapisi hazirdir.
 
-Remote config'in avantajları:
-- Deploy etmeden flag değiştirilebilir (anında etki).
-- Kullanıcı bazlı, bölge bazlı, yüzde bazlı segmentasyon mümkündür.
-- Flag değişiklik geçmişi (audit log) tutulur.
-- A/B test altyapısı hazırdır.
+## 32.7. Kod Pattern'i
 
-## 32.4. Kod pattern'i
-
-Feature flag kontrolü kod içinde şu şekilde uygulanır:
+Feature flag kontrolu kod icinde su sekilde uygulanir:
 
 ```tsx
-// Doğru yaklaşım: Component render seviyesinde
+// Dogru yaklasim: Component render seviyesinde
 function ProfileScreen() {
   if (isFeatureEnabled('new-profile')) {
     return <NewProfileScreen />;
@@ -1397,56 +1453,60 @@ function ProfileScreen() {
 }
 ```
 
-Önemli kurallar:
+Onemli kurallar:
 
-- **Flag kontrolü component render'ında yapılır**, iş mantığının derinliklerine gömülmez. Bu sayede flag kaldırıldığında hangi kodu silmek gerektiği açıktır.
-- **Flag kontrolü mümkün olduğunca üst seviyede tutulur**. Bir component'in içindeki 5 farklı yerde flag kontrol etmek yerine, component seviyesinde tek bir kontrol tercih edilir.
-- **Nested (iç içe) flag kontrolünden kaçınılır**: `if (flagA && flagB)` gibi kombinasyonlar test matrisini patlatır ve davranışı öngörülemez kılar.
+- **Flag kontrolu component render'inda yapilir**, is mantığının derinliklerine gomulmez. Bu sayede flag kaldirildiginda hangi kodu silmek gerektigi aciktir.
+- **Flag kontrolu mumkun oldugunca ust seviyede tutulur**. Bir component'in icindeki 5 farkli yerde flag kontrol etmek yerine, component seviyesinde tek bir kontrol tercih edilir.
+- **Nested (ic ice) flag kontrolunden kacinilir**: `if (flagA && flagB)` gibi kombinasyonlar test matrisini patlatir ve davranisi ongorulemez kilar.
 
-## 32.5. Flag lifecycle (yaşam döngüsü)
+## 32.8. Flag Yasam Dongusu ve Temizleme
 
-Her feature flag şu yaşam döngüsünden geçer:
+Feature flag'ler temizlenmezse technical debt'e donusur. Bu proje kapsaminda:
 
-1. **Oluştur**: Flag tanımlanır. Adı, türü, varsayılan değeri, sahibi belirlenir.
-2. **Kodu wrap et**: İlgili kod, flag kontrolüne sarılır.
-3. **Merge / deploy**: Kod ana branch'e merge edilir ve deploy edilir. Flag kapalıdır, özellik gizlidir.
-4. **Remote'dan aç**: Flag açılır (build-time ise yeni deploy ile, remote config ise dashboard'dan). Özellik kullanıcılara gösterilir.
-5. **Stabil**: Özellik sorunsuz çalıştığı doğrulanır. Belirli bir süre izlenir.
-6. **Flag kaldır**: Flag kontrolü koddan tamamen silinir. Eski kod yolu (flag kapalıyken çalışan kod) da silinir. Flag tanımı remote config'den de kaldırılır.
+### Yasam dongusu adimlari
 
-**6. adım zorunludur.** Flag kaldırılmadan bırakılırsa "flag debt" (bayrak borcu) oluşur. Zamanla kodda düzinelerce ölü flag birikir, okunabilirlik düşer, test karmaşıklığı artar.
+Her feature flag su yasam dongusunden gecer:
 
-## 32.6. Cleanup (temizlik) kuralı
+1. **Olustur**: Flag tanimlanir. Adi, turu, varsayilan degeri, sahibi belirlenir.
+2. **Kodu wrap et**: Ilgili kod, flag kontrolune sarilir.
+3. **Merge / deploy**: Kod ana branch'e merge edilir ve deploy edilir. Flag kapalidir, ozellik gizlidir.
+4. **Remote'dan ac**: Flag acilir (build-time ise yeni deploy ile, remote config ise dashboard'dan). Ozellik kullanicilara gosterilir.
+5. **Stabil**: Ozellik sorunsuz calistigi dogrulanir. Belirli bir sure izlenir.
+6. **Flag kaldir**: Flag kontrolu koddan tamamen silinir. Eski kod yolu (flag kapaliyken calisan kod) da silinir. Flag tanimi remote config'den de kaldirilir.
 
-Flag temizliği için şu süreler geçerlidir:
+**6. adim zorunludur.** Flag kaldirilmadan birakilirsa "flag debt" (bayrak borcu) olusur. Zamanla kodda duzinelerce olu flag birikir, okunabilirlik duser, test karmasikligi artar.
 
-- **Release flag**: Özellik production'a açıldıktan (launch) **2 sprint sonra** flag ve eski kod yolu kaldırılır. 2 sprint, özelliğin kararlı çalıştığını doğrulamak için yeterli süredir.
-- **Experiment flag**: Test sonucu belirlendikten (kazanan varyant seçildikten) **1 sprint sonra** flag kaldırılır. Kaybeden varyantın kodu silinir.
-- **Operational flag**: Kill switch olarak kalıcı olabilir ama periyodik olarak gözden geçirilir. Artık gerekmeyen operational flag'ler de kaldırılır.
+### Temizleme sureler
 
-Her sprint'te **"stale flag review"** yapılır:
-- Süresi dolmuş flag'ler listelenir.
-- Her birinin kaldırılması için issue açılır veya o sprint'te kaldırılır.
-- Remote config dashboard'undaki aktif flag sayısı izlenir. Sürekli artan sayı tehlike işaretidir.
+- **Release flag:** Ozellik stable olduktan sonra 2 hafta icinde flag kodu kaldirilmali
+- **Experiment flag:** Test sonuclandiktan sonra 1 hafta icinde kazanan varyant sabitlenip flag kaldirilmali
+- **Stale flag tespiti:** 30 gunden uzun suredir degistirilmemis release/experiment flag'ler stale kabul edilir
+- **CI entegrasyonu:** Stale flag uyarisi CI'da otomatik uretilmeli
+- **Flag sayisi limiti:** Aktif release + experiment flag sayisi 20'yi gecmemeli (yonetilebilirlik siniri)
 
-## 32.7. Test
+Her sprint'te **"stale flag review"** yapilir:
+- Suresi dolmus flag'ler listelenir.
+- Her birinin kaldirilmasi icin issue acilir veya o sprint'te kaldirilir.
+- Remote config dashboard'undaki aktif flag sayisi izlenir. Surekli artan sayi tehlike isaretdir.
 
-Feature flag'li kodun test edilmesinde şu kurallar geçerlidir:
+## 32.9. Test
 
-- **Her flag için hem açık hem kapalı durumda test yazılır.** Yalnızca flag açıkken test etmek, flag kapalıyken bozulan kodu görmezden gelmektir.
-- **Default değer güvenli olmalıdır.** Yeni bir özelliğin varsayılan değeri **kapalı** olmalıdır. Bu sayede flag sistemi çökse bile yeni (ve potansiyel olarak sorunlu) özellik kullanıcıya gösterilmez.
-- **Test dosyasında flag mock'lanır.** Remote config SDK'sı veya environment variable mock edilerek her iki durumda test koşulur.
+Feature flag'li kodun test edilmesinde su kurallar gecerlidir:
+
+- **Her flag icin hem acik hem kapali durumda test yazilir.** Yalnizca flag acikken test etmek, flag kapaliyken bozulan kodu gormezden gelmektir.
+- **Default deger guvenli olmalidir.** Yeni bir ozelligin varsayilan degeri **kapali** olmalidir. Bu sayede flag sistemi cokse bile yeni (ve potansiyel olarak sorunlu) ozellik production'da kullaniciya gosterilmez.
+- **Test dosyasinda flag mock'lanir.** Remote config SDK'si veya environment variable mock edilerek her iki durumda test kosulur.
 
 ```typescript
-// Test örneği
+// Test ornegi
 describe('ProfileScreen', () => {
-  it('yeni profil ekranını gösterir (flag açık)', () => {
+  it('yeni profil ekranini gosterir (flag acik)', () => {
     mockFeatureFlag('new-profile', true);
     render(<ProfileScreen />);
     expect(screen.getByTestId('new-profile')).toBeTruthy();
   });
 
-  it('eski profil ekranını gösterir (flag kapalı)', () => {
+  it('eski profil ekranini gosterir (flag kapali)', () => {
     mockFeatureFlag('new-profile', false);
     render(<ProfileScreen />);
     expect(screen.getByTestId('old-profile')).toBeTruthy();
@@ -1454,13 +1514,22 @@ describe('ProfileScreen', () => {
 });
 ```
 
-## 32.8. Hatalı yaklaşımlar
+## 32.10. Guardrail Entegrasyonu
 
-- **Flag'i hiç kaldırmamak (flag debt)**: En yaygın ve en zararlı hata. Flag eklenir ama asla kaldırılmaz. Zamanla kodda onlarca ölü flag birikir. Hangi flag'in aktif, hangisinin ölü olduğu anlaşılmaz. Yeni geliştirici hangi kodu silmesi gerektiğini bilemez.
-- **Nested flag kontrolü**: `if (flagA && flagB && !flagC)` gibi iç içe flag kombinasyonları test matrisini üstel olarak büyütür. 3 flag'in kombinasyonu 8 farklı senaryo demektir. Bu senaryoların hepsini test etmek ve davranışlarını anlamak pratik olarak imkansızlaşır.
-- **Default değeri riskli yapmak**: Yeni özelliğin varsayılan değerini "açık" yapmak. Flag sistemi çökerse veya remote config'e erişilemezse tamamlanmamış veya test edilmemiş özellik production'da kullanıcıya gösterilir.
-- **Flag'i iş mantığının derinliklerine gömmek**: Flag kontrolünü 10 farklı dosyada, 20 farklı if bloğunda yapmak. Flag kaldırılacağı zaman tüm bu noktaları bulmak ve temizlemek son derece zor ve hata yapmaya açık hale gelir.
-- **Her küçük değişiklik için flag oluşturmak**: Bir butonun rengini değiştirmek için flag oluşturmak overengineering'dir. Flag, anlamlı ve riskli özellik değişiklikleri için kullanılmalıdır.
+Feature flag kullanimi su guardrail kurallarina tabidir:
+
+- A-NEW-FEAT aktivitesinde flag kullanim zorunlulugu degerlendirilmeli
+- Trunk-based development (42-branching) ile flag disiplini birlikte calismali
+- Flag arkasinda kalan tamamlanmamis kod, test kapsamından muaf degildir
+- Flag degisikligi production'da yapiliyorsa (remote config), deployment log'una kaydedilmeli
+
+## 32.11. Hatali yaklasimlar
+
+- **Flag'i hic kaldirmamak (flag debt)**: En yaygin ve en zararli hata. Flag eklenir ama asla kaldirilmaz. Zamanla kodda onlarca olu flag birikir. Hangi flag'in aktif, hangisinin olu oldugu anlasilmaz. Yeni gelistirici hangi kodu silmesi gerektigini bilemez.
+- **Nested flag kontrolu**: `if (flagA && flagB && !flagC)` gibi ic ice flag kombinasyonlari test matrisini ustel olarak buyutur. 3 flag'in kombinasyonu 8 farkli senaryo demektir. Bu senaryolarin hepsini test etmek ve davranislarini anlamak pratik olarak imkansizlasir.
+- **Default degeri riskli yapmak**: Yeni ozelligin varsayilan degerini "acik" yapmak. Flag sistemi cokerse veya remote config'e erisilemezse tamamlanmamis veya test edilmemis ozellik production'da kullaniciya gosterilir.
+- **Flag'i is mantığının derinliklerine gommek**: Flag kontrolunu 10 farkli dosyada, 20 farkli if blogunda yapmak. Flag kaldirilacagi zaman tum bu noktalari bulmak ve temizlemek son derece zor ve hata yapmaya acik hale gelir.
+- **Her kucuk degisiklik icin flag olusturmak**: Bir butonun rengini degistirmek icin flag olusturmak overengineering'dir. Flag, anlamli ve riskli ozellik degisiklikleri icin kullanilmalidir.
 
 ---
 
@@ -1758,3 +1827,288 @@ Kural:
 - Biome ancak pilot olarak formatter/import sorting/commodity lint yüzeyinde değerlendirilir
 - Pilot kararı olmadan `.eslintrc`/flat-config ve custom plugin zinciri sökülemez
 - Pilot çıktısı; performans, suppressions, editor uyumu ve custom rule coverage karşılaştırmasıyla belgelenir
+
+---
+
+# 38. Biome 2.x Pilot Değerlendirme Prosedürü (2026-04-02 Eki)
+
+Watchlist'teki Biome'un ESLint + Prettier yerine değerlendirilmesi için detaylı prosedür.
+
+## 38.1. Değerlendirme Koşulları
+
+Biome'un Candidate statüsüne terfisi için aşağıdaki tüm koşulların sağlanması gerekir:
+
+- [ ] Biome 2.x stable release çıktı mı?
+- [ ] TypeScript 5.8+ tam destek mevcut mu?
+- [ ] React/JSX lint kuralları ESLint eşdeğeri mi? (false positive/negative karşılaştırması)
+- [ ] Import sorting (isort benzeri) mevcut mu?
+- [ ] Tailwind CSS class sorting desteği var mı?
+- [ ] CI entegrasyonu kolay mı? (`--ci` flag, JSON output, exit code davranışı)
+- [ ] VS Code extension stabil mi? (formatter, lint gutter, code action)
+- [ ] Migration aracı mevcut mu? (ESLint config → Biome config dönüşümü)
+- [ ] Community adoption yeterli mi? (npm weekly downloads >100K, GitHub stars >10K)
+
+## 38.2. Pilot Test Planı
+
+1. **Kapsam seçimi:** Bir shared package'ta (ör. `packages/utils`) Biome ile ESLint/Prettier paralel çalıştırılır. Production kodu etkilenmez.
+2. **Rule uyumu karşılaştırması:**
+   - ESLint canonical rule set'inin Biome karşılıkları tespit edilir.
+   - Biome'da karşılığı olmayan kurallar listelenir (coverage gap).
+   - False positive/negative analizi: Aynı dosyalarda iki araç karşılaştırılır.
+3. **Performans benchmark:**
+   - Lint süresi karşılaştırması (ESLint vs Biome, aynı dosya kümesi üzerinde).
+   - Beklenti: Biome'un Rust tabanlı olması nedeniyle 10-100x hızlı olması.
+   - CI pipeline toplam süresine etkisi ölçülür.
+4. **Deneyim süreci:** 2 sprint (4 hafta) boyunca pilot package'ta Biome kullanılır, geliştirici feedback'i toplanır.
+5. **Karar:** Pilot sonuçlarına göre üç yoldan biri izlenir:
+   - Başarılı → ADR yazılır, Canonical'a terfi planlanır
+   - Kısmi başarılı → Yalnızca formatter/import sorting için Biome, lint için ESLint hibrit model değerlendirilir
+   - Başarısız → Watchlist'te kalır, 6 ay sonra yeniden değerlendirilir
+
+## 38.3. Kısıtlamalar
+
+- ESLint custom governance/HIG rule engine Biome'a taşınamadığı sürece tam geçiş yapılamaz.
+- Biome pilot süresince canonical ESLint konfigürasyonu korunur, paralel çalışma modeli uygulanır.
+- Pilot sonucu ne olursa olsun belgelenir ve `17-technology-decision-framework.md`'de referans edilir.
+
+---
+
+# 39. Feature Flag Canonical Araç Değerlendirmesi (2026-04-02 Eki)
+
+Feature flag yönetimi için araç karşılaştırması ve boilerplate kararı.
+
+## 39.1. Araç Karşılaştırma Tablosu
+
+| Araç | Avantaj | Dezavantaj | Maliyet | Durum |
+|------|---------|-----------|---------|-------|
+| Firebase Remote Config | Firebase zaten stack'te, kolay entegrasyon, real-time güncelleme | Karmaşık targeting sınırlı, A/B test desteği temel | Ücretsiz | Candidate |
+| PostHog | Açık kaynak, self-host, analytics + flag birleşik | Ek altyapı gereksinimi, bakım efortu | Ücretsiz (self-host) | Watchlist |
+| LaunchDarkly | Enterprise-grade, güçlü targeting, SDK kalitesi | Yüksek maliyet, küçük proje için overkill | Ücretli | Kapsam dışı |
+| Unleash | Açık kaynak, self-host, güçlü API | Kurulum ve bakım efortu, UI sınırlı | Ücretsiz (self-host) | Watchlist |
+| Custom (Zustand + MMKV) | Bağımlılık yok, tam kontrol, basit implementasyon | Targeting yok, analytics yok, dashboard yok | Ücretsiz | Fallback |
+
+## 39.2. Boilerplate Kararı
+
+- **Canonical candidate:** Firebase Remote Config (Firebase zaten canonical stack'te, ek dependency yükü minimal).
+- **Custom fallback:** Basit boolean flag'ler için Zustand store + MMKV persist. Backend bağımlılığı gerektirmez.
+- **Derived project esnekliği:** İhtiyaca göre PostHog veya LaunchDarkly tercih edebilir (dependency policy'ye tabi).
+
+## 39.3. Kullanım Senaryoları
+
+| Senaryo | Önerilen Araç | Gerekçe |
+|---------|--------------|---------|
+| Basit on/off feature toggle | Custom (Zustand + MMKV) | Ek altyapı gerektirmez |
+| A/B test | Firebase Remote Config | Kullanıcı segmentasyonu desteği |
+| Kademeli rollout (%5 → %100) | Firebase Remote Config | Yüzde bazlı targeting |
+| Enterprise multi-environment | LaunchDarkly (derived project) | Gelişmiş targeting ve audit |
+
+## 39.4. ADR Gerekliliği
+
+Feature flag araç seçimi canonical stack'e yeni runtime dependency ekleyebileceğinden, seçim finalize edildiğinde ADR yazılmalıdır. Custom fallback için ADR gerekmez.
+
+---
+
+# 40. Debug Menu ve Developer Tools (2026-04-02 Eki)
+
+Bu bölüm, development ve staging ortamlarında geliştiriciye hızlı erişim sağlayan, production'da otomatik kaldırılan debug araçlarının kapsamını, erişim mekanizmasını, içerik öğelerini, araç tercihlerini ve güvenlik kurallarını tanımlar.
+
+---
+
+## 40.1. Amaç
+
+Debug menu, geliştiricilerin ve QA ekibinin development/staging ortamlarında uygulama durumunu hızlıca incelemesini, test senaryolarını kolaylaştırmasını ve sorun tespitini hızlandırmasını sağlayan merkezi bir araç panelidir.
+
+**Temel hedefler:**
+- Geliştirme süresini kısaltmak (cache temizleme, state sıfırlama, ortam bilgisi).
+- QA sürecini kolaylaştırmak (push token kopyalama, crash simülasyonu, feature flag toggle).
+- Debug bilgilerini tek bir noktadan sunmak (dağınık console.log yerine yapılandırılmış bilgi).
+- Production güvenliğini garanti etmek (debug menu kodu production bundle'a dahil edilmez).
+
+---
+
+## 40.2. Debug Menu İçerik Öğeleri
+
+| Öğe | Açıklama | Kullanım Senaryosu |
+|-----|---------|-------------------|
+| **Ortam Bilgisi** | App version, build number, ortam adı (`DEV`/`STG`), API base URL, Expo SDK version | Hangi build'de olduğunu hızlıca anlamak; QA raporlarında ortam bilgisi paylaşmak |
+| **Feature Flag Toggle** | Aktif feature flag'leri geçici olarak açma/kapama | Geliştirme sırasında henüz release edilmemiş feature'ları test etmek |
+| **Cache Invalidate All** | TanStack Query cache + MMKV persistent storage temizleme | Stale data sorunlarını debug etmek; fresh state ile test tekrarlamak |
+| **Push Token Kopyala** | Expo push token'ı clipboard'a kopyalar | Push notification testi için token'ı backend veya FCM console'a yapıştırmak |
+| **Crash Simulate** | Sentry test crash tetikleme (`Sentry.nativeCrash()`) | Error boundary davranışını ve Sentry entegrasyonunu doğrulamak |
+| **Network Inspector** | Son N isteğin request/response logunu görme (URL, method, status, süre) | API iletişim sorunlarını yerinde debug etmek |
+| **Auth State Özeti** | Mevcut auth durumu (authenticated/unauthenticated), token expiry zamanı, user ID | Auth flow sorunlarını debug etmek; token yenileme davranışını doğrulamak |
+| **Store Reset** | Tüm Zustand store'ları initial state'e sıfırlama | Clean state ile test; state corruption sorunlarını izole etmek |
+| **Tema Değiştir** | Light / dark / system tema modunu zorla değiştirme | Tema implementasyonunu her modda test etmek |
+| **Dil Değiştir** | Uygulama dilini i18next üzerinden runtime'da değiştirme | i18n çevirilerini ve RTL layout'u test etmek |
+
+**Genişletilebilirlik:**
+- Debug menu öğeleri plugin pattern ile eklenebilir olmalıdır.
+- Her öğe `label`, `action`, `category` alanlarına sahiptir.
+- Kategoriler: `info`, `state`, `network`, `testing`, `ui`.
+
+---
+
+## 40.3. Erişim Mekanizması
+
+### 40.3.1. Mobile (React Native / Expo)
+
+- **Giriş yöntemi:** Settings ekranında uygulama logo'suna 7 kez art arda tap (Easter egg pattern).
+- **Koşul:** `__DEV__ === true` veya `Constants.expoConfig.extra.appEnv !== "production"` iken erişilebilir.
+- **Alternatif:** Shake gesture ile açılabilir (`DevSettings` API üzerinden).
+- **UX:** Toast veya haptic feedback ile "Debug menu aktif" onayı gösterilir.
+
+### 40.3.2. Web
+
+- **Giriş yöntemi:** `Ctrl+Shift+D` (Windows/Linux) veya `Cmd+Shift+D` (macOS) keyboard shortcut.
+- **Koşul:** `import.meta.env.MODE !== "production"` veya `import.meta.env.DEV === true` iken erişilebilir.
+- **UX:** Ekranın sağ alt köşesinde floating panel olarak açılır; draggable ve minimize edilebilir.
+
+### 40.3.3. Ortam Etiketi (Görsel İpucu)
+
+- Development ve staging build'lerinde status bar'da (mobile) veya sayfa köşesinde (web) küçük bir ortam etiketi gösterilir.
+- Etiket değerleri: `DEV` (yeşil), `STG` (turuncu).
+- Production build'de etiket kesinlikle gösterilmez.
+- Etiket boyutu küçüktür ve kullanıcı deneyimini engellemez; ancak hangi ortamda olunduğunu anında belli eder.
+
+---
+
+## 40.4. React Native DevTools / Flipper Pozisyonu
+
+Bu projede debug araç tercih sırası ve pozisyonları aşağıdaki gibidir:
+
+### 40.4.1. React Native DevTools — Canonical Birincil Araç
+
+- React Native community'nin resmi debug aracıdır.
+- **Özellikler:** Component inspector, profiler, network tab, console, layout inspector.
+- Expo Dev Client ile doğrudan entegre çalışır; ek konfigürasyon gerektirmez.
+- `npx react-native start` ile otomatik başlatılır.
+- **Karar:** Tüm geliştiriciler birincil debug aracı olarak React Native DevTools kullanır.
+
+### 40.4.2. Flipper — Deprecated / İkincil
+
+- Meta'nın geliştirdiği masaüstü debug uygulamasıdır.
+- React Native community Flipper'dan aktif olarak uzaklaşmaktadır (bakım azaldı, plugin ekosistemi zayıfladı).
+- **Karar:** Yeni projede Flipper kullanılmaz. Mevcut derived projelerde legacy sebeplerle kullanılabilir ancak önerilmez.
+- Migration yolu: Flipper plugin'leri yerine React Native DevTools + custom debug menu karşılıkları kullanılır.
+
+### 40.4.3. Standalone react-devtools
+
+- `npx react-devtools` ile çalıştırılan bağımsız React DevTools uygulaması.
+- React Native DevTools yeterli olduğunda kullanılması gerekmez.
+- Geri uyumluluk veya spesifik profiling ihtiyaçları için mevcuttur.
+
+### 40.4.4. Reactotron — Watchlist
+
+- Zustand store inspector olarak değerlendirilebilir.
+- **Durum:** Watchlist — canonical araç değildir ama derived projelerde pilot yapılabilir.
+- Zustand DevTools middleware (`devtools`) zaten browser/React Native DevTools ile entegre çalıştığından öncelik düşüktür.
+
+---
+
+## 40.5. Production'da Kaldırma Garantisi
+
+Debug menu ve developer tools kodunun production build'e sızmaması kritik güvenlik ve performans gereksinimidir.
+
+### 40.5.1. Conditional Import
+
+- Debug menu component'i `__DEV__` flag veya `process.env.NODE_ENV` kontrolü ile conditional import edilir.
+- Örnek pattern:
+
+```typescript
+// apps/mobile/src/components/DebugMenu/index.ts
+let DebugMenu: React.ComponentType | null = null;
+
+if (__DEV__) {
+  // Yalnızca development'ta import edilir
+  DebugMenu = require("./DebugMenuPanel").DebugMenuPanel;
+}
+
+export { DebugMenu };
+```
+
+### 40.5.2. Tree-Shaking
+
+- Production build'de `__DEV__` dalı dead code olarak işaretlenir.
+- Metro (mobile) ve Vite/Rollup (web) tree-shaking ile bu kodu bundle'dan çıkarır.
+- `sideEffects: false` package.json ayarı tree-shaking etkinliğini artırır.
+
+### 40.5.3. CI Sanity Check
+
+- Production bundle oluşturulduktan sonra otomatik string taraması yapılır.
+- Taranan string'ler: `"debug-menu"`, `"DebugMenu"`, `"debugMode"`, `"DebugPanel"`, `"__debug__"`.
+- Bu string'lerden herhangi biri production bundle'da bulunursa → CI uyarı üretir.
+- Kural: CI uyarısı halinde debug menu kodu production'a sızmış demektir; merge bloklanır.
+
+### 40.5.4. Bundle Analyzer Doğrulaması
+
+- Bundle analyzer çıktısında debug-related chunk veya modül görülmemelidir.
+- `vite-bundle-analyzer` (web) ve `react-native-bundle-visualizer` (mobile) ile periyodik kontrol.
+- Debug menu kaynak dosyaları bundle graph'ta görünüyorsa → leak tespit edilmiştir.
+
+---
+
+## 40.6. Debug Menu Anti-Pattern Listesi
+
+Aşağıdaki davranışlar bu repo'da doğrudan zayıf kabul edilir ve kabul edilemezdir:
+
+1. **Debug menu'yü production build'de erişilebilir bırakmak** — Kullanıcıya internal araçları açmak güvenlik ve UX açısından kabul edilemez.
+2. **Debug menu içinde production API key veya user token göstermek** — Secret sızıntısı riski; debug menu'de yalnızca non-sensitive bilgiler gösterilir (ortam adı, version, expiry zamanı — token kendisi değil).
+3. **`console.log` ile debugging yapıp production'da bırakmak** — Console çıktısı production'da strip edilir; kalıcı log ihtiyacı varsa Sentry breadcrumb veya yapılandırılmış logger kullanılır.
+4. **Debug menu'yü her ekrana ayrı ayrı eklemek** — Debug menu global (app root seviyesinde) tek noktadan mount edilir; ekran bazlı dağılım bakım yükünü artırır ve tutarsızlık oluşturur.
+5. **Debug menu'den production API'ye istek göndermek** — Debug araçları yalnızca mevcut ortamın API'sine istek gönderir; cross-environment erişim yasaktır.
+6. **Debug menu'yü test etmemek** — Debug menu de bir component'tir; temel render ve action testleri yazılmalıdır (ancak sadece development test suite'inde).
+7. **Flipper'ı yeni projede canonical araç olarak kurmak** — Flipper deprecated pozisyondadır; React Native DevTools canonical birincil araçtır.
+
+---
+
+# 41. Developer Experience (DX) Standardı
+
+Bu bölüm, geliştirici deneyiminin ölçülebilir hedeflerini, izlenmesi gereken metrikleri ve önerilen araç setini tanımlar. DX iyileştirmesi, governance kurallarının sürdürülebilirliğinin ön koşuludur.
+
+## 41.1. DX Metrikleri ve Hedefler
+
+| Metrik | Hedef | Ölçüm Yöntemi |
+|--------|-------|----------------|
+| Dev server başlatma süresi (web) | < 5 saniye | `pnpm dev` komutundan "ready" mesajına kadar |
+| Dev server başlatma süresi (mobile) | < 15 saniye | `pnpm dev:mobile` komutundan QR kod gösterimine kadar |
+| Hot reload / Fast Refresh başarı oranı | > %95 | Manuel gözlem + Expo Dev Client istatistikleri |
+| TypeScript incremental type-check | < 30 saniye | `pnpm typecheck` süresi (warm cache) |
+| ESLint check (incremental) | < 15 saniye | `pnpm lint` süresi (changed files) |
+| PR CI feedback süresi | < 5 dakika | CI başlangıcından sonuç bildirimine kadar |
+| Full build süresi (from cache) | < 2 dakika | Turborepo cache hit durumunda |
+
+## 41.2. IDE Önerileri
+
+Aşağıdaki VS Code extension'ları geliştirici deneyimini doğrudan iyileştirir ve önerilir:
+
+| Extension | Açıklama |
+|-----------|----------|
+| ESLint | Kod kalitesi ve hata tespiti |
+| Prettier | Otomatik format |
+| Tailwind CSS IntelliSense | Tailwind class otomatik tamamlama |
+| TypeScript Nightly | Güncel TypeScript dil desteği |
+| Error Lens | Hataları satır içinde gösterme |
+| Pretty TypeScript Errors | TypeScript hatalarını okunabilir yapma |
+| GitLens | Git history ve blame görünürlüğü |
+
+JetBrains IDE'ler (WebStorm) de desteklenir; eşdeğer plugin'ler mevcuttur.
+
+## 41.3. Debug Araçları
+
+| Araç | Kullanım | Platform |
+|------|----------|----------|
+| React Native DevTools | Component tree, profiler, network | iOS + Android |
+| Expo Dev Client | Hot reload, dev menu, native log | iOS + Android |
+| React DevTools (standalone) | Component inspection, profiling | Web + Mobile |
+| Chrome DevTools | Network, console, performance | Web |
+| Reactotron | State inspection, API monitoring | iOS + Android (opsiyonel) |
+
+**Kural:** Flipper deprecated pozisyondadır; yeni projelerde canonical olarak kurulmaz. React Native DevTools birincil araçtır.
+
+## 41.4. DX Anti-pattern'ler
+
+- CI'da 10+ dakika bekletmek (bağlam değişikliği maliyeti çok yüksek)
+- Hata mesajı vermeyen lint kuralları (geliştirici neden fail ettiğini anlamaz)
+- Development ortamında production-only kontrolleri çalıştırmak (gereksiz yavaşlama)
+- Readme ve onboarding dokümanlarını güncel tutmamak (yeni geliştiriciler zorluk çeker)
+- Tek bir config hatası için tüm CI'ı tekrar çalıştırmak (izole task çalıştırma eksikliği)

@@ -4,7 +4,7 @@ type: domain
 name: Firebase, Firestore, Cloud Functions
 kaynak-dokümanlar: yeni alan
 miras-tipi: yapısal
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # D-FIR: Firebase & Firestore Guardrail
@@ -58,6 +58,28 @@ son-güncelleme: 2026-04-01
 26. [YAPILMALI] Snapshot listener'ları component unmount'ta temizle
 27. [YAPILMAMALI] Her render'da yeni listener oluşturma
 
+### Security Rules Test Recetesi
+28. [ZORUNLU] `@firebase/rules-unit-testing` ile security rules test yazılmalı
+29. [ZORUNLU] Her koleksiyon icin minimum 3 test senaryosu zorunlu
+30. [YAPILMALI] Asagidaki 5 temel senaryo test edilmeli:
+    1. Authenticated kullanici kendi verisini okuyabilir
+    2. Authenticated kullanici baskasinin verisini okuyamaz
+    3. Unauthenticated kullanici erisimi engellenir
+    4. Write kurallari dogru calisir (olusturma, guncelleme, silme ayri)
+    5. Veri validasyon kurallari dogru calisir (zorunlu alanlar, tip kontrolleri)
+31. [YAPILMALI] CI'da `pnpm test:rules` komutu ile rules testleri otomatik calistirilmali
+32. [YAPILMALI] Test ortaminda Firebase Emulator kullanilmali — canli Firestore'a test istegi gonderilmemeli
+33. [YAPILMAMALI] Security rules'u test etmeden production'a deploy etme
+
+### Offline Persistence Konfigurasyonu
+34. [YAPILMALI] Web'de `enableIndexedDbPersistence` ile offline persistence aktif edilmeli
+35. [YAPILMALI] React Native'de native Firestore SDK otomatik offline persistence saglayacagi icin ek konfigurasyona gerek yok — ancak davranis bilinmeli
+36. [YAPILMALI] Multi-tab destegi gerekiyorsa `enableMultiTabIndexedDbPersistence` kullanilmali (web)
+37. [YAPILMALI] Cache boyutu onerilen: 50MB — asim durumunda eski veriler otomatik temizlenir
+38. [YAPILMALI] Offline'da yapilan yazma islemleri mutation queue'da beklemeli (D-DAT cache stratejisi ile koordineli)
+39. [YAPILMALI] Cihaz online'a gectiginde queue otomatik sync edilmeli — kullaniciya sync durumu bildirilmeli
+40. [YAPILMAMALI] Offline persistence'i varsayilan kabul edip test etmeme — offline senaryolar test edilmeli
+
 ## Kalite Eşikleri
 - [MİNİMUM] Her koleksiyonda security rules tanımlı
 - [MİNİMUM] Default deny kuralı aktif
@@ -70,15 +92,27 @@ son-güncelleme: 2026-04-01
 3. [ZAYIF] Array field'ına sınırsız push — dokümant şişmesi
 4. [ZAYIF] Her render'da `onSnapshot` yeniden oluşturma
 5. [ZAYIF] Client-side'da admin SDK kullanma girişimi
+6. [ZAYIF] Security rules test olmadan deploy — güvenlik açığı riski
+7. [ZAYIF] Firebase Emulator yerine canlı Firestore'da test çalıştırma
+8. [ZAYIF] Offline persistence konfigüre edilmemiş — offline'da uygulama kullanılamaz
+9. [ZAYIF] Offline mutation queue sync durumu kullanıcıya bildirilmiyor
 
 ## Kontrol Listesi
 - [ ] Koleksiyon isimlendirme kebab-case ve çoğul mu?
 - [ ] Doküman yapısı TypeScript/Zod ile tanımlı mı?
 - [ ] Security rules yazıldı mı (default deny)?
+- [ ] Security rules testleri yazıldı mı (min 3 senaryo/koleksiyon)?
+- [ ] `@firebase/rules-unit-testing` kullanılıyor mu?
+- [ ] CI'da `pnpm test:rules` çalışıyor mu?
+- [ ] Firebase Emulator test ortamında aktif mi?
 - [ ] Query'lerde limit ve pagination var mı?
 - [ ] Composite index gerekli mi, tanımlı mı?
 - [ ] Snapshot listener cleanup yapılıyor mu?
 - [ ] Batch/transaction uygun mu?
+- [ ] Offline persistence konfigüre edildi mi?
+- [ ] Multi-tab desteği gerekli mi, konfigüre edildi mi?
+- [ ] Cache boyutu ayarlandı mı (önerilen 50MB)?
+- [ ] Offline mutation queue → online sync akışı test edildi mi?
 
 ## İhlal Durumunda
 - Security rules eksikliği → hemen yaz (blocker)

@@ -820,8 +820,139 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 37. Kısa Sonuç
+# 37. Zustand DevTools Entegrasyon Standardı
+
+Zustand store’larının development ortamında görünür, debug edilebilir ve izlenebilir olması için DevTools entegrasyonu standardize edilmelidir.
+
+## 37.1. Development Ortamı
+
+- `zustand/devtools` middleware aktif olmalıdır
+- Redux DevTools Extension ile bağlantı kurulur (Chrome/Firefox extension)
+- Her store DevTools’ta ayrı instance olarak görünür
+- Time-travel debugging desteği sayesinde state değişiklikleri geriye sarılabilir
+
+## 37.2. Production Ortamı
+
+- DevTools middleware **tamamen devre dışı** bırakılır
+- Bundle’dan çıkarılır (tree-shaking ile veya conditional import ile)
+- Konfigürasyon: `import.meta.env.DEV` koşullu middleware ekleme pattern’i kullanılır
+
+## 37.3. Store Naming Convention
+
+DevTools’ta görünen store adları **PascalCase** ve açıklayıcı olmalıdır:
+
+- ✅ `AuthStore`, `ThemeStore`, `CartStore`, `WorkspaceStore`
+- ❌ `store1`, `myStore`, `data`, `state`
+
+Bu isimlendirme DevTools’ta store’ları hızlı tanımlamayı ve debug etmeyi kolaylaştırır.
+
+## 37.4. Koşullu Middleware Örneği
+
+```typescript
+import { devtools } from ‘zustand/middleware’;
+
+// DevTools sadece development’ta aktif
+const withDevtools = import.meta.env.DEV
+  ? (fn, name) => devtools(fn, { name })
+  : (fn) => fn;
+```
+
+Bu pattern ile production bundle’da DevTools kodu yer almaz; development’ta ise tüm store değişiklikleri izlenebilir.
+
+## 37.5. Time-Travel Debugging
+
+DevTools entegrasyonu ile şu debug kabiliyetleri elde edilir:
+
+- Her state değişikliğinin action adı ile loglanması
+- State’in belirli bir ana geri sarılması (time-travel)
+- State diff görünümü (hangi alan değişti)
+- Action dispatch history
+
+---
+
+# 38. React Compiler ile Zustand Uyumu Analizi
+
+React Compiler şu anda controlled opt-in ile watchlist’tedir (36-canonical-stack-decision.md). Etkinleştirildiğinde Zustand ile etkileşimi dikkatle değerlendirilmelidir.
+
+## 38.1. Potansiyel Çakışma Alanları
+
+Zustand’ın temel performans optimizasyonu **selector bazlı re-render kontrolü**ne dayanır. Kullanıcı `useStore(state => state.count)` şeklinde selector yazarak yalnızca `count` değiştiğinde re-render tetikler. React Compiler ise component seviyesinde otomatik memoization yapar.
+
+Bu iki mekanizma birlikte çalıştığında:
+
+- **useShallow hook’u gereksiz hale gelebilir:** Compiler’ın otomatik memo’laması shallow comparison’ı zaten yapıyor olabilir
+- **Selector optimizasyonları çifte çalışabilir:** Hem selector hem Compiler aynı re-render’ı engellemeye çalışabilir; bu tehlikeli değildir ama gereksiz karmaşıklık üretebilir
+- **Manuel React.memo ve useMemo kullanımları kaldırılabilir:** Compiler bunları otomatik yapacağı için store subscriber component’lerdeki manuel optimizasyonlar gereksizleşebilir
+
+## 38.2. Test Stratejisi
+
+Compiler opt-in yapıldığında aşağıdaki doğrulama adımları uygulanır:
+
+1. Tüm store subscriber component’lerin **re-render sayısı benchmark’lanır** (before/after karşılaştırma)
+2. `useShallow` kullanan component’lerin Compiler altında davranışı doğrulanır
+3. Selector bazlı optimizasyonların Compiler ile çakışıp çakışmadığı tespit edilir
+4. Production bundle size etkisi ölçülür
+
+## 38.3. Geçiş Planı
+
+1. **Şu an:** Manuel selector optimizasyonu devam eder, Compiler deneysel kalır
+2. **Compiler stable olunca:** Sınırlı scope’ta (1-2 store subscriber component) pilot deneme yapılır
+3. **Pilot başarılıysa:** Zustand selector pattern’leri gözden geçirilir; useShallow gereksizse kaldırılır
+4. **Genişletme:** Tüm store subscriber component’ler Compiler altında test edilir ve geçiş tamamlanır
+
+## 38.4. Mevcut Eylem
+
+Şu anda herhangi bir aksiyon gerekmez. Manuel selector optimizasyonu canonical yaklaşım olmaya devam eder. Compiler stable release’i ve Zustand ekibinin resmi Compiler uyumluluk rehberi yayınlaması beklenir.
+
+---
+
+# 39. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 
 > Bu boilerplate’te state management, merkezi store fetişi ile kurulmayacaktır. Zustand yalnızca gerçekten app-global veya kontrollü feature-scope client-owned state için kullanılacaktır. Server state query/cache katmanında, form state form engine içinde, local ephemeral state ise mümkün olduğunca component veya feature yakınında kalacaktır.
+
+---
+
+# 40. React 19 State Primitives ile İlişki
+
+Bu bölüm, React 19.2 ile gelen state-related değişikliklerin Zustand-merkezli state mimarisi üzerindeki etkisini kaydeder.
+
+## 40.1. use(Context) Kısa Yazımı
+
+React 19, `useContext(MyContext)` yerine `use(MyContext)` yazılmasını destekler. Bu tamamen bir convenience syntax’tır; davranışsal fark yoktur.
+
+**Bu boilerplate’teki pozisyonu:** Kabul edilir.
+
+Zustand store’larına erişim zaten `useStore(selector)` pattern’i ile yapılır ve Context’e bağımlı değildir. Ancak React Context kullanan (ör: ThemeProvider, i18n) senaryolarda `use(Context)` kısa yazımı kullanılabilir. Bu bir mimari karar değil, syntax tercihidir.
+
+## 40.2. useOptimistic
+
+React 19 `useOptimistic` hook’u, asenkron operasyon tamamlanmadan önce UI state’ini geçici olarak güncellemek için tasarlanmıştır.
+
+**Bu boilerplate’teki pozisyonu:** UI-local scope’ta kabul edilir; store’a yazılmaz.
+
+`useOptimistic` ile üretilen geçici state, Zustand store’a yazılmamalıdır. Zustand store’lar "truth of record" niteliğindedir; optimistic state ise geçici ve spekülatif niteliktedir. Bu iki kavram aynı katmanda yaşamamalıdır.
+
+**Kabul edilebilir kullanım:**
+- Bir butonun tıklanmasıyla anlık UI geri bildirimi (like/unlike toggle)
+- Form submit sonrası geçici başarı gösterimi
+- Liste öğesi ekleme/çıkarma animasyonu için anlık UI güncellemesi
+
+**Yasak kullanım:**
+- `useOptimistic` çıktısını Zustand store’a yazmak
+- Server state’i `useOptimistic` ile yönetmek (TanStack Query optimistic update kullanılmalı — ADR-005 §22)
+- Global app state’i `useOptimistic` ile değiştirmek
+
+## 40.3. useTransition ve useDeferredValue
+
+Bu hook’lar React 18’de tanıtılmış, React 19’da olgunlaşmıştır. Concurrent rendering ile ağır hesaplamaları veya state güncellemelerini düşük öncelikli olarak işaretlerler.
+
+**Bu boilerplate’teki pozisyonu:** Kabul edilir.
+
+- `useTransition`: Ağır state güncellemelerini (ör: filtreleme, arama) non-blocking yapmak için kullanılabilir. Zustand store güncellemesini `startTransition` içinde çağırmak teknik olarak mümkündür ancak Zustand’ın senkron yapısı nedeniyle fayda sınırlıdır. Daha çok React state (`useState`) ile kullanıldığında etkilidir.
+- `useDeferredValue`: Expensive render’ları geciktirmek için. Liste filtreleme, arama sonuçları gibi senaryolarda kullanılabilir.
+
+## 40.4. Bilinçli Karar Kaydı
+
+> Zustand 5.x bu boilerplate’in canonical client-side state management aracıdır. React 19 state primitives (use, useOptimistic, useTransition, useDeferredValue) Zustand’ı değiştirmez; UI-local optimizasyon ve convenience senaryolarında tamamlayıcı olarak kullanılabilir. Store ownership, persistence ve cross-component state paylaşımı Zustand’ın sorumluluğundadır.

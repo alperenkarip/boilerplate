@@ -827,7 +827,96 @@ Bu ADR yeterli kabul edilir eğer:
 
 ---
 
-# 36. Kısa Sonuç
+# 36. Visual Regression Test Stratejisi
+
+Component’lerin piksel düzeyinde görsel regresyon testi, design system tutarlılığının otomatik olarak korunmasını sağlar.
+
+## 36.1. Araç Seçimi
+
+### Canonical Tercih: Storybook + Chromatic
+
+Storybook zaten canonical component lab olarak seçilmiştir (Bölüm 21). Chromatic, Storybook ile doğal entegrasyon sunarak visual regression test’i en düşük friction ile ekler:
+
+- Her story otomatik olarak screenshot alınır
+- PR’da değişen component’lerin visual diff’i görsel olarak raporlanır
+- Onay gerektiren değişiklikler review ekibine sunulur
+- Baseline yönetimi otomatiktir
+
+### Alternatifler
+
+- **Percy (BrowserStack):** Storybook entegrasyonu var, daha geniş browser matrix
+- **Playwright screenshot comparison:** Mevcut E2E stack ile entegre, ek tool gerektirmez ama story-level granularity zor
+
+## 36.2. Kapsam
+
+- **Shared UI component’ler:** `packages/ui/` altındaki tüm component’lerin her varyantı (size, state, theme)
+- **Varyant matrisi:** Primary/Secondary/Destructive intent × Small/Medium/Large size × Light/Dark theme × Default/Hover/Focus/Disabled state
+- **Critical screens:** Onboarding, login, ana dashboard gibi yüksek etkili ekranlar (selective)
+
+## 36.3. Tolerans Eşiği
+
+- **%0.1 piksel farkı** kabul edilir (anti-aliasing, sub-pixel rendering toleransı)
+- Bu eşik üzerindeki farklar "değişiklik" olarak işaretlenir ve onay gerektirir
+- Font rendering farkları (OS/browser kaynaklı) baseline güncelleme ile çözülür
+
+## 36.4. CI Entegrasyonu
+
+- Her PR’da değişen component’lerin visual diff raporu üretilir
+- Onay gerektiren visual değişiklikler PR’da açıkça görünür
+- Onaylanmadan merge yapılamaz (blocking check)
+- Yalnızca değişen story’ler test edilir (incremental)
+
+## 36.5. Mobile Visual Test
+
+- Expo + Storybook React Native ile component snapshot’ları alınır
+- Web parity kontrolü: Aynı component’in web ve mobile render’ı karşılaştırılır (behavior parity, piksel birebirlik beklenmez)
+- Platform-specific visual farklar (safe area, native control render) tolere edilir
+
+---
+
+# 37. Test Isolation ve Paralellik Stratejisi
+
+Test suite’lerinin hızlı, güvenilir ve birbirinden izole çalışması için strateji:
+
+## 37.1. Vitest (Web)
+
+- `--pool=threads` ile her test dosyası ayrı thread’de paralel çalışır
+- Her test dosyası kendi izole ortamında çalışır; global state paylaşımı yoktur
+- `beforeEach` / `afterEach` ile test-level cleanup zorunludur
+- `vi.resetAllMocks()` her test sonrası otomatik çağrılır
+
+## 37.2. Jest (Mobile)
+
+- `--maxWorkers=50%` ile CPU kullanımı optimize edilir (CI’da tüm core’ları kullanmak diğer CI job’larını yavaşlatır)
+- Her test dosyası ayrı worker process’te çalışır
+- `jest.clearAllMocks()` her test sonrası otomatik çağrılır (`clearMocks: true` config)
+
+## 37.3. Shared State Yasağı
+
+- **Test dosyaları arası global state paylaşımı kesinlikle yasaktır**
+- Shared variable, singleton mock veya global side-effect üzerinden test arası veri geçirme forbidden
+- Her test kendi setup’ını ve teardown’ını yapar
+- Database/API mock: Her test kendi mock instance’ını oluşturur (msw handler, mock function)
+
+## 37.4. CI Konfigürasyonu
+
+Test suite’leri CI’da şu sıra ve paralellik ile çalışır:
+
+1. **Paralel:** Vitest (web unit/integration) + Jest (mobile unit/integration) → aynı anda başlar
+2. **Sıralı sonrası:** Playwright E2E → unit/integration testleri geçtikten sonra başlar (E2E daha yavaş ve daha kırılgan; önceki katman temiz geçmeli)
+3. **Opsiyonel paralel:** Visual regression → unit testleri ile paralel çalışabilir
+
+## 37.5. Flaky Test Politikası
+
+- **Tespit:** Aynı kod değişikliği olmadan 3 ardışık CI run’da farklı sonuç veren test "flaky" kabul edilir
+- **Quarantine:** Flaky test suite’den çıkarılır ve `__quarantine__/` dizinine taşınır; CI’da koşmaz ama görünür kalır
+- **Süre limiti:** 1 hafta içinde düzeltilmezse test **silinir** ve ilgili davranış için yeni test yazılır
+- **Root cause:** Her flaky test için root cause analizi yapılır (timing issue, shared state, network dependency, race condition)
+- **Metrik:** Flaky test oranı CI dashboard’da izlenir; %2’yi aşarsa test stratejisi gözden geçirilir
+
+---
+
+# 38. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

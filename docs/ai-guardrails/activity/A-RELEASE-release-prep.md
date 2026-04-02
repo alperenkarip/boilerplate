@@ -7,7 +7,7 @@ araç-zorunlulukları:
   spec: —
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-01
+son-güncelleme: 2026-04-02
 ---
 
 # A-RELEASE: Release Hazırlığı Guardrail
@@ -25,9 +25,24 @@ son-güncelleme: 2026-04-01
 5. Boundary contract uyumu — audit sonucu temiz mi?
 6. Codex full-audit çalıştır
 
+## Release Readiness Checklist
+7. Release öncesi aşağıdaki kontroller tamamlanmalı:
+   - [ ] CI/CD tüm kontrolleri geçti
+   - [ ] Performance benchmark kabul edilebilir seviyede
+   - [ ] Guardrail audit PASS
+   - [ ] CHANGELOG güncellendi
+   - [ ] Store metadata güncellendi (açıklama, screenshot, what's new)
+   - [ ] Privacy policy güncel
+   - [ ] Yeni permission varsa açıklaması güncellendi (Apple/Google)
+   - [ ] OTA vs binary release ayrıştırıldı (JS-only → OTA, native → store build)
+   - [ ] Rollback planı hazır
+   - [ ] Canary rollout konfigüre edildi
+
 ## DoD Ek Maddeleri
 - [ ] Quality gate'ler geçmiş
 - [ ] Version bump doğru
 - [ ] Changelog güncel
 - [ ] Exception budget kontrol edilmiş
+- [ ] Release readiness checklist tamamlanmış
+- [ ] Rollback planı hazır
 - [ ] Codex full-audit temiz

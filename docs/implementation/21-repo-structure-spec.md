@@ -940,6 +940,94 @@ Her yeni klasör, package veya modül eklenirken şu sorular sorulmalıdır:
 
 ---
 
+# 29.5. Paket Isimlendirme Standardi
+
+## 29.5.1. Scope Formati
+
+Tum workspace paketleri `@project/` scope prefix'i ile isimlendirilir. Bu prefix, derived project'te proje adina gore degistirilir (orn. `@myapp/ui`, `@myapp/config`).
+
+| Ozellik | Kural | Ornek |
+|---------|-------|-------|
+| **Scope** | `@project/` (boilerplate'te), `@<proje-adi>/` (derived project'te) | `@project/ui`, `@myapp/design-tokens` |
+| **Paket adi** | kebab-case, aciklayici ve kisa | `design-tokens`, `config-eslint`, `auth-utils` |
+| **Internal paket** | `"private": true` — npm'e publish edilmez | Tum baslangic paketleri internal |
+| **Publishable paket** | Semantic versioning (major.minor.patch) | Yalnizca disariya acilacak paketler |
+
+## 29.5.2. Isimlendirme Kurallari
+
+- **kebab-case zorunludur:** `designTokens` veya `DesignTokens` degil, `design-tokens`. Tum paket adlari kucuk harf ve tire ile yazilir.
+- **Aciklayici olmali:** Paketin ne yaptigini adından anlamak mumkun olmali. `utils`, `common`, `misc` gibi belirsiz adlar yasaktir (bkz. `07-module-boundaries-and-code-organization.md` Bolum 23).
+- **Kısa olmali:** Gereksiz uzun adlar kacinilmali. `config-eslint` dogru, `eslint-configuration-package-for-shared-usage` yanlis.
+- **Tekrar eden prefix kacinilmali:** `@project/project-utils` gibi scope ile carpisan adlar kullanilmaz. `@project/utils` yeterli (eger `utils` adi gerekiyorsa).
+
+## 29.5.3. Baslangic Paket Seti Isimlendirmesi
+
+| Paket | Tam Ad | Aciklama |
+|-------|--------|----------|
+| Core | `@project/core` | Domain mantigi, shared types, validation rules |
+| Design Tokens | `@project/design-tokens` | Raw palette, semantic tokens, scale degerleri |
+| UI | `@project/ui` | Reusable primitives ve component'ler |
+| Config TS | `@project/config-typescript` | Shared tsconfig base ve extend'leri |
+| Config ESLint | `@project/config-eslint` | Shared ESLint flat config |
+| Testing | `@project/testing` | Test helper'lari, fixture builder'lar, mock utilities |
+
+---
+
+# 29.6. Scaffold Generator Recetesi
+
+## 29.6.1. Amac
+
+Canonical repo yapisini otomatik olusturacak arac stratejisini tanimlar. Manuel klasor acma ve dosya kopyalama yerine, generator komutlariyla tutarli ve tekrarlanabilir scaffold islemleri saglanir.
+
+## 29.6.2. Generator Yaklasimi
+
+Iki ana generator araci degerlendirilebilir:
+
+**Seceneck 1: `turbo gen` (Turborepo built-in)**
+Turborepo'nun dahili generator'u, `turbo.json` icinde tanimlanan template'lerden workspace paketleri ve app'ler olusturur. Monorepo ile dogal entegredir ve ek dependency gerektirmez.
+
+**Seceneck 2: `plop` (custom template generator)**
+Plop, Handlebars template motoru uzerine kurulu, interaktif soru-cevap ile scaffold ureten bir aractir. Daha esnek template mantigi ve conditional dosya uretimi saglar. `turbo gen`'den daha ozellestirilmis senaryolar icin uygundur.
+
+**Onerilen yaklasim:** Basit scaffold (yeni package, yeni app) icin `turbo gen`; karmasik scaffold (yeni feature modulu, platform-specific dosyalar) icin `plop` kullanilir.
+
+## 29.6.3. Template Tipleri
+
+| Template | Komut | Cikti |
+|----------|-------|-------|
+| **App template** | `pnpm gen:app <app-adi>` | `apps/<app-adi>/` altinda canonical app shell yapisi: `package.json`, `tsconfig.json`, `src/App.tsx`, `src/index.ts`, provider composition |
+| **Package template** | `pnpm gen:package <paket-adi>` | `packages/<paket-adi>/` altinda standart package yapisi: `package.json` (`@project/<paket-adi>`, `"private": true`), `tsconfig.json`, `src/index.ts`, `__tests__/` |
+| **Feature module template** | `pnpm gen:feature <feature-adi>` | Feature modulu icin standart dizin yapisi: `ui/`, `state/`, `data/`, `__tests__/`, `index.ts` barrel file |
+
+## 29.6.4. Template Icerikleri
+
+Her template'in olusturduğu dosyalarin icerigi:
+
+**`package.json`:** Paket adı, scope, version (`0.0.0`), `"private": true`, `main` ve `types` entry point'leri, devDependencies olarak shared config referanslari.
+
+**`tsconfig.json`:** Root `tsconfig.base.json`'u extend eder. `compilerOptions` ve `include` alanlari template tipine gore ayarlanir (orn. app template'inde `jsx: "react-jsx"`, package template'inde `declaration: true`).
+
+**`src/index.ts`:** Barrel export dosyasi. Bos baslar, paket buyudukce export'lar eklenir.
+
+**`__tests__/`:** Test dizini ve ilk ornek test dosyasi (`index.test.ts` veya `<paket-adi>.test.ts`).
+
+## 29.6.5. Kullanim Ornekleri
+
+```bash
+# Yeni shared package olustur
+pnpm gen:package form-utils
+
+# Yeni app olustur
+pnpm gen:app admin
+
+# Yeni feature modulu olustur (app icerisinde)
+pnpm gen:feature user-profile
+```
+
+Her komut calistiktan sonra olusturulan dosyalarin listesini ve sonraki adimlari (orn. "package.json'a dependency ekleyin") yazdiran bir ozet mesaji gosterir.
+
+---
+
 # 30. Repo Structure Anti-Pattern Listesi
 
 Aşağıdaki davranışlar bu repo’da doğrudan zayıf kabul edilir:
@@ -978,3 +1066,254 @@ Bu doküman yeterli kabul edilir eğer:
 Bu dokümanın ana çıktısı şudur:
 
 > Bu boilerplate için repo yapısı artık soyut klasör önerisi değildir. Canonical başlangıç topolojisi; `apps/web`, `apps/mobile`, `packages/core`, `packages/design-tokens`, `packages/ui`, `packages/config-typescript`, `packages/config-eslint`, `packages/testing`, `docs`, `tooling`, `scripts` ve repo-level config yüzeyleri üzerinden tanımlanmıştır. Feature code varsayılan olarak app içinde kalır; shared alanlar ancak kanıtlı fayda ile package olur.
+
+---
+
+# 33. Environment ve Build Configuration Yapısı (2026-04-02 Eki)
+
+Bu bölüm, cross-platform boilerplate'in ortam yönetimi, build profilleri, dynamic config yapısı, web/mobile build farklılıkları ve CI/CD ortamında environment variable yönetimini tanımlar. Tüm ortam bazlı konfigürasyon bu bölümdeki kurallara tabidir.
+
+---
+
+## 33.1. EAS Build Profiles
+
+Expo Application Services (EAS) build profilleri, mobil uygulama için ortam bazlı build yapılandırmasını yönetir. Her ortamın kendine özgü signing, distribution ve environment variable seti vardır.
+
+| Profil | Amaç | Signing | Distribution | Env Dosyası |
+|--------|------|---------|-------------|-------------|
+| `development` | Local debug, hot reload, dev client | Debug | Internal (dev client) | `.env.development` |
+| `preview` | QA/test, stakeholder demo, regression testi | Ad Hoc | Internal | `.env.staging` |
+| `production` | App Store / Google Play release | Release | Store | `.env.production` |
+
+`eas.json` dosyası `apps/mobile/` altında bulunur ve aşağıdaki yapıyı takip eder:
+
+```json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "APP_ENV": "development" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": { "APP_ENV": "staging" }
+    },
+    "production": {
+      "env": { "APP_ENV": "production" }
+    }
+  }
+}
+```
+
+**Kurallar:**
+- Her profil yalnızca kendi ortamının env değişkenlerini kullanır.
+- `developmentClient: true` yalnızca `development` profilinde aktiftir.
+- `distribution: "internal"` development ve preview'da kullanılır; production'da `"store"` varsayılandır.
+- Yeni profil eklendiğinde bu tabloya ve `eas.json`'a eşzamanlı kayıt edilmelidir.
+
+---
+
+## 33.2. app.config.ts Dynamic Config Pattern
+
+Expo'nun `app.config.ts` dosyası, `process.env.APP_ENV` değerine göre ortam bazlı dynamic konfigürasyon üretir. Statik `app.json` yerine dynamic config tercih edilir çünkü ortam bazlı farklılaşma runtime'da değil build time'da çözülmelidir.
+
+**Ortam bazlı farklılaşan değerler:**
+- API base URL
+- Sentry DSN
+- Bundle identifier (iOS) / package name (Android)
+- App name suffix (ortam görünürlüğü için)
+- Push notification sender ID
+- Analytics endpoint
+
+**Örnek yapı:**
+
+```typescript
+// apps/mobile/app.config.ts
+import { ExpoConfig, ConfigContext } from "expo/config";
+
+// Ortam bazlı konfigürasyon haritası
+const ENV_CONFIG = {
+  development: {
+    apiUrl: "http://localhost:3000/api",
+    bundleId: "com.company.app.dev",
+    appName: "MyApp (Dev)",
+    sentryDsn: "https://dev-dsn@sentry.io/xxx",
+  },
+  staging: {
+    apiUrl: "https://staging-api.example.com/api",
+    bundleId: "com.company.app.staging",
+    appName: "MyApp (Staging)",
+    sentryDsn: "https://staging-dsn@sentry.io/xxx",
+  },
+  production: {
+    apiUrl: "https://api.example.com/api",
+    bundleId: "com.company.app",
+    appName: "MyApp",
+    sentryDsn: "https://prod-dsn@sentry.io/xxx",
+  },
+} as const;
+
+type AppEnv = keyof typeof ENV_CONFIG;
+
+const getEnv = (): AppEnv => {
+  const env = process.env.APP_ENV as AppEnv;
+  if (!env || !ENV_CONFIG[env]) {
+    // Bilinmeyen ortam → development'a fallback
+    return "development";
+  }
+  return env;
+};
+
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const env = getEnv();
+  const envConfig = ENV_CONFIG[env];
+
+  return {
+    ...config,
+    name: envConfig.appName,
+    slug: "myapp",
+    ios: {
+      bundleIdentifier: envConfig.bundleId,
+    },
+    android: {
+      package: envConfig.bundleId,
+    },
+    extra: {
+      apiUrl: envConfig.apiUrl,
+      sentryDsn: envConfig.sentryDsn,
+      appEnv: env,
+    },
+  };
+};
+```
+
+**Config plugin entegrasyonu:** `expo-config-plugin` ile native konfigürasyon (Info.plist, AndroidManifest.xml, Entitlements) build time'da otomatik güncellenir. Custom config plugin'ler `plugins/` dizininde tutulur.
+
+**Kurallar:**
+- `app.config.ts` içinde `process.env` ile doğrudan secret erişimi yapılmaz; secret'lar `extra` üzerinden EAS Secrets ile inject edilir.
+- `ENV_CONFIG` nesnesi type-safe olmalıdır; `as const` ile tip güvenliği sağlanır.
+- Bilinmeyen `APP_ENV` değeri için fallback `development`'tır (fail-safe).
+
+---
+
+## 33.3. Web Build Configuration (Vite)
+
+Web uygulaması için Vite build konfigürasyonu ortam bazlı farklılaşmayı `.env.[mode]` dosyaları ve `--mode` flag'i ile yönetir.
+
+**Vite Mode Mapping:**
+- `vite dev` → `.env.development` yüklenir (varsayılan)
+- `vite build --mode staging` → `.env.staging` yüklenir
+- `vite build --mode production` → `.env.production` yüklenir (varsayılan build mode)
+
+**Environment Variable Kuralları:**
+- Sadece `VITE_` prefix'li değişkenler client bundle'a dahil edilir (`import.meta.env.VITE_*`).
+- `VITE_` prefix'siz değişkenler yalnızca `vite.config.ts` içinde (build time) erişilebilir; client koduna sızmaz.
+- Bu ayrım güvenlik açısından kritiktir: Server-side secret'lar `VITE_` prefix'i almaz.
+
+**Build Script'leri (`apps/web/package.json`):**
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:staging": "vite build --mode staging",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview"
+  }
+}
+```
+
+**Source Map Stratejisi:**
+- Development: Inline source map (hızlı debug)
+- Staging: Source map açık, Sentry'ye upload edilir, public'e serve edilmez
+- Production: Hidden source map — Sentry'ye upload edilir, production bundle'dan erişilemez
+- Source map Sentry upload: `@sentry/vite-plugin` ile build sırasında otomatik upload
+
+**Kurallar:**
+- `VITE_API_URL`, `VITE_SENTRY_DSN` gibi ortam bazlı değişkenler `.env.[mode]` dosyalarında tanımlanır.
+- Production build'de `console.log`, `console.warn` strip edilir (`vite-plugin-strip-console` veya terser drop config).
+- Bundle analizi için `rollup-plugin-visualizer` development dependency olarak kullanılır.
+
+---
+
+## 33.4. Bundle ID / Package Name Ortam Farkları
+
+Her ortam için farklı bundle identifier ve package name kullanılır. Bu sayede geliştirici veya QA ekibi aynı fiziksel cihazda birden fazla ortam build'ini eş zamanlı olarak kurabilir.
+
+| Ortam | iOS Bundle ID | Android Package Name | Uygulama Adı | Gerekçe |
+|-------|-------------|---------------------|-------------|---------|
+| Development | `com.company.app.dev` | `com.company.app.dev` | MyApp (Dev) | Aynı cihazda paralel kurulum; dev client desteği |
+| Staging | `com.company.app.staging` | `com.company.app.staging` | MyApp (Staging) | Production ile karışmaması; QA izolasyonu |
+| Production | `com.company.app` | `com.company.app` | MyApp | Store release; resmi kullanıcı deneyimi |
+
+**Kurallar:**
+- Bundle ID / package name `app.config.ts` içinde `ENV_CONFIG` üzerinden yönetilir (bkz. Bölüm 33.2).
+- Her ortam için ayrı Firebase projesi veya ayrı Firebase app konfigürasyonu (`google-services.json`, `GoogleService-Info.plist`) gereklidir.
+- Ortam bazlı app icon badge'i (ör. "DEV" overlay) uygulanabilir; bu durum kullanıcının hangi build'i kullandığını görsel olarak anlamasını sağlar.
+- Tüm ortamlar için aynı bundle ID kullanmak kesinlikle yasaktır (kurulum çakışması ve veri kaybı riski).
+
+---
+
+## 33.5. CI/CD Environment Variable Injection
+
+Secret ve ortam değişkenleri hiçbir zaman kaynak koduna veya `.env` dosyalarına yazılmaz. Tüm secret'lar CI/CD ortamından inject edilir.
+
+**Platform Bazlı Injection Mekanizmaları:**
+
+| Platform | Mekanizma | Kullanım |
+|----------|-----------|---------|
+| GitHub Actions | Repository Secrets → workflow `env:` veya `${{ secrets.KEY }}` | Web build, test, lint CI adımları |
+| EAS Build | EAS Secrets dashboard veya `eas secret:create` CLI | Mobil build sırasında `process.env` erişimi |
+| Vercel (Web Deploy) | Project Settings → Environment Variables (preview/production ayrımı) | Web deployment ortam değişkenleri |
+
+**Kural ve Kısıtlamalar:**
+- `.env` dosyaları `.gitignore`'a eklenmiş olmalıdır (`.env.development`, `.env.staging`, `.env.production`).
+- `.env.example` dosyası commit edilir ve tüm gerekli key'lerin listesini tutar (değersiz, sadece key adları).
+- Yeni bir env var eklendiğinde hem `.env.example` hem de CI/CD ortamı eşzamanlı güncellenir.
+- Secret rotation sonrası CI/CD secret'ları güncellenmelidir; bu işlem `27-security-and-secrets-baseline.md` kurallarına tabidir.
+- Hiçbir secret log'a yazdırılmaz; CI workflow'larında `::add-mask::` kullanılır.
+
+---
+
+## 33.6. Dosya Yerleşimi
+
+```
+apps/mobile/
+├── app.config.ts          # Dynamic Expo config (ortam bazlı)
+├── eas.json               # EAS Build profilleri
+├── .env.example           # Şablon — commit edilir, key listesi
+├── .env.development       # Local dev ortam değişkenleri (gitignore)
+├── .env.staging           # Staging ortam değişkenleri (gitignore)
+└── .env.production        # Production ortam değişkenleri (gitignore)
+
+apps/web/
+├── vite.config.ts         # Vite build konfigürasyonu
+├── .env.example           # Şablon — commit edilir, key listesi
+├── .env.development       # Local dev ortam değişkenleri (gitignore)
+├── .env.staging           # Staging ortam değişkenleri (gitignore)
+└── .env.production        # Production ortam değişkenleri (gitignore)
+```
+
+**Yerleşim Kuralları:**
+- `.env` dosyaları ilgili app dizininde tutulur; repo root'a konulmaz.
+- Her app kendi ortam değişken setine sahiptir; shared env var gereksinimi varsa monorepo root'ta `.env.shared.example` oluşturulabilir ama bu istisnai durumdur.
+- Config dosyaları (`eas.json`, `app.config.ts`, `vite.config.ts`) kaynak kontrolünde tutulur.
+
+---
+
+## 33.7. Environment ve Build Configuration Anti-Pattern Listesi
+
+Aşağıdaki davranışlar bu repo'da doğrudan zayıf kabul edilir ve kabul edilemezdir:
+
+1. **`.env` dosyasını git'e commit etmek** — Secret sızıntısı riski, güvenlik ihlali.
+2. **Ortam değişkenini kod içinde hardcode etmek** — `const API_URL = "https://api.example.com"` gibi kullanımlar yasaktır; ortam değişkeni kullanılmalıdır.
+3. **Development build'de production API URL kullanmak** — Üretim verisinin bozulması ve test izolasyonunun kaybı riski.
+4. **`VITE_` prefix'siz değişkeni web client kodunda kullanmaya çalışmak** — Vite bu değişkenleri client bundle'a dahil etmez; `undefined` döner ve runtime hatası oluşur.
+5. **Tüm ortamlar için aynı bundle ID kullanmak** — Aynı cihazda farklı ortam build'leri eş zamanlı kurulamaz; kurulum çakışması ve veri kaybı oluşur.
+6. **Secret'ları CI log'larında açık bırakmak** — `echo $SECRET` gibi komutlar yasaktır; mask mekanizması kullanılmalıdır.
+7. **`.env.example` dosyasını güncellememek** — Yeni eklenen env var `.env.example`'da yoksa ekip üyeleri local setup'ta sorun yaşar.
+8. **Tek bir `.env` dosyasıyla tüm ortamları yönetmeye çalışmak** — Ortam izolasyonu bozulur; yanlış ortama yanlış değerle deploy riski oluşur.
+9. **app.config.ts yerine statik app.json kullanmak** — Dynamic konfigürasyon ihtiyacı olan projelerde ortam bazlı farklılaşma yapılamaz.
+10. **Firebase konfigürasyon dosyalarını ortam bazlı ayırmamak** — Tüm ortamlar aynı Firebase projesini kullanırsa development/test verileri production'a karışır.

@@ -632,6 +632,131 @@ Bu doküman, aşağıdaki kararları sabitler:
 
 ---
 
+# 19.5. Platform Genişleme Stratejisi
+
+Bu boilerplate şu an web (tarayıcı) ve mobil (iOS/Android) platformlarını hedefler. Gelecekte ek platform desteği ihtiyacı doğabilir. Bu bölüm, desteklenmeyen ve gelecekte değerlendirilebilecek platformları, mevcut durumlarını ve değerlendirme koşullarını tanımlar.
+
+| Platform | Mevcut Durum | Değerlendirme Koşulu | Gerekli Adımlar |
+|----------|-------------|---------------------|----------------|
+| **macOS (React Native macOS)** | Değerlendirilmez | Enterprise veya productivity ürün gereksinimi ve yeterli iş gerekçesi oluşursa değerlendirmeye alınabilir. React Native macOS'un stabilite ve ekosistem olgunluğu yeterli seviyeye ulaşmalıdır. | ADR açılır, POC yapılır, mevcut mimari üzerindeki etkisi analiz edilir. Monorepo'da `apps/macos` eklenmesi ve platform-specific adaptation kuralları tanımlanır. |
+| **Windows (React Native Windows)** | Değerlendirilmez | Enterprise gereksinimi doğarsa (ör. internal tool, kiosk uygulaması) değerlendirilebilir. Microsoft'un React Native Windows desteğinin sürdürülebilirliği doğrulanmalıdır. | ADR açılır, Windows-specific API gereksinimleri (registry, file system, notification) analiz edilir, existing shared package uyumu değerlendirilir. |
+| **watchOS / Wear OS** | Kapsam dışı | Companion app ihtiyacı doğarsa ve ana mobil uygulama ile veri senkronizasyonu gerekirse ADR açılır. Bu platformlar tamamen farklı SDK (WatchKit, Wear OS Compose) ve UI paradigması (glance, complication) gerektirir. | Bağımsız modül olarak ele alınır. Ana boilerplate mimarisine entegre edilmez; companion app olarak ayrı workspace veya repo'da geliştirilir. Yalnızca shared domain logic paylaşılabilir. |
+| **tvOS / Android TV** | Kapsam dışı | Media/streaming uygulaması gereksinimi doğarsa değerlendirilir. TV platformları focus-driven navigation, 10-foot UI ve D-pad/remote kontrol gerektirir. Touch-first yaklaşımla temelden çelişir. | Ayrı bir ADR ve mimari değerlendirme gerektirir. React Native tvOS veya alternatif çözümler araştırılır. Shared domain logic paylaşılabilir ama UI katmanı tamamen farklı olacaktır. |
+| **Web PWA (offline-first)** | Watchlist | Service worker stratejisi belirlenirse ve offline-first gereksinimi güçlü bir iş gerekçesiyle desteklenirse değerlendirmeye alınır. ADR-019 (Local Storage and Offline-First Strategy) ile ilişkili olarak ilerleyebilir. | Service worker lifecycle, cache stratejisi, background sync, push notification (web push) ve install prompt UX'i tanımlanır. Mevcut web app'e PWA desteği eklenmesi veya ayrı bir PWA build track'i oluşturulması değerlendirilir. |
+
+### Platform Genişleme Karar Kuralları
+
+Yeni bir platformun kapsama alınması için aşağıdaki koşulların tamamı sağlanmalıdır:
+
+1. **İş gerekçesi:** Platform desteğinin somut bir ürün ihtiyacından kaynaklandığı belgelenmelidir. "Olsa güzel olur" yeterli gerekçe değildir.
+2. **Ekosistem olgunluğu:** Hedef platformun React/React Native ekosistemindeki araç desteği, topluluk büyüklüğü ve bakım sürekliliği yeterli seviyede olmalıdır.
+3. **Mimari etki analizi:** Yeni platformun mevcut monorepo yapısına, shared package'lara, CI pipeline'ına ve test stratejisine etkisi ADR'de detaylandırılmalıdır.
+4. **POC doğrulaması:** Teorik değerlendirme yeterli değildir; minimal bir POC ile teknik fizibilite doğrulanmalıdır.
+5. **Bakım maliyeti değerlendirmesi:** Yeni platform desteğinin uzun vadeli bakım yükü (CI süresi, test matrix genişlemesi, platforma özgü bug yönetimi) kabul edilebilir olmalıdır.
+
+## 19.6. Expo UI (@expo/ui) Pozisyonu
+
+Expo SDK 55 ile birlikte `@expo/ui` paketi tanıtılmıştır. Bu paket, SwiftUI (iOS) ve Jetpack Compose (Android) bileşenlerini React Native'de doğrudan kullanmaya olanak tanıyan bir bridge katmanı sunar. Platform-native UI bileşenlerinin (DatePicker, SegmentedControl, Switch, Picker vb.) JavaScript tabanlı taklit yerine gerçek native render ile sunulmasını sağlar.
+
+### Mevcut Durum: Watchlist
+
+`@expo/ui` şu an bu boilerplate kapsamında **watchlist** statüsündedir. Bu, paketin aktif olarak izlendiği ancak henüz canonical stack'e dahil edilmediği anlamına gelir.
+
+### Ne Yapar?
+
+`@expo/ui`, iOS tarafında SwiftUI, Android tarafında Jetpack Compose bileşenlerini React Native component'i gibi kullanılabilir hale getirir. Bu yaklaşımın potansiyel faydaları şunlardır:
+
+- **Gerçek native görünüm ve his:** DatePicker, SegmentedControl, Switch gibi atom-seviye bileşenler platform-native kalite ile render edilir. Kullanıcı, uygulamanın native bir uygulama olduğunu hisseder.
+- **Platform güncellemeleriyle uyum:** iOS veya Android yeni bir design language güncelleme yaptığında, native bileşenler otomatik olarak güncellenir. JavaScript tabanlı taklitler ise manuel güncelleme gerektirir.
+- **Performans:** Native render, JavaScript bridge overhead'ini azaltır ve özellikle animasyon yoğun bileşenlerde daha akıcı deneyim sunar.
+
+### Potansiyel Etkiler
+
+Boilerplate'in mevcut design system mimarisi (`04-design-system-architecture.md`) üzerindeki potansiyel etkiler şunlardır:
+
+- **Atom-seviye bileşenlerde native kalite artışı:** DatePicker, TimePicker, SegmentedControl, Switch gibi bileşenler custom JavaScript implementasyonu yerine native karşılıklarıyla değiştirilebilir. Bu, özellikle Apple HIG uyumu açısından önemli bir kalite artışı sağlar.
+- **Design token uyumu:** Native bileşenler, mevcut semantic token sistemiyle uyumlu çalışmalıdır. Renk, boyut ve spacing değerlerinin native bileşenlere nasıl aktarılacağı değerlendirilmelidir.
+- **NativeWind etkileşimi:** `@expo/ui` bileşenlerinin NativeWind 5.x styling sistemiyle uyumu henüz netleşmemiştir. Style override mekanizması ve token consumption pattern'i doğrulanmalıdır.
+
+### Karar Koşulu
+
+`@expo/ui`'nin boilerplate canonical stack'ine dahil edilmesi için aşağıdaki koşulların tamamı sağlanmalıdır:
+
+1. **Stable 1.0 release:** Paket stable release'e ulaşmalı, API'si kilitlenmiş olmalıdır. Alfa/beta aşamasında canonical stack'e alınmaz.
+2. **NativeWind 5.x uyumu:** Mevcut styling mimarisiyle (NativeWind + semantic tokens) sorunsuz çalıştığı doğrulanmalıdır.
+3. **Breaking change riski:** Major versiyon geçişlerinde breaking change riskinin kabul edilebilir seviyede olduğu belgelenmelidir.
+4. **Cross-platform tutarlılık:** iOS ve Android'de aynı bileşen ailesinin tutarlı davranış sergilediği POC ile doğrulanmalıdır.
+5. **Accessibility uyumu:** Native bileşenlerin mevcut a11y standartlarıyla (`12-accessibility-standard.md`) uyumlu çalıştığı test edilmelidir.
+
+Bu koşullar sağlandığında bir ADR açılır ve `@expo/ui`'nin hangi bileşenler için kullanılacağı, hangilerinin custom implementasyon olarak kalacağı kararlaştırılır.
+
+### Şu Anki Yaklaşım
+
+`@expo/ui` canonical stack'e alınana kadar, tüm UI bileşenleri mevcut design system mimarisi üzerinden üretilir: custom component'ler, semantic token consumption, NativeWind styling ve boilerplate'in tanımladığı component governance kuralları (`23-component-governance-rules.md`) geçerlidir.
+
+---
+
+## 19.7. Home Screen Widgets ve App Clips Pozisyonu
+
+iOS WidgetKit, Android Glance Widgets, iOS App Clips ve Android Instant Apps teknolojileri kullanıcı edinimi ve engagement için önemli kanallar haline gelmektedir.
+
+**Mevcut pozisyon:** Watchlist statüsünde. Bu boilerplate şu an için widget ve app clip desteği sağlamamaktadır.
+
+### Potansiyel Faydalar
+
+- **Widgets:** Ana ekrandan uygulama açmadan bilgi görüntüleme (günlük özet, hızlı aksiyon)
+- **App Clips (iOS) / Instant Apps (Android):** Uygulama yüklenmeden belirli bir özelliğe erişim (QR kod, NFC, link)
+
+### Neden Henüz Canonical Değil?
+
+1. **React Native ekosistem olgunluğu:** Widget ve app clip için stabil, production-ready React Native kütüphanesi sınırlıdır
+2. **Native kod gereksinimi:** Widget'lar platform-native kod (SwiftUI/Kotlin) gerektirir; React Native bridge ile iletişim karmaşıktır
+3. **Boilerplate kapsamı:** Boilerplate temel uygulama çerçevesini sağlar; widget/clip gibi platform-specific uzantılar proje bazlı kararlarla eklenir
+4. **Test ve bakım maliyeti:** Her widget güncellemesinde native build gerekir; OTA update ile güncellenemez
+
+### Canonical Stack'e Dahil Edilme Koşulları
+
+1. `expo-widgets` veya eşdeğeri stabil bir Expo plugin olarak yayımlanması
+2. SwiftUI/Jetpack Compose widget'larının React Native'den kolayca beslenmesi için olgun bir bridge mekanizması
+3. En az 2 production uygulamada başarılı kullanım örneği
+4. Widget veri güncelleme mekanizmasının (timeline, background refresh) güvenilir çalışması
+
+## 19.8. On-Device AI/ML Pozisyonu
+
+On-device AI/ML, yapay zeka modellerinin sunucuya gönderilmeden doğrudan kullanıcının cihazında çalıştırılmasını sağlar. Privacy, latency ve offline çalışabilirlik avantajları sunar.
+
+**Mevcut pozisyon:** Watchlist statüsünde. D-AIX guardrail'de on-device AI UX kuralları tanımlanmıştır ancak canonical implementation kararı alınmamıştır.
+
+### Potansiyel Kullanım Alanları
+
+- Görüntü sınıflandırma (ör: yemek tanıma, belge tarama)
+- Doğal dil işleme (ör: metin özetleme, duygu analizi)
+- Poz tahmini (ör: egzersiz form kontrolü)
+- On-device LLM (ör: yerel asistan, metin tamamlama)
+
+### Ekosistem Durumu (2026)
+
+- **TensorFlow Lite:** React Native binding mevcut, production-tested
+- **PyTorch Mobile (ExecuTorch):** React Native entegrasyonu olgunlaşıyor
+- **MLC LLM:** On-device LLM, erken aşama ama hızla gelişiyor
+- **React Native AI (Callstack):** AI özellikli RN uygulamaları için araç seti
+
+### Neden Henüz Canonical Değil?
+
+1. **Model boyutu:** AI modelleri 10-500 MB arası; app size budget'ını doğrudan etkiler
+2. **Platform fragmantasyonu:** iOS Core ML ve Android NNAPI farklı model formatları gerektirir
+3. **Performans değişkenliği:** Eski cihazlarda inference süresi kullanılabilirlik sınırını aşabilir
+4. **Boilerplate kapsamı:** AI/ML özellikler domain-specific'tir; boilerplate genel çerçeve sağlar
+
+### Canonical Stack'e Dahil Edilme Koşulları
+
+1. Expo managed workflow ile uyumlu, stabil bir AI/ML SDK'nın mevcut olması
+2. Model boyutu optimizasyonu (quantization, pruning) için standart araç zinciri
+3. Cross-platform (iOS + Android) model uyumluluğu
+4. App size budget (ADR boyut hedefleri) ile uyumlu model dağıtım stratejisi
+
+---
+
 # 20. Açık Noktalar
 
 Bu doküman temel felsefeyi sabitler, ancak aşağıdaki alanlar sonraki dokümanlarda detaylandırılmalıdır:

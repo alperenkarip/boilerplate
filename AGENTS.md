@@ -37,11 +37,19 @@
 - Styling: Tailwind CSS 4.x + NativeWind 5.x candidate track (bootstrap öncesi release-status doğrulaması zorunlu)
 - Testing: Vitest 4.x + Jest 30.x + Playwright 1.58.x
 - Component Lab: Storybook 10.x + Storybook Test (web)
-- Observability: Sentry
-- Watchlist: React Compiler controlled opt-in + Biome 2.x pilot/watchlist
-- Auth: HttpOnly cookies (web) + Expo SecureStore (mobile)
+- Observability: Sentry + vendor-agnostic analytics abstraction
+- Local Storage: MMKV canonical default + Expo SecureStore (hassas veri) + Zustand persist (ADR-019)
+- New Architecture: Fabric + JSI + TurboModules + Hermes V1 zorunlu (ADR-018)
+- Watchlist: React Compiler controlled opt-in + Biome 2.x pilot/watchlist + @expo/ui 1.0 stable watch
+- Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) + Biometric (expo-local-authentication)
 - i18n: i18next 26.x
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile)
+- Push Notification: expo-notifications + FCM/APNs
+- Deep Linking: expo-linking + Universal Links + App Links
+- OTA Update: EAS Update
+- In-App Purchase: RevenueCat (react-native-purchases)
+- Privacy/Compliance: GDPR + KVKK uyum çerçevesi (ADR-017)
+- SDK Upgrade: 48-expo-sdk-upgrade-strategy.md stratejisi zorunlu
 
 ## Design Token Rules
 - Hardcoded renk değerleri yerine semantic token kullan
