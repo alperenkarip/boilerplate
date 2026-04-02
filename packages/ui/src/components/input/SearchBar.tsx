@@ -2,7 +2,7 @@
 // NOT: Performans icin debounce uygulamasi onerilir.
 // Ornek: lodash.debounce veya custom useDebounce hook ile
 // onChange handler'ini sarmalayin (ornegin 300ms gecikme).
-import { type InputHTMLAttributes, forwardRef, useId } from 'react';
+import { type ChangeEvent, type InputHTMLAttributes, forwardRef, useId } from 'react';
 
 interface SearchBarProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
   /** Arama degeri */
@@ -28,8 +28,8 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
   const fieldId = id ?? generatedId;
 
   /** Input degisim handler'i */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange?.((e.target as any).value);
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onChange?.(e.target.value);
   };
 
   /** Temizle butonuna tiklandiginda */
@@ -99,16 +99,16 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
           onClick={handleClear}
           style={{
             position: 'absolute',
-            right: '8px',
+            right: '0px',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '24px',
-            height: '24px',
+            minWidth: '44px',
+            minHeight: '44px',
             padding: 0,
             border: 'none',
             borderRadius: '50%',
-            backgroundColor: 'var(--color-interactive-secondary-bg)',
+            backgroundColor: 'transparent',
             color: 'var(--color-content-secondary)',
             cursor: 'pointer',
             fontSize: '12px',

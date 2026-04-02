@@ -1,5 +1,5 @@
 // C18.1 — DatePicker — Tarih secici bileseni (native HTML date input wrapper)
-import { type InputHTMLAttributes, forwardRef, useId } from 'react';
+import { type ChangeEvent, type InputHTMLAttributes, forwardRef, useId } from 'react';
 
 interface DatePickerProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
   /** Alan etiketi */
@@ -29,7 +29,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
   const fieldId = id ?? generatedId;
 
   /** Input degisim handler'i */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange?.(e.target.value);
   };
 

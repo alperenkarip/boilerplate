@@ -1,5 +1,5 @@
 // C18.5 — Slider — Kaydirici bileseni (native HTML range input wrapper)
-import { type InputHTMLAttributes, forwardRef, useId } from 'react';
+import { type ChangeEvent, type InputHTMLAttributes, forwardRef, useId } from 'react';
 
 interface SliderProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -45,7 +45,7 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(function Slider(
   const fieldId = id ?? generatedId;
 
   /** Input degisim handler'i */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange?.(Number(e.target.value));
   };
 

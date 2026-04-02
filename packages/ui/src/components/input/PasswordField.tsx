@@ -90,18 +90,17 @@ export const PasswordField = forwardRef<HTMLInputElement, PasswordFieldProps>(
           {showToggle && (
             <button
               type="button"
-              tabIndex={-1}
               aria-label={visible ? 'Sifreyi gizle' : 'Sifreyi goster'}
               onClick={handleToggle}
               disabled={disabled}
               style={{
                 position: 'absolute',
-                right: '8px',
+                right: '0px',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '28px',
-                height: '28px',
+                minWidth: '44px',
+                minHeight: '44px',
                 padding: 0,
                 border: 'none',
                 borderRadius: '4px',
