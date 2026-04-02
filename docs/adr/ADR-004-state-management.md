@@ -761,16 +761,27 @@ Bu ADR’nin risklerini azaltmak için şu önlemler gerekir:
 
 # 32. Non-Goals
 
-Bu ADR aşağıdakileri çözmez:
+Bu ADR aşağıdaki alanları **çözmez**. Her biri kendi ilgili ADR veya policy belgesinde kapatılmıştır:
 
-- TanStack Query detayları
-- form engine davranış detayları
-- persistence library exact selection
-- auth token transport protocol
-- every selector pattern detail
-- mobile secure storage implementation specifics
+### 32.1. Server state yönetimi
+API query data, cache lifecycle, stale/refetch mantığı, mutation result ownership ve invalidation graph bu ADR'nin kapsamı dışındadır. Server state yönetimi **ADR-005 — Data Fetching, Cache and Mutation Model** tarafından çözülür. Zustand'a server state kopyalanması bu ADR tarafından açıkça yasaklanmıştır (Bölüm 16).
 
-Bu alanlar ilgili ADR ve policy belgelerinde kapanacaktır.
+### 32.2. Form state yönetimi
+Field values, touched/dirty state, validation lifecycle, submit state ve field error tree bu ADR'nin kapsamı dışındadır. Form state yönetimi **ADR-006 — Forms and Validation** tarafından çözülür. Generic Zustand store ile form state çözümlenmesi bu ADR tarafından açıkça yasaklanmıştır (Bölüm 17).
+
+### 32.3. Auth ve session state
+Auth token transport protocol, session restore/expire lifecycle, biometric authentication state ve secure credential storage bu ADR'nin kapsamı dışındadır. Auth ve session state yönetimi **ADR-010 — Auth, Session and Secure Storage Baseline** tarafından çözülür.
+
+### 32.4. Offline persistence stratejisi
+Offline-first data sync, local-first storage engine seçimi, conflict resolution ve offline queue yönetimi bu ADR'nin kapsamı dışındadır. Offline persistence stratejisi **ADR-019 — Local Storage and Offline-First Strategy** tarafından çözülür. Bu ADR yalnızca Zustand store'larının sınırlı persistence kurallarını tanımlar (Bölüm 18); genel offline mimari kararı vermez.
+
+### 32.5. Global CSS/styling state
+Theme token'ları, design system renk/spacing değerleri ve platform-specific styling konfigürasyonu bu ADR'nin kapsamı dışındadır. Zustand yalnızca kullanıcı theme preference'ını (dark/light mode seçimi gibi) tutabilir; styling engine state'i ve token yönetimi **ADR-007 — Styling, Tokens and Theming Implementation** kapsamındadır.
+
+### 32.6. Diğer kapsam dışı alanlar
+- Persistence library exact selection (MMKV vs SecureStore detayları → ADR-019)
+- Every selector pattern detail (implementasyon seviyesi kararı, bu ADR policy seviyesindedir)
+- Mobile secure storage implementation specifics (→ ADR-010, ADR-019)
 
 ---
 

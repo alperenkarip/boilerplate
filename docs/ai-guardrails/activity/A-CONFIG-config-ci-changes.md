@@ -19,6 +19,11 @@ son-güncelleme: 2026-04-02
 ## Aktif Domain Guardrail'ler
 - **D-SEC** → Secret yönetimi, environment güvenliği
 
+## Kaynak Doküman Referansları
+- 15-quality-gates-and-ci-rules.md — CI kalite kapıları
+- 21-repo-structure-spec.md — Repo yapı standardı
+- 27-security-and-secrets-baseline.md — Secret yönetimi ve güvenlik temeli
+
 ## Aktiviteye Özel Kurallar
 1. CI pipeline değişikliği → tüm job'lar çalıştığını doğrula
 2. Environment variable ekleme → .env.example güncelle, .gitignore kontrol et

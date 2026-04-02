@@ -2,7 +2,7 @@
 id: A-NEW-COMP
 type: activity
 name: Yeni Component Oluşturma
-tetiklenen-domain-guardrails: [D-UIX, D-DSY, D-A11, D-PLT, D-MOT]
+tetiklenen-domain-guardrails: [D-UIX, D-DSY, D-A11, D-PLT, D-MOT, D-VIS]
 araç-zorunlulukları:
   spec: —
   stitch: önerilen
@@ -23,6 +23,7 @@ son-güncelleme: 2026-04-02
 - **D-A11** → Role, label, focus management, contrast, reduced motion
 - **D-PLT** → Platform parity, platform convention, kod organizasyonu
 - **D-MOT** → Motion token, reduced motion guard (animasyon içeriyorsa)
+- **D-VIS** → Visual fidelity, tasarım-kod uyumu, pixel-perfect doğrulama
 
 ## Aktiviteye Özel Kurallar
 1. Component PascalCase isimlendirilmeli, dosya adıyla eşleşmeli

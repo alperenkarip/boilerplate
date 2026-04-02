@@ -28,7 +28,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-017`
+  - `ADR-001` → `ADR-019`
 - **Doğrudan etkileyeceği belgeler:**
   - `32-definition-of-done.md`
   - `33-visual-implementation-contract.md`

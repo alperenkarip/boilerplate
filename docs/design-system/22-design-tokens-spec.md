@@ -939,6 +939,7 @@ Bu doküman yeterli kabul edilir eğer:
 6. Governance ve lifecycle mantığı görünür kılınmışsa,
 7. Sonraki component, motion ve audit dokümanlarına uygulanabilir temel sağlanmışsa.
 8. Stitch pipeline token eşleştirme referansı tanımlanmışsa.
+9. Token → kod dönüşüm pipeline'ı, çıktı formatları ve CI doğrulama mekanizması tanımlanmışsa.
 
 ---
 
@@ -1018,7 +1019,122 @@ Bazı kullanım senaryolarında kullanıcının tema rengini veya font boyutunu 
 
 ---
 
-# 34. Kısa Sonuç
+# 34. Kod Üretimi ve Implementasyon Bağlama (Code Generation and Implementation Binding)
+
+Bu bölüm, token tanımlarının somut koda nasıl dönüştürüleceğini, dönüşüm pipeline'ını, çıktı formatlarını ve doğrulama mekanizmalarını tanımlar. Amaç, token spec'in soyut kalmamasını ve implementasyon katmanıyla açık bağlantısının kurulmasını sağlamaktır.
+
+## 34.1. Token → Kod Dönüşüm Pipeline'ı
+
+### 34.1.1. Kaynak format
+
+Token tanımları `packages/design-tokens/` dizini altında JSON veya YAML kaynak formatında tutulur. Bu kaynak dosyalar tek doğru kaynaktır (single source of truth); diğer tüm formatlar bu kaynaktan türetilir.
+
+Dizin yapısı:
+```
+packages/design-tokens/
+├── tokens/
+│   ├── raw/               # Raw token tanımları (color, spacing, typography, radius, motion vb.)
+│   ├── semantic/           # Semantic token tanımları (light/dark mapping dahil)
+│   └── context/            # Context/pattern token tanımları (gerekirse)
+├── build/                  # Dönüşüm yapılandırma dosyaları
+└── dist/                   # Derleme çıktıları (gitignore'a eklenir)
+```
+
+### 34.1.2. Build-time dönüşüm
+
+Token kaynak dosyaları build-time'da platform hedeflerine derlenir:
+- **Web:** Tailwind CSS 4.x config'e entegre edilecek CSS custom properties
+- **Mobile:** NativeWind 5.x config'e entegre edilecek tema yapılandırması
+- **Shared:** Platform-agnostik TypeScript/JavaScript constant dosyaları
+
+Dönüşüm tamamen build-time'da gerçekleşir. Runtime'da token çözümleme maliyeti yoktur (bölüm 33'teki dynamic token mekanizması hariç).
+
+### 34.1.3. Dönüşüm aracı
+
+Canonical dönüşüm aracı olarak Style Dictionary veya eşdeğer bir token transformer kullanılacaktır. Kesin araç seçimi bootstrap implementasyon aşamasında kilitlenecek ve `36-canonical-stack-decision.md`'ye eklenecektir.
+
+Dönüşüm aracı seçimi için gereksinimler:
+- JSON/YAML kaynak formatını desteklemeli
+- Çoklu platform çıktısı üretebilmeli (CSS, JS/TS, JSON)
+- Katmanlı token referanslarını çözümleyebilmeli (raw → semantic → context)
+- Tema varyantlarını (light/dark) ayrı çıktı olarak üretebilmeli
+- Custom transform ve format tanımlamaya izin vermeli
+
+### 34.1.4. Çıktı formatları
+
+| Çıktı Formatı | Platform | Kullanım Alanı |
+|---|---|---|
+| CSS custom properties (`--token-name: value`) | Web | Tailwind CSS 4.x entegrasyonu, runtime tema swap |
+| TypeScript/JavaScript constants | Shared | Tip güvenli token erişimi, test ve storybook desteği |
+| NativeWind theme config | Mobile | NativeWind 5.x stil sistemi entegrasyonu |
+| JSON manifest | Tümü | Token envanteri, dashboard ve analiz araçları |
+
+## 34.2. Token Tüketim Zinciri
+
+### 34.2.1. Katmanlı dönüşüm akışı
+
+```
+Raw token → Semantic token → Context/pattern token → Component tüketimi
+```
+
+Her katman derleme zamanında çözümlenir:
+1. **Raw token:** Ham değer tanımlanır (ör. `color-neutral-700: #374151`)
+2. **Semantic token:** Raw token'a referans verir (ör. `content-primary: {color.neutral.700}`)
+3. **Context/pattern token:** Semantic token'a referans verir (ör. `card-title-color: {content.primary}`)
+4. **Build çıktısı:** Tüm referanslar çözümlenmiş nihai değere dönüştürülür
+
+Bu katmanlı yapı sayesinde:
+- Bir raw değer değiştiğinde tüm bağımlı semantic ve context token'lar otomatik güncellenir
+- Referans zinciri build-time'da tamamen düzleştirilir, runtime overhead oluşmaz
+
+### 34.2.2. Dark mode / light mode dönüşüm mekanizması
+
+Dark mode ve light mode token'ları aynı pipeline'dan geçer; her tema varyantı için ayrı çıktı seti üretilir.
+
+**Web:** Tema değişikliği CSS custom property swap ile gerçekleşir. `[data-theme="dark"]` veya `prefers-color-scheme` media query ile aktif tema belirlenir; CSS custom property değerleri ilgili tema setine geçer. Sayfa yenilemesi gerekmez.
+
+**Mobile:** Tema değişikliği appearance listener (Appearance API veya context provider) ile gerçekleşir. NativeWind'in CSS variable desteği ile web'deki mekanizmaya paralel çalışır.
+
+Her iki platformda da semantic token isimleri sabit kalır; yalnızca arkadaki raw değer eşleştirmesi değişir. Bu, bölüm 19'daki Light / Dark Theme Mapping Modeli ile tutarlıdır.
+
+## 34.3. CI Doğrulama ve Token Lint
+
+### 34.3.1. Token lint kuralları
+
+CI pipeline'ında aşağıdaki token doğrulama kontrolleri çalıştırılır:
+
+| Kontrol | Seviye | Açıklama |
+|---|---|---|
+| Kullanılmayan token tespiti | Uyarı | Token dosyasında tanımlı olup kaynak kodda referansı bulunmayan token'lar raporlanır (bölüm 32.1 ile entegre) |
+| Tanımsız token referansı | Blocker (P0) | Kaynak kodda referans edilen ancak token dosyasında tanımı bulunmayan token'lar tespit edilir |
+| İsimlendirme kuralı ihlali | Blocker (P0) | Bölüm 20'deki isimlendirme kurallarına uymayan token adları reddedilir |
+| Döngüsel referans kontrolü | Blocker (P0) | Token referans zincirinde döngü olup olmadığı build sırasında kontrol edilir |
+| Hardcoded değer tespiti | Blocker (P0) | Kaynak kodda token yerine doğrudan kullanılan görsel değerler reddedilir (bölüm 32.2 ile entegre) |
+
+### 34.3.2. Etki analizi raporu
+
+Token değişikliği içeren PR'larda otomatik etki analizi raporu üretilir:
+
+- **Değişen token'lar:** Eklenen, silinen veya değeri değiştirilen token listesi
+- **Etkilenen component'ler:** Değişen token'ları referans eden component dosyaları
+- **Etkilenen ekranlar:** Dolaylı olarak etkilenen sayfa/ekran listesi
+- **Tema etki özeti:** Light/dark varyantlarında hangi görsel değişikliklerin oluşacağı
+
+Bu rapor PR açıklamasına otomatik olarak eklenir ve code review sürecinde görsel regresyon değerlendirmesini kolaylaştırır.
+
+### 34.3.3. Build pipeline entegrasyonu
+
+Token derleme adımları monorepo build pipeline'ına (Turborepo) entegre edilir:
+
+1. `pnpm build:tokens` — Token kaynak dosyalarını tüm platform çıktılarına derler
+2. `pnpm lint:tokens` — Yukarıdaki tüm lint kurallarını çalıştırır
+3. `pnpm lint:tokens:impact` — Token değişikliği etki analizi raporunu üretir
+
+Bu adımlar `pnpm build` ve `pnpm lint` üst komutlarının parçası olarak Turborepo task graph'ında yer alır. Token derleme adımı, web ve mobile build adımlarından önce çalışır (dependency olarak tanımlanır).
+
+---
+
+# 35. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

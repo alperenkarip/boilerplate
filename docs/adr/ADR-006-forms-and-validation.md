@@ -810,11 +810,45 @@ Ama presentation ve ergonomi platforma göre uyarlanabilir.
 - dense data form layout
 - inline vs full-screen edit ergonomisi
 
-## 28.4. Zayıf davranışlar
+## 28.4. Keyboard Handling Stratejisi
+
+Keyboard yönetimi, form ekranlarında kullanıcı deneyiminin temel parçasıdır. Yanlış yönetildiğinde aktif input keyboard arkasında kalır, kullanıcı submit butonuna erişemez veya form alanları arasında geçiş yapamaz. Bu bölüm, platform bazında keyboard handling kurallarını tanımlar.
+
+### 28.4.1. Keyboard Avoidance
+
+**Mobile (React Native):**
+- Basit formlar (3-5 alan): `KeyboardAvoidingView` kullanılmalı — iOS’ta `behavior="padding"`, Android’de `behavior="height"`
+- Uzun / scroll gerektiren formlar: `KeyboardAwareScrollView` (react-native-keyboard-aware-scroll-view) tercih edilmeli — aktif input’u otomatik olarak görünür alana kaydırır
+- Bottom sheet içindeki formlar: Sheet kütüphanesinin built-in keyboard avoidance desteği kullanılmalı (ör. @gorhom/bottom-sheet)
+
+**Web:** Tarayıcılar keyboard avoidance’ı otomatik yönetir. Ek React bileşeni gerekmez.
+
+### 28.4.2. Focus Akışı ve Alan Geçişleri
+
+Kullanıcı keyboard’daki "Next" tuşuyla bir sonraki alana geçebilmelidir. Bu akış programatik olarak kurulmalıdır:
+
+1. Her alana `returnKeyType` tanımlanmalı: ara alanlar `"next"`, son alan `"done"` veya `"send"`
+2. `onSubmitEditing` ile bir sonraki alana `ref.current?.focus()` yapılmalı
+3. Son alandan "done" tuşu ile form submit tetiklenmeli
+4. Formun birincil amacı veri girişiyse ilk alana `autoFocus` verilebilir
+
+### 28.4.3. Keyboard Dismiss Kuralları
+
+- Form dışına dokunma → keyboard kapanmalı (`keyboardDismissMode="on-drag"` veya `Keyboard.dismiss()`)
+- Submit sonrası → keyboard kapanmalı (`Keyboard.dismiss()` submit handler içinde)
+- Navigation (geri gitme) → keyboard kapanmalı
+- Hata gösterimi → keyboard açık kalmalı (kullanıcı düzeltmeye devam edebilmeli)
+
+Detaylı platform farkları tablosu ve kontrol listesi `D-FRM-forms-validation.md` guardrail dokümanındadır.
+
+## 28.5. Zayıf davranışlar
 
 - web’de güçlü validation varken mobile’da gevşek bırakmak
 - mobile’da helper/error görünürlüğünü azaltmak
 - aynı formu iki platformda farklı domain mantığıyla çalıştırmak
+- keyboard açıldığında aktif input’un görünmez kalması
+- form alanları arasında "Next" ile geçiş yapılamaması
+- submit sonrası keyboard’un açık kalması
 
 ---
 

@@ -1,0 +1,121 @@
+# Notify Derived Projects — Boilerplate Release Bildirimi
+# Referans: docs/governance/49-upstream-sync-strategy.md Bolum 8
+#
+# Boilerplate'te yeni bp-v* tag'i push'landiginda,
+# derived projelere otomatik olarak sync hatirlatma issue'su acar.
+
+name: Notify Derived Projects
+
+on:
+  push:
+    tags:
+      - 'bp-v*'
+
+jobs:
+  notify:
+    name: Upstream Release Notification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Release bilgilerini cikar
+        id: release_info
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          # Tag mesajini al
+          MSG=$(git tag -l --format='%(contents)' "$TAG" 2>/dev/null || echo "Detay icin CHANGELOG.md'ye bakin.")
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MSG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          # Miras kategorisini belirle
+          MAJOR=$(echo "$TAG" | sed 's/bp-v//' | cut -d. -f1)
+          MINOR=$(echo "$TAG" | sed 's/bp-v//' | cut -d. -f2)
+          PATCH=$(echo "$TAG" | sed 's/bp-v//' | cut -d. -f3)
+
+          # MAJOR degisiklik = zorunlu, MINOR = yapisal, PATCH = felsefi
+          # Onceki tag ile karsilastirarak kategori belirle
+          PREV_TAG=$(git tag -l 'bp-v*' --sort=-v:refname | head -2 | tail -1)
+          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$TAG" ]; then
+            PREV_MAJOR=$(echo "$PREV_TAG" | sed 's/bp-v//' | cut -d. -f1)
+            PREV_MINOR=$(echo "$PREV_TAG" | sed 's/bp-v//' | cut -d. -f2)
+            if [ "$MAJOR" != "$PREV_MAJOR" ]; then
+              echo "severity=P0" >> "$GITHUB_OUTPUT"
+              echo "label=priority-p0" >> "$GITHUB_OUTPUT"
+              echo "deadline=2 sprint (max 4 hafta)" >> "$GITHUB_OUTPUT"
+            elif [ "$MINOR" != "$PREV_MINOR" ]; then
+              echo "severity=P1" >> "$GITHUB_OUTPUT"
+              echo "label=priority-p1" >> "$GITHUB_OUTPUT"
+              echo "deadline=4 sprint (max 8 hafta)" >> "$GITHUB_OUTPUT"
+            else
+              echo "severity=INFO" >> "$GITHUB_OUTPUT"
+              echo "label=priority-info" >> "$GITHUB_OUTPUT"
+              echo "deadline=Zorunlu sure yok" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "severity=INFO" >> "$GITHUB_OUTPUT"
+            echo "label=priority-info" >> "$GITHUB_OUTPUT"
+            echo "deadline=Ilk release" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Derived projelere bildirim gonder
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        run: |
+          TAG="${{ steps.release_info.outputs.tag }}"
+          SEVERITY="${{ steps.release_info.outputs.severity }}"
+          DEADLINE="${{ steps.release_info.outputs.deadline }}"
+          LABEL="${{ steps.release_info.outputs.label }}"
+          MSG="${{ steps.release_info.outputs.message }}"
+
+          DERIVED_LIST="tooling/sync/derived-projects.txt"
+
+          if [ ! -f "$DERIVED_LIST" ]; then
+            echo "ℹ️ derived-projects.txt bulunamadi. Bildirim gonderilmiyor."
+            exit 0
+          fi
+
+          # Bos satirlari ve yorumlari atla
+          REPOS=$(grep -v '^#' "$DERIVED_LIST" | grep -v '^$' || echo "")
+          if [ -z "$REPOS" ]; then
+            echo "ℹ️ derived-projects.txt bos. Bildirim gonderilmiyor."
+            exit 0
+          fi
+
+          BODY=$(cat <<EOF
+          ## Boilerplate Upstream Sync Gerekli
+
+          **Tag:** \`$TAG\`
+          **Severity:** $SEVERITY
+          **Deadline:** $DEADLINE
+
+          ### Degisiklikler
+          $MSG
+
+          ### Aksiyon
+          - [ ] CHANGELOG.md incelendi
+          - [ ] Sync script calistirildi: \`./tooling/sync/upstream-sync.sh $TAG\`
+          - [ ] BOUNDARY.md guncellendi
+          - [ ] PR olusturuldu ve review edildi
+
+          ### Referans
+          - [Upstream Sync Stratejisi](docs/governance/49-upstream-sync-strategy.md)
+          - [Boundary Contract](docs/governance/45-boilerplate-project-boundary-contract.md)
+          EOF
+          )
+
+          while IFS= read -r repo; do
+            [ -z "$repo" ] && continue
+            echo "Issue aciliyor: $repo"
+            gh issue create --repo "$repo" \
+              --title "Upstream sync gerekli: $TAG [$SEVERITY]" \
+              --body "$BODY" \
+              --label "upstream-sync,$LABEL" \
+              2>/dev/null || echo "⚠️ Issue acilamadi: $repo (CROSS_REPO_TOKEN kontrol edin)"
+          done <<< "$REPOS"

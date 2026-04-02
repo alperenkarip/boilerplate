@@ -10,6 +10,7 @@
 - **Kapsam:** Bu belge, Expo SDK major upgrade sürecinin nasıl planlanacağını, hangi ön değerlendirme adımlarının zorunlu olduğunu, upgrade uygulamasının hangi sırayla yapılacağını, expo-doctor aracının nasıl kullanılacağını, runtimeVersion ve OTA update ilişkisinin nasıl yönetileceğini, rollback senaryolarını, test matrisini, major ve minor upgrade farklarını, anti-pattern'leri ve upgrade checklist'ini tanımlar. Amaç, Expo SDK upgrade'ini "npm update expo" kadar basit bir işlem gibi görmekten çıkarıp, ekosistem zincirini bütünsel olarak yöneten, kontrollü, test edilmiş ve belgelenmiş bir operasyona dönüştürmektir.
 - **Bağlı olduğu üst dokümanlar:**
   - `ADR-002-mobile-runtime-and-native-strategy.md`
+  - `ADR-018-new-architecture-migration-and-readiness-strategy.md`
   - `29-release-and-versioning-rules.md`
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
@@ -412,7 +413,52 @@ Her community paketi güncellendikten sonra:
 - Screen options imza değişiklikleri
 - Native stack renderer değişiklikleri (react-native-screens bağımlılığı)
 
-## 5.5. EAS Build Doğrulama
+## 5.5. New Architecture Runtime Doğrulaması (ADR-018 Entegrasyonu)
+
+Expo SDK major upgrade sırasında New Architecture bileşenlerinin (Fabric renderer, JSI, TurboModules, Hermes V1) doğru çalıştığı ayrıca doğrulanmalıdır. `expo-doctor` JavaScript seviyesindeki uyumsuzlukları tespit eder ancak native runtime seviyesindeki regresyonları yakalayamaz. Bu nedenle aşağıdaki kontroller upgrade checklist'inin zorunlu parçasıdır.
+
+### 5.5.1. Fabric Renderer Doğrulaması
+
+Development build açıldıktan sonra React DevTools ile bağlanarak Fabric renderer'ın aktif olduğu doğrulanmalıdır:
+- React DevTools'ta component inspector'da "Fabric: true" görünmelidir
+- Eğer "Fabric: false" görünüyorsa, upgrade sırasında bir paket eski renderer'a fallback yapmış olabilir — bu P0 blocker'dır
+
+### 5.5.2. Hermes V1 Engine Doğrulaması
+
+Yeni SDK ile gelen Hermes sürümünün düzgün çalıştığı doğrulanmalıdır:
+- Uygulama içinde `typeof HermesInternal !== 'undefined'` kontrolü yapılmalı
+- Hermes bytecode precompilation'ın çalıştığı build output'tan doğrulanmalı (`.hbc` dosyaları oluşmalı)
+- Yeni Hermes sürümünde garbage collection davranış değişikliği varsa, bellek yoğun ekranlarda (uzun liste, medya galerisi) profiling yapılmalı
+
+### 5.5.3. TurboModules Lazy-Loading Kontrolü
+
+TurboModules'ın lazy-loading davranışını koruduğu doğrulanmalıdır:
+- Uygulama başlangıcında tüm native modüllerin eager-load edilmediği startup profiling ile kontrol edilmeli
+- Yeni SDK ile gelen Codegen çıktısının (`android/app/build/generated/source/codegen` ve `ios/build/generated/ios`) hata vermeden üretildiği doğrulanmalı
+- Custom TurboModule varsa, yeni Codegen ile uyumluluğu ayrıca kontrol edilmeli
+
+### 5.5.4. Bridge-Only Paket Kontrolü
+
+Upgrade sonrasında bridge-only (New Architecture ile uyumsuz) paket kalıp kalmadığı kontrol edilmelidir:
+- `npx expo-doctor` çıktısındaki "legacy module" uyarıları incelenmeli
+- Kalan bridge-only paketler için: uyumlu alternatif aranmalı veya wrapper yazılmalı (ADR-018 §paket uyumluluk değerlendirme zorunluluğu)
+- `setNativeProps` veya `findNodeHandle` kullanan kodlar derleme zamanında hata verecektir — bunlar SDK upgrade öncesinde kaldırılmış olmalıdır
+
+### 5.5.5. Upgrade Öncesi / Sonrası Karşılaştırma Metrikleri
+
+| Metrik | Upgrade Öncesi | Upgrade Sonrası | Kabul Eşiği |
+|--------|---------------|----------------|-------------|
+| Cold start süresi | Ölçüm al | Ölçüm al | Regresyon < %10 |
+| JS bundle boyutu | Ölçüm al | Ölçüm al | Artış < %5 |
+| Bellek kullanımı (idle) | Ölçüm al | Ölçüm al | Artış < %15 |
+| Slow frame oranı | Ölçüm al | Ölçüm al | < %5 (mutlak) |
+| Hermes bytecode derleme | Başarılı | Başarılı | Başarılı |
+
+Bu metriklerde kabul eşiğini aşan regresyon varsa, upgrade PR'ı merge edilmemelidir. Regresyon kaynağı araştırılmalı ve çözülmelidir.
+
+---
+
+## 5.6. EAS Build Doğrulama
 
 **EAS Build doğrulaması, upgrade PR'ının merge koşuludur.** Development build'in lokalde çalışması yeterli değildir; EAS infrastructure üzerinde tam build başarılı olmalıdır.
 
@@ -448,7 +494,7 @@ eas build --platform all --profile development --clear-cache
 
 4. **Build başarılı olana kadar commit yapılmaz.** Kırık build ile trunk'a merge etmek yasaktır.
 
-## 5.6. OTA Update Uyumluluğu
+## 5.7. OTA Update Uyumluluğu
 
 OTA update uyumluluğu, SDK upgrade'in en kritik ve en çok atlanan adımıdır. Bu adım atlanırsa mevcut kullanıcı tabanı ile yeni sürüm arasında kopukluk oluşur.
 

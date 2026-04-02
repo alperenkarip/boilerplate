@@ -155,9 +155,88 @@ son-güncelleme: 2026-04-02
 - textContentType eksikliği → hemen tanımla
 - Inline hata eksikliği → hemen düzelt
 
+## Keyboard Handling Pattern
+
+Form ekranlarında keyboard yönetimi, kullanıcı deneyiminin kritik bir parçasıdır. Keyboard açıldığında aktif input'un görünür kalması, submit butonuna erişilebilmesi ve formdan çıkışta keyboard'un uygun şekilde kapanması gerekir. Aşağıdaki kurallar tüm form ekranları için geçerlidir.
+
+### Keyboard Avoidance Stratejisi
+
+**Mobile (React Native):**
+
+| Durum | Yöntem | Açıklama |
+|-------|--------|----------|
+| Basit form (3-5 alan) | `KeyboardAvoidingView` | `behavior="padding"` (iOS), `behavior="height"` (Android) |
+| Uzun form / scroll gerektiren | `KeyboardAwareScrollView` (react-native-keyboard-aware-scroll-view) | Aktif input'u otomatik olarak görünür alana kaydırır |
+| Bottom sheet içinde form | Sheet kendi keyboard avoidance'ını sağlar | @gorhom/bottom-sheet veya benzeri kütüphanelerin built-in desteği kullanılmalı |
+
+**Web:**
+- Tarayıcılar keyboard avoidance'ı otomatik yönetir. Ek bir React bileşeni gerekmez.
+- Mobil web'de (viewport) `<meta name="viewport" content="..., interactive-widget=resizes-content">` kullanılarak keyboard açıldığında viewport'un yeniden boyutlandırılması sağlanmalıdır.
+
+### Focus Yönetimi ve Alan Geçişleri
+
+Form alanları arasında doğal bir geçiş akışı olmalıdır. Kullanıcı keyboard'daki "Next/Return" tuşuyla bir sonraki alana geçebilmelidir.
+
+**Kurallar:**
+1. [ZORUNLU] `returnKeyType` her alana uygun tanımlanmalı: ara alanlar `"next"`, son alan `"done"` veya `"send"`
+2. [ZORUNLU] `onSubmitEditing` ile bir sonraki alana programatik focus yapılmalı (`ref.current?.focus()`)
+3. [YAPILMALI] Formun ilk alanına otomatik focus verilmeli (`autoFocus={true}` — yalnızca formun birincil amacı veri girişi ise)
+4. [YAPILMALI] Son alandan "done" ile form submit tetiklenmeli (kullanıcı submit butonuna uzanmak zorunda kalmamalı)
+
+**Focus akışı örneği:**
+```typescript
+const emailRef = useRef<TextInput>(null);
+const passwordRef = useRef<TextInput>(null);
+
+<TextInput
+  ref={emailRef}
+  returnKeyType="next"
+  onSubmitEditing={() => passwordRef.current?.focus()}
+  textContentType="emailAddress"
+  keyboardType="email-address"
+/>
+<TextInput
+  ref={passwordRef}
+  returnKeyType="done"
+  onSubmitEditing={handleSubmit(onSubmit)}
+  textContentType="password"
+  secureTextEntry
+/>
+```
+
+### Keyboard Dismiss Davranışı
+
+| Durum | Davranış | Uygulama |
+|-------|----------|----------|
+| Form dışına dokunma | Keyboard kapanmalı | `<ScrollView keyboardDismissMode="on-drag">` veya `<TouchableWithoutFeedback onPress={Keyboard.dismiss}>` |
+| Submit sonrası | Keyboard kapanmalı | `Keyboard.dismiss()` submit handler içinde çağrılmalı |
+| Navigation (geri gitme) | Keyboard kapanmalı | React Navigation varsayılan olarak bunu yönetir; custom geçişlerde `Keyboard.dismiss()` eklenmeli |
+| Hata gösterimi | Keyboard açık kalmalı | Kullanıcı hatayı görüp düzeltmeye devam edebilmeli |
+
+### Platform Farkları
+
+| Özellik | iOS | Android | Web |
+|---------|-----|---------|-----|
+| Keyboard avoidance | `behavior="padding"` (KeyboardAvoidingView) | `behavior="height"` veya `android:windowSoftInputMode="adjustResize"` (AndroidManifest) | Otomatik |
+| returnKeyType | "next", "done", "go", "send" | "next", "done", "go", "send" | N/A (tab ile geçiş) |
+| Keyboard dismiss | Interactive dismiss destekli (`keyboardDismissMode="interactive"`) | Geri tuşu ile dismiss | Esc ile dismiss |
+| textContentType | Zorunlu (AutoFill için) | `autoComplete` prop | `autoComplete` HTML attribute |
+| Secure keyboard (password) | Otomatik (secureTextEntry ile) | Otomatik | `type="password"` |
+
+### Kontrol Listesi (Keyboard)
+- [ ] KeyboardAvoidingView veya KeyboardAwareScrollView uygulandı mı?
+- [ ] iOS ve Android'de behavior prop'u doğru ayarlandı mı?
+- [ ] returnKeyType her alan için tanımlı mı?
+- [ ] Focus akışı (next → next → done) çalışıyor mu?
+- [ ] Son alandan "done" ile submit tetikleniyor mu?
+- [ ] Form dışı dokunmada keyboard kapanıyor mu?
+- [ ] Submit sonrası keyboard kapanıyor mu?
+- [ ] Hata durumunda keyboard açık kalıyor mu?
+
 ## Kaynak
 - Form mimarisi → docs/architecture/11-forms-inputs-and-validation.md
 - Form kararı → docs/adr/ADR-006-forms-and-validation.md
 - Error states → docs/design-system/25-error-empty-loading-states.md
 - Apple HIG Text Fields → developer.apple.com/design/human-interface-guidelines/text-fields
 - Apple HIG Entering Data → developer.apple.com/design/human-interface-guidelines/entering-data
+- Apple HIG Keyboards → developer.apple.com/design/human-interface-guidelines/keyboards

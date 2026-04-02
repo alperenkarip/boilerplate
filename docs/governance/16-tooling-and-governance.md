@@ -1753,7 +1753,7 @@ Aşağıdaki dosyalar git'te tutulur ve PR review kapsamındadır:
 - `.moai/config/` (MoAI-ADK konfigürasyonu)
 - `DESIGN.md` (Stitch tasarım sistemi — Stitch'ten export edilir, elle düzenlenmez)
 
-Bu dosyalardaki değişiklik, canonical katmanla (ADR-001 → ADR-017 + 36/37/38 canonical governance belgeleri) tutarlılık açısından review edilir.
+Bu dosyalardaki değişiklik, canonical katmanla (ADR-001 → ADR-019 + 36/37/38 canonical governance belgeleri) tutarlılık açısından review edilir.
 
 ## 37.4. Otorite Sırası
 

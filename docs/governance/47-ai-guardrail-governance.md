@@ -105,7 +105,7 @@ Her kod üretiminde, her iş türünde, her zaman aktif olan kurallar. Bu kurall
 - i18n: inline user-facing string yasak, i18n key kullan
 - Security baseline: secret, credential, hassas veri kuralları
 - Naming convention: PascalCase component, camelCase değişken, dosya adı eşleşmesi
-- Canonical stack kararlarına uyum: ADR-001 → ADR-017 tartışmaya kapalı
+- Canonical stack kararlarına uyum: ADR-001 → ADR-019 tartışmaya kapalı
 
 ## 4.2. Katman 2 — Domain Guardrail'ler
 
@@ -173,13 +173,13 @@ Mevcut aktiviteler:
 | A-DOCS | Doküman/ADR yazımı | 41, 18 |
 | A-FIX | Bug fix | Universal + ilgili domain |
 | A-3RD | Third-party SDK entegrasyonu | D-3RD, D-SEC, 37 |
-| A-AUTH | Auth flow değişikliği | D-SEC, ADR-010 |
-| A-RELEASE | Release hazırlığı | 29, 15, 31 |
+| A-AUTH | Auth flow değişikliği | D-SEC, ADR-010, D-BIO |
+| A-RELEASE | Release hazırlığı | 29, 15, 31, D-OBS, D-SEC |
 | A-MEDIA | File upload/media/storage | D-SEC, D-PRF |
 | A-REALTIME | Real-time/WebSocket/push | D-DAT, D-SEC, D-PRF |
 | A-ANALYTICS | Analytics/event tracking | D-OBS, D-SEC |
-| A-OFFLINE | Offline/cache/persistence | D-DAT, D-PLT |
-| A-AI-FEAT | AI/ML feature entegrasyonu | D-AIX, D-UIX, D-SEC, D-PLT |
+| A-OFFLINE | Offline/cache/persistence | D-DAT, D-PLT, D-OFL |
+| A-AI-FEAT | AI/ML feature entegrasyonu | D-AIX, D-UIX, D-SEC, D-PLT, D-PRI, D-TST, D-OBS |
 | A-NOTIFICATION | Push notification geliştirme | D-NTF, D-SEC, D-PRI |
 | A-DEEPLINK | Deep link implementasyonu | D-DPL, D-NAV, D-SEC |
 | A-PAYMENT | Ödeme/abonelik entegrasyonu | D-PAY, D-SEC, D-PRI |

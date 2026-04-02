@@ -2,7 +2,7 @@
 id: A-DOCS
 type: activity
 name: Doküman / ADR Yazımı
-tetiklenen-domain-guardrails: []
+tetiklenen-domain-guardrails: [] # Domain-independent aktivite — 41-ai-instruction-standards ve 18-adr-template kaynak referanstır
 araç-zorunlulukları:
   spec: —
   stitch: —

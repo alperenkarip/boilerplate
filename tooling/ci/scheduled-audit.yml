@@ -191,6 +191,108 @@ jobs:
     steps:
       - run: echo "Docs-only / pre-bootstrap repo detected. Dependency and compatibility jobs intentionally skipped."
 
+  upstream-drift-check:
+    name: Upstream Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: BOUNDARY.md varlik kontrolu
+        id: boundary
+        shell: bash
+        run: |
+          if [ ! -f BOUNDARY.md ]; then
+            echo "has_boundary=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️ BOUNDARY.md bulunamadi — bu bir boilerplate repo veya henuz kurulmamis derived project olabilir"
+          else
+            echo "has_boundary=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upstream drift analizi
+        if: steps.boundary.outputs.has_boundary == 'true'
+        shell: bash
+        run: |
+          # Upstream remote ekle (yoksa)
+          UPSTREAM_URL=$(grep 'upstream_repo:' .sync-config.yaml 2>/dev/null | sed 's/.*: *"\?\([^"]*\)"\?/\1/' || echo "")
+          if [ -z "$UPSTREAM_URL" ]; then
+            echo "ℹ️ .sync-config.yaml bulunamadi veya upstream_repo tanimli degil. Drift kontrolu atlaniyor."
+            exit 0
+          fi
+
+          git remote add upstream "https://$UPSTREAM_URL" 2>/dev/null || true
+          git fetch upstream --tags --quiet 2>/dev/null || {
+            echo "⚠️ Upstream fetch basarisiz. Remote URL kontrol edin: $UPSTREAM_URL"
+            exit 0
+          }
+
+          # BOUNDARY.md'den mevcut sync hash'ini oku
+          CURRENT_HASH=$(grep -oP '(?<=boilerplate_upstream_hash: )[a-f0-9]+' BOUNDARY.md 2>/dev/null || echo "")
+          if [ -z "$CURRENT_HASH" ]; then
+            echo "::error::BOUNDARY.md'de boilerplate_upstream_hash bulunamadi"
+            exit 1
+          fi
+
+          # En guncel bp-v* tag'ini bul
+          LATEST_TAG=$(git tag -l 'bp-v*' --sort=-v:refname | head -1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "ℹ️ Upstream'de bp-v* tag'i bulunamadi. Drift kontrolu atlaniyor."
+            exit 0
+          fi
+
+          LATEST_HASH=$(git rev-parse "$LATEST_TAG" 2>/dev/null || echo "")
+
+          if [ "$CURRENT_HASH" = "$LATEST_HASH" ]; then
+            echo "✅ Upstream ile guncel. Tag: $LATEST_TAG"
+            exit 0
+          fi
+
+          echo "::warning::Upstream drift tespit edildi!"
+          echo "Mevcut sync hash: $CURRENT_HASH"
+          echo "Guncel upstream: $LATEST_TAG ($LATEST_HASH)"
+          echo ""
+
+          # Degisen dosyalari listele
+          CHANGED=$(git diff --name-only "$CURRENT_HASH" "$LATEST_HASH" 2>/dev/null || echo "")
+          if [ -z "$CHANGED" ]; then
+            echo "Degisen dosya listesi alinamadi."
+            exit 0
+          fi
+
+          echo "=== DEGISEN DOSYALAR ==="
+          echo "$CHANGED"
+          echo ""
+
+          # Zorunlu miras dosyalarindaki degisiklik var mi
+          MANDATORY_DRIFT=false
+          while IFS= read -r file; do
+            case "$file" in
+              docs/adr/ADR-*|docs/ai-guardrails/domain/D-*|\
+              docs/governance/37-*|docs/governance/38-*|\
+              docs/governance/45-*|docs/governance/47-*|\
+              docs/quality/12-*|docs/quality/27-*)
+                MANDATORY_DRIFT=true
+                echo "::error::ZORUNLU miras degisikligi: $file"
+                ;;
+              docs/architecture/*|docs/design-system/*|\
+              docs/foundation/*|docs/governance/*|\
+              docs/quality/*|docs/checklists/*)
+                echo "::warning::Yapisal miras degisikligi: $file"
+                ;;
+            esac
+          done <<< "$CHANGED"
+
+          echo ""
+          if [ "$MANDATORY_DRIFT" = true ]; then
+            echo "🔴 P0: Zorunlu miras degisikligi tespit edildi."
+            echo "2 sprint icinde sync yapilmalidir."
+            echo "Sync komutu: ./tooling/sync/upstream-sync.sh $LATEST_TAG"
+            exit 1
+          fi
+
+          echo "🟡 P1: Yapisal/felsefi miras degisiklikleri mevcut."
+          echo "4 sprint icinde sync yapilmalidir."
+          echo "Sync komutu: ./tooling/sync/upstream-sync.sh $LATEST_TAG"
+
   exception-audit:
     name: Exception Audit
     runs-on: ubuntu-latest

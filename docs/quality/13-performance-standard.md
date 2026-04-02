@@ -1179,7 +1179,24 @@ Mevcut performans standardı (bu belgenin önceki bölümleri) runtime-agnostic 
 ### Ölçüm yöntemi:
 - Flipper / React Native Performance Monitor ile cold start süresi ölçülmeli
 - `AppStartup` custom Sentry span ile production'da izlenmeli
-- Hedef: cold start < 1.5 saniye (orta segment cihaz, temiz açılış)
+
+### Cold Start Hedefleri (Cihaz ve Ağ Segmentasyonu):
+
+Cold start süresi yalnızca cihaza değil, ağ koşullarına ve uygulamanın ilk anlamlı ekranı gösterme süresine bağlıdır. Aşağıdaki hedefler, uygulama açılışından ilk etkileşime hazır ekranın gösterilmesine (TTI — Time to Interactive) kadar geçen süreyi kapsar.
+
+| Senaryo | Hedef | Açıklama |
+|---------|-------|----------|
+| Cold start — orta segment cihaz, WiFi/4G | < 1.5s | Canonical baseline hedef. Hermes bytecode precompilation + TurboModules lazy-loading ile ulaşılabilir |
+| Cold start — orta segment cihaz, 3G | < 2.5s | İlk ekran network-bağımsız olmalı (cached/offline-first). API yanıtı beklenmeden shell gösterilmeli |
+| Cold start — düşük segment cihaz, 4G | < 2.0s | Düşük RAM cihazlarda bellek baskısı cold start'ı yavaşlatır. TurboModules lazy-loading kritik |
+| Warm start — tüm cihazlar | < 0.8s | Uygulama arka plandan öne geldiğinde yeniden render gereksiz olmamalı |
+| Splash → ilk anlamlı ekran | < 2.0s | Splash screen süresi dahil toplam. Font ve kritik asset yüklenmesi bu bütçe içinde kalmalı |
+
+**Kritik kurallar:**
+- İlk ekran (splash sonrası) **network çağrısı beklemeden** gösterilmelidir. API verileri yüklendikçe ekran güncellenebilir (progressive rendering).
+- Splash screen süresi 2 saniyeyi aşarsa, kullanıcı uygulamayı "donmuş" algılar — bu P0 performans ihlalidir.
+- Cold start hedefleri, production build üzerinde (debug build değil) orta segment bir cihazda (ör. Pixel 6a, iPhone 12) ölçülmelidir.
+- Network koşulları `charles proxy` veya benzeri araçlarla simüle edilerek test edilmelidir.
 
 ## 32.3. JS-to-Native İletişim Latansı
 

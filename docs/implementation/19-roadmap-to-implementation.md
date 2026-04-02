@@ -21,7 +21,7 @@
   - `18-adr-template.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-017`
+  - `ADR-001` → `ADR-019`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `20-initial-implementation-checklist.md`
   - `21-repo-structure-spec.md`
@@ -89,7 +89,7 @@ Bu proje artık erken yön arama aşamasında değildir.
 - navigation/state/data/forms yönleri
 
 ## 3.3. Canonical karar katmanı
-- `ADR-001` → `ADR-017`
+- `ADR-001` → `ADR-019`
 
 ## 3.4. Governance tamamlayıcıları
 - `37-dependency-policy.md`
@@ -190,7 +190,7 @@ Bu aşama olmadan repo structure bile spekülatif kalır.
 Artık temel teknoloji ve mimari taşıyıcıların fiilen kilitlenmesi.
 
 ## 8.2. Bu aşamada tamamlanan set
-- `ADR-001` → `ADR-017`
+- `ADR-001` → `ADR-019`
 
 ## 8.3. Sonuç
 Aşağıdaki alanlar artık exploratory değil:

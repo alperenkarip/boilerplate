@@ -7,7 +7,7 @@
 - **Doküman türü:** Specification / implementation blueprint / bootstrap reference
 - **Durum:** Accepted
 - **Tarih:** 2026-03-31
-- **Kapsam:** Bu belge, boilerplate'in repo bootstrap'ı tamamlandıktan sonra ilk çalışan ürünü ayağa kaldırmak için gereken varsayılan ekranları, varsayılan component'leri, her biri için kullanılacak kütüphane/framework seçimlerini, Apple HIG uyum durumlarını ve bootstrap sırasını tanımlar. Bu belge mimari karar üretmez; canonical stack kararlarını (ADR-001 → ADR-017 + 36/37/38 canonical governance belgeleri) somut bileşen ve ekran planına dönüştürür.
+- **Kapsam:** Bu belge, boilerplate'in repo bootstrap'ı tamamlandıktan sonra ilk çalışan ürünü ayağa kaldırmak için gereken varsayılan ekranları, varsayılan component'leri, her biri için kullanılacak kütüphane/framework seçimlerini, Apple HIG uyum durumlarını ve bootstrap sırasını tanımlar. Bu belge mimari karar üretmez; canonical stack kararlarını (ADR-001 → ADR-019 + 36/37/38 canonical governance belgeleri) somut bileşen ve ekran planına dönüştürür.
 - **Bağlı olduğu üst dokümanlar:**
   - `04-design-system-architecture.md`
   - `20-initial-implementation-checklist.md`
@@ -17,7 +17,7 @@
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-017`
+  - `ADR-001` → `ADR-019`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `19-roadmap-to-implementation.md`
   - `20-initial-implementation-checklist.md`
@@ -4964,7 +4964,7 @@ Bu doküman, boilerplate projesinin ilk çalışan ürüne ulaşması için gere
 - 20 anti-pattern, ekip genelinde "neyi yapmayacağız" konusunda net bir çerçeve çizer.
 - 8 onay kriteri, "tamamlandı" tanımını subjektiflikten kurtarır.
 
-**Bu doküman tek başına mimari karar üretmez.** Canonical stack kararları (ADR-001 → ADR-017 + 36/37/38 canonical governance belgeleri) ve governance kuralları (23-component-governance, 25-error-empty-loading, 32-definition-of-done) bu dokümanın üst katman referanslarıdır. Bu doküman, o kararları somut ve uygulanabilir bir plana dönüştürür.
+**Bu doküman tek başına mimari karar üretmez.** Canonical stack kararları (ADR-001 → ADR-019 + 36/37/38 canonical governance belgeleri) ve governance kuralları (23-component-governance, 25-error-empty-loading, 32-definition-of-done) bu dokümanın üst katman referanslarıdır. Bu doküman, o kararları somut ve uygulanabilir bir plana dönüştürür.
 
 **Bir sonraki adım:** Faz 0 — token dosyalarının oluşturulması (`packages/design-tokens`). Token dosyaları hazır olduğunda Faz 1 primitive'lerine geçilir.
 

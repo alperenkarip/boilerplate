@@ -74,6 +74,8 @@ Developer Fast Track sonrası, mobile özelinde:
 | 2 | `34-hig-enforcement-strategy.md` | 15 dk | Apple HIG uyumu |
 | 3 | `24-motion-and-interaction-standard.md` | 15 dk | Animasyon, gesture kuralları |
 | 4 | `12-accessibility-standard.md` | 15 dk | Touch target, VoiceOver/TalkBack |
+| 5 | `ADR-018-new-architecture-migration-and-readiness-strategy.md` | 15 dk | Fabric, JSI, TurboModules, Hermes V1 zorunlulukları |
+| 6 | `ADR-019-local-storage-and-offline-first-strategy.md` | 10 dk | MMKV, SecureStore, Zustand persist, offline-first |
 
 ---
 
@@ -89,6 +91,21 @@ Developer Fast Track sonrası, mobile özelinde:
 
 ---
 
+## Derived Proje Maintainer (1 saat)
+
+Amacınız: Boilerplate güncellemelerini projenize nasıl alacağınızı öğrenmek.
+
+| Sıra | Belge | Süre | Ne Öğrenirsiniz |
+|------|-------|------|-----------------|
+| 1 | `upstream-sync-rehberi.md` | 10 dk | Sync komutları, conflict çözme (hızlı başlangıç) |
+| 2 | `45-boilerplate-project-boundary-contract.md` | 20 dk | Miras modeli, override izinleri |
+| 3 | `49-upstream-sync-strategy.md` | 15 dk | Versiyonlama, manifest, drift detection |
+| 4 | `43-derived-project-creation-guide.md` | 15 dk | İlk kurulum adımları, BOUNDARY.md |
+
+**Günlük iş:** `CHANGELOG.md`'yi takip edin, `upstream-sync` issue'larını çözün.
+
+---
+
 ## AI Agent Rolü
 
 AI agent'ların (Claude Code, Codex CLI vb.) projeye katılımında okuması gereken dokümanlar:
@@ -101,7 +118,7 @@ AI agent'ların (Claude Code, Codex CLI vb.) projeye katılımında okuması ger
 | 🟠 Yüksek | `36-canonical-stack-decision.md` | Teknoloji kararları, kilitli kütüphaneler |
 | 🟠 Yüksek | `37-dependency-policy.md` | Bağımlılık kuralları, yeni paket ekleme süreci |
 | 🟠 Yüksek | `38-version-compatibility-matrix.md` | Versiyon uyumluluğu, SDK eşleşmeleri |
-| 🟡 Orta | İlgili ADR (ADR-001 → ADR-019) | Karar bağlamı, neden bu teknoloji seçildi |
+| 🟡 Orta | İlgili ADR (ADR-001 → ADR-019) | Karar bağlamı, neden bu teknoloji seçildi (ADR-018: New Architecture, ADR-019: Local Storage dahil) |
 | 🟡 Orta | `40-ai-workflow-and-tooling.md` | AI workflow kuralları, token bütçesi |
 | 🟡 Orta | `41-ai-instruction-standards.md` | Talimat dosyası standartları, context bütçesi |
 | 🟢 Düşük | `44-exception-and-exemption-policy.md` | İhlal düzeltilemediğinde exception süreci |
@@ -126,7 +143,7 @@ Doküman aileleri ve tahmini okuma süreleri:
 | Operations (29-34) | 6 | ~1.5 saat | Release, contribution, audit, DoD |
 | Governance (36-48) | 13 | ~2.5 saat | Stack, dependency, branching, AI, guardrail |
 | AI Guardrails | ~26 domain + ~30 aktivite | ~2 saat | Domain ve aktivite kuralları |
-| Onboarding | 2 | ~30 dakika | İlk adımlar, okuma rehberi |
+| Onboarding | 3 | ~40 dakika | İlk adımlar, okuma rehberi, upstream sync rehberi |
 
 ### Hedef Okuma Süreleri
 

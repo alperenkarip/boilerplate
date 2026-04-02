@@ -1,10 +1,13 @@
 # Boilerplate Proje Talimatları
 
+<!-- PROJECT-SPECIFIC-START: Proje Kimligi -->
 ## Proje Kimliği
 - Cross-platform boilerplate: React + React Native (Expo)
 - Documentation-first, spec-first yaklaşım
 - Apple HIG uyumlu, design system merkezli
+<!-- PROJECT-SPECIFIC-END: Proje Kimligi -->
 
+<!-- UPSTREAM-SYNC-START: Canonical Kararlar -->
 ## Canonical Kararlar — BUNLAR AÇILAMAZ
 Bu kararlar ADR-001 → ADR-019 ile birlikte `36-canonical-stack-decision.md`, `37-dependency-policy.md` ve `38-version-compatibility-matrix.md` tarafından kilitlenmiştir.
 Alternatifleri tartışma, sorgulatma veya bypass etme.
@@ -31,29 +34,39 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - OTA Update: EAS Update (ADR-015)
 - In-App Purchase: RevenueCat (react-native-purchases) (ADR-016)
 - Privacy/Compliance: GDPR + KVKK uyum çerçevesi (ADR-017)
+<!-- UPSTREAM-SYNC-END: Canonical Kararlar -->
 
+<!-- UPSTREAM-SYNC-START: SDK Upgrade Kurallari -->
 ## SDK Upgrade Kuralları
 - Expo SDK major upgrade için docs/governance/48-expo-sdk-upgrade-strategy.md zorunlu referanstır
 - expo-doctor temiz geçmeden SDK upgrade merge edilmez
 - runtimeVersion değişikliği OTA uyumluluk etkisiyle birlikte değerlendirilir
+<!-- UPSTREAM-SYNC-END: SDK Upgrade Kurallari -->
 
+<!-- UPSTREAM-SYNC-START: Dependency Kurallari -->
 ## Dependency Kuralları
 - Yeni dependency eklemeden önce docs/governance/37-dependency-policy.md kontrol et
 - Versiyon uyumluluğu için docs/governance/38-version-compatibility-matrix.md kontrol et
 - Canonical stack'teki kütüphanelerin alternatiflerini önerme
+<!-- UPSTREAM-SYNC-END: Dependency Kurallari -->
 
+<!-- PROJECT-SPECIFIC-START: MoAI-ADK Entegrasyonu -->
 ## MoAI-ADK Entegrasyonu
 - Bu projede MoAI-ADK aktiftir: /moai komutları kullanılabilir
 - SPEC-First: karmaşık görevlerde önce /moai plan ile SPEC oluştur
 - TRUST 5 kalite kuralları geçerlidir
 - Basit görevlerde (bug fix, küçük düzeltme) SPEC zorunlu değildir
+<!-- PROJECT-SPECIFIC-END: MoAI-ADK Entegrasyonu -->
 
+<!-- PROJECT-SPECIFIC-START: Stitch Entegrasyonu -->
 ## Stitch Entegrasyonu
 - Stitch MCP aktiftir: tasarım verileri çekilebilir
 - DESIGN.md dosyası varsa, component üretiminde referans al
 - Token çıktılarını docs/design-system/22-design-tokens-spec.md katmanlarıyla eşle
 - DESIGN.md 22-design-tokens-spec.md'nin türevdir; çelişki varsa 22 kazanır
+<!-- PROJECT-SPECIFIC-END: Stitch Entegrasyonu -->
 
+<!-- PROJECT-SPECIFIC-START: Dosya Organizasyonu -->
 ## Dosya Organizasyonu
 - Feature kodu: apps/{app}/src/features/{feature}/
 - Shared package: packages/{package}/src/
@@ -61,7 +74,9 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - Design token: packages/design-tokens/
 - Spec dokümanları: .moai/specs/
 - Import yönü: feature → shared OK, shared → feature YASAK
+<!-- PROJECT-SPECIFIC-END: Dosya Organizasyonu -->
 
+<!-- UPSTREAM-SYNC-START: Referans Dokumanlar -->
 ## Referans Dokümanlar (Detay İçin Oku)
 - Component governance → docs/design-system/23-component-governance-rules.md
 - Platform adaptation → docs/design-system/26-platform-adaptation-rules.md
@@ -82,7 +97,10 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - New Architecture migration → docs/adr/ADR-018-new-architecture-migration-and-readiness-strategy.md
 - Local storage/offline-first → docs/adr/ADR-019-local-storage-and-offline-first-strategy.md
 - SDK upgrade stratejisi → docs/governance/48-expo-sdk-upgrade-strategy.md
+- Upstream sync stratejisi → docs/governance/49-upstream-sync-strategy.md
+<!-- UPSTREAM-SYNC-END: Referans Dokumanlar -->
 
+<!-- UPSTREAM-SYNC-START: Kodlama Standartlari -->
 ## Kodlama Standartları
 - TypeScript strict mode zorunlu — `any` tipi yasak
 - Hardcoded renk, spacing, font değeri yasak — semantic token kullan
@@ -90,7 +108,9 @@ Alternatifleri tartışma, sorgulatma veya bypass etme.
 - `eslint-disable` / `@ts-ignore` kullanımı exception policy gerektirir (44-exception-and-exemption-policy.md)
 - Component isimlendirme: PascalCase, dosya adı ile eşleşmeli
 - Test dosyası: `*.test.ts(x)` kaynak dosyanın yanında
+<!-- UPSTREAM-SYNC-END: Kodlama Standartlari -->
 
+<!-- UPSTREAM-SYNC-START: AI Guardrail Protokolu -->
 ## AI Guardrail Protokolü [ZORUNLU — OTOMATİK TETİKLEME]
 Kod üretimi veya düzenleme yapmadan ÖNCE bu protokolü uygula. Guardrail okumadan kod üretme.
 Skill'ler kullanıcı müdahalesi BEKLEMEDEN otomatik tetiklenir.
@@ -130,16 +150,16 @@ Skill'ler kullanıcı müdahalesi BEKLEMEDEN otomatik tetiklenir.
 | State değişikliği | A-STATE | D-STA, D-PRF |
 | Navigation değişikliği | A-NAV | D-NAV, D-PLT |
 | Styling/theme değişikliği | A-STYLE | D-STY, D-DSY, D-UIX |
-| Auth flow değişikliği | A-AUTH | D-SEC, ADR-010 |
+| Auth flow değişikliği | A-AUTH | D-SEC, ADR-010, D-BIO |
 | Config/CI değişikliği | A-CONFIG | D-SEC, 15, 21, 27 |
 | Third-party entegrasyon | A-3RD | D-3RD, D-SEC, 37 |
 | Migration (veri/şema/kod) | A-MIGRATION | D-DAT, D-SEC |
-| Release hazırlığı | A-RELEASE | 29, 15, 31 |
+| Release hazırlığı | A-RELEASE | 29, 15, 31, D-OBS, D-SEC |
 | File upload/media | A-MEDIA | D-SEC, D-PRF |
 | Real-time/WebSocket/push | A-REALTIME | D-DAT, D-SEC, D-PRF |
 | Analytics/event tracking | A-ANALYTICS | D-OBS, D-SEC |
 | Offline/cache/persistence | A-OFFLINE | D-DAT, D-PLT, D-OFL |
-| AI/ML feature entegrasyonu | A-AI-FEAT | D-AIX, D-UIX, D-SEC, D-PLT |
+| AI/ML feature entegrasyonu | A-AI-FEAT | D-AIX, D-UIX, D-SEC, D-PLT, D-PRI, D-TST, D-OBS |
 | Push notification geliştirme | A-NOTIFICATION | D-NTF, D-SEC, D-PRI |
 | Deep link implementasyonu | A-DEEPLINK | D-DPL, D-NAV, D-SEC |
 | Ödeme/abonelik entegrasyonu | A-PAYMENT | D-PAY, D-SEC, D-PRI |
@@ -159,7 +179,9 @@ Guardrail dokümanları: `docs/ai-guardrails/domain/` ve `docs/ai-guardrails/act
 - `/domain-guide D-XXX` — Domain detayı gerektiğinde → guardrail kuralları
 - `/boundary-check` — Modül yapısı değiştiğinde → boundary contract uyumu
 - `/exception-create` — İhlal düzeltilemediğinde → exception kaydı oluştur
+<!-- UPSTREAM-SYNC-END: AI Guardrail Protokolu -->
 
+<!-- PROJECT-SPECIFIC-START: Sik Kullanilan Komutlar -->
 ## Sık Kullanılan Komutlar
 ```bash
 pnpm install          # Bağımlılık kurulumu
@@ -170,7 +192,9 @@ pnpm lint             # ESLint kontrolü
 pnpm test             # Tüm testleri çalıştır
 pnpm build            # Tüm workspace'i derle
 ```
+<!-- PROJECT-SPECIFIC-END: Sik Kullanilan Komutlar -->
 
+<!-- UPSTREAM-SYNC-START: Belge Otorite Hiyerarsisi -->
 ## Belge Otorite Hiyerarşisi
 Çelişki durumunda otorite sırası:
 1. `00-project-charter.md` (en yüksek)
@@ -180,27 +204,39 @@ pnpm build            # Tüm workspace'i derle
 5. `36-canonical-stack-decision.md`
 6. İlgili operasyonel belge (19-34)
 7. `35-document-map.md` (navigasyon)
+<!-- UPSTREAM-SYNC-END: Belge Otorite Hiyerarsisi -->
 
+<!-- UPSTREAM-SYNC-START: Boilerplate-Project Sinirlari -->
 ## Boilerplate-Project Sınırları
 - Derived project'ler boilerplate kurallarını `45-boilerplate-project-boundary-contract.md`'ye göre miras alır
 - Zorunlu miras kuralları override edilemez
 - Yapısal miras kuralları sıkılaştırılabilir ama gevşetilemez
 - Kural sapmaları `44-exception-and-exemption-policy.md`'ye göre kaydedilmeli
+- Upstream sync stratejisi: `49-upstream-sync-strategy.md`
+<!-- UPSTREAM-SYNC-END: Boilerplate-Project Sinirlari -->
 
+<!-- UPSTREAM-SYNC-START: Branching Stratejisi -->
 ## Branching Stratejisi
 - Trunk-based development, kısa ömürlü feature branch'ler
 - Branch isimlendirme: `feature/`, `fix/`, `hotfix/`, `release/`, `chore/`
+- Stacked PR workflow: Büyük değişikliklerde zincirleme PR'lar kullanılabilir (graphite veya manuel rebase). Her PR bağımsız review ve CI alır.
+- Merge queue: GitHub merge queue aktif. PR'lar direct merge yerine queue üzerinden birleştirilir — concurrent merge çakışmalarını önler.
 - Detay: `42-branching-and-merge-strategy.md`
+<!-- UPSTREAM-SYNC-END: Branching Stratejisi -->
 
+<!-- UPSTREAM-SYNC-START: Guvenlik -->
 ## Güvenlik
 - .env, credentials, secret dosyalarını context'e alma
 - .claudeignore dosyasındaki path'lere uy
 - Gerçek kullanıcı verisi içeren dosyalara dikkat et
 - Auth token'ları log'lara yazılmaz
 - Sentry payload'larında hassas veri bulunmamalı
+<!-- UPSTREAM-SYNC-END: Guvenlik -->
 
+<!-- PROJECT-SPECIFIC-START: Dil Kurallari -->
 ## Dil Kuralları
 - Kod yorumları: Türkçe
 - Commit mesajları: Türkçe
 - Değişken/fonksiyon adları: İngilizce
 - Doküman dili: Türkçe
+<!-- PROJECT-SPECIFIC-END: Dil Kurallari -->

@@ -1135,6 +1135,319 @@ Aşağıdaki yaklaşımlar bu proje kapsamında zayıf kabul edilir:
 
 ---
 
+# 19.5. Offline Conflict Resolution Pattern Kataloğu
+
+Bu bölüm, offline durumda yapılan değişikliklerin ağ bağlantısı geri geldiğinde sunucu verisiyle çakışması (conflict) durumunda uygulanacak çözüm stratejilerini detaylı olarak tanımlar.
+
+Offline conflict, kullanıcı cihaz çevrimdışıyken yerel veri üzerinde değişiklik yaptığında ve aynı zaman diliminde sunucu tarafında da aynı veya ilişkili veri değiştiğinde ortaya çıkar. Bu durum özellikle çok kullanıcılı sistemlerde, uzun süreli offline dönemlerinde ve paylaşılan kaynaklar üzerinde sık yaşanır.
+
+Bu katalog ADR-019 (Local Storage and Offline-First Strategy) ile uyumludur ve D-OFL guardrail'inin "conflict resolution stratejisi var mı?" kontrol maddesini karşılar.
+
+> **İlgili referanslar:**
+> - ADR-019 — Local Storage and Offline-First Strategy (TanStack Query offline mutation queue, conflict resolution genel çerçeve)
+> - D-OFL — Offline & Local Storage Domain Guardrail (kontrol listesi: "Sync stratejisi ve conflict resolution var mı?")
+> - Bölüm 19.4 — Kısmi Senkronizasyon Hatası (partial sync failure kuralları)
+> - Bölüm 28.5 — Offline Mutation Queue Pattern (kuyruk yapısı ve persist kuralları)
+
+---
+
+## 19.5.1. Genel İlkeler
+
+Conflict resolution stratejisi seçiminde şu ilkeler geçerlidir:
+
+1. **Veri kritikliğine göre strateji seç.** Tüm veri türleri için tek bir strateji (örneğin yalnızca LWW) uygulamak zayıf yaklaşımdır. Düşük riskli veriler basit stratejiyle, yüksek riskli veriler güvenli stratejiyle çözülmelidir.
+2. **Server timestamp otoritedir.** Cihaz saati güvenilmez olabilir (kullanıcı tarafından değiştirilebilir, zaman dilimi farkları, NTP senkronizasyon sorunları). Timestamp karşılaştırması yapılacaksa sunucu timestamp'i referans alınmalıdır.
+3. **Veri kaybını önle.** Çözülemez conflict durumunda client versiyonu yedeklenmelidir. Kullanıcının offline'da ürettiği veri hiçbir koşulda sessizce silinmemelidir.
+4. **Conflict çözüm sonucu loglanmalıdır.** Hangi strateji uygulandı, hangi veri kazandı, hangi veri yedeklendi bilgisi Sentry breadcrumb veya analytics event olarak kaydedilmelidir.
+5. **Sunucu tarafında da doğrulama gereklidir.** Conflict resolution yalnızca client-side yapılmamalıdır; sunucu kendi versiyonlama ve doğrulama mekanizmasına sahip olmalıdır.
+
+---
+
+## 19.5.2. Pattern 1: Last-Write-Wins (LWW)
+
+### Tanım
+
+En basit conflict resolution stratejisidir. İki sürüm arasında en son güncellenen (daha yeni timestamp'e sahip olan) sürüm kazanır; diğer sürüm atılır.
+
+### Ne Zaman Kullanılır
+
+- Düşük çakışma riski olan veriler
+- Tek kullanıcıya ait bireysel tercihler ve ayarlar
+- Basit toggle/boolean değerler
+- Çakışma durumunda veri kaybının kabul edilebilir olduğu senaryolar
+
+### Tipik Kullanım Alanları
+
+| Veri Türü | Örnek |
+|-----------|-------|
+| Kullanıcı tercihleri | Tema (açık/koyu), dil seçimi, bildirim açık/kapalı |
+| Profil bilgileri | Görünen ad, avatar, bio |
+| Uygulama ayarları | Sayfa başına öğe sayısı, sıralama tercihi |
+| Basit durum değişiklikleri | Favori toggle, okundu/okunmadı işareti |
+
+### Uygulama Kuralları
+
+1. Her veri kaydında `updatedAt` timestamp alanı bulunmalıdır (ISO 8601 formatında, UTC).
+2. Sync sırasında client `updatedAt` ile server `updatedAt` karşılaştırılır.
+3. **Server timestamp otoritedir.** Client saati güvenilmez kabul edilir; karşılaştırma sunucunun sağladığı referans zamana göre yapılır.
+4. Daha yeni timestamp'e sahip olan sürüm kazanır.
+5. Kaybeden sürüm loglanır (hangi değer üzerine yazıldı).
+
+### Akış
+
+```
+Client (offline)                 Server
+──────────────                   ──────
+1. Kullanıcı tema=koyu ayarlar
+   updatedAt=T1
+
+                                 2. Başka cihaz tema=açık ayarlar
+                                    updatedAt=T2
+
+3. Online olur, sync başlar
+4. Client gönderir: tema=koyu, updatedAt=T1
+5. Server karşılaştırır: T2 > T1
+6. Server-wins → tema=açık kalır
+7. Client güncellenir: tema=açık
+```
+
+### Riskler ve Sınırlamalar
+
+- Kullanıcı offline'da yaptığı değişikliğin kaybolduğunu fark etmeyebilir.
+- Birden fazla alanı olan kayıtlarda tek bir alan değişmiş olsa bile tüm kayıt üzerine yazılır.
+- Bu strateji yalnızca düşük değerli ve kolayca yeniden üretilebilir veriler için uygundur. Kritik iş verilerinde (sipariş, ödeme, belge) kullanılmamalıdır.
+
+---
+
+## 19.5.3. Pattern 2: Field-Level Merge
+
+### Tanım
+
+Kayıt düzeyinde değil, alan (field) düzeyinde karşılaştırma yapılır. Farklı alanlar farklı taraflarca güncellenmiş ise her iki güncelleme otomatik olarak birleştirilir. Aynı alan her iki tarafta da değişmiş ise o alan conflict olarak işaretlenir ve ek çözüm stratejisi uygulanır.
+
+### Ne Zaman Kullanılır
+
+- Birden fazla alanı olan kayıtların farklı alanlarının bağımsız olarak güncellenme ihtimali yüksek olduğunda
+- Orta karmaşıklıktaki veriler
+- Tam kayıt üzerine yazmanın kabul edilemez veri kaybı yaratacağı durumlarda
+
+### Tipik Kullanım Alanları
+
+| Veri Türü | Örnek |
+|-----------|-------|
+| Form verileri | Kullanıcı profili (ad, email, telefon ayrı alanlar) |
+| Belge düzenleme | Başlık, açıklama, durum alanları bağımsız |
+| Proje/görev detayları | Ad, açıklama, atanan kişi, etiketler |
+| Adres bilgileri | Sokak, şehir, posta kodu ayrı alanlar |
+
+### Uygulama Kuralları
+
+1. Her alan için ayrı `fieldUpdatedAt` veya kayıt düzeyinde `changedFields` listesi tutulmalıdır.
+2. Sync sırasında client ve server versiyonu alan bazında karşılaştırılır.
+3. **Farklı alanlar değişmiş ise:** Otomatik birleştirme yapılır. Client'ın değiştirdiği alanlar ve server'ın değiştirdiği alanlar birlikte uygulanır.
+4. **Aynı alan değişmiş ise (true conflict):** Bu alan için ikincil strateji uygulanır: LWW, server-wins veya kullanıcıya sorma.
+5. Merge sonucu kullanıcıya bildirilmelidir: "Değişiklikleriniz sunucu güncellemeleriyle birleştirildi."
+
+### Akış
+
+```
+Client (offline)                 Server
+──────────────                   ──────
+Kayıt: { ad: "Ali", email: "a@x.com", tel: "555" }
+
+1. Kullanıcı ad="Veli" yapar     2. Admin email="b@x.com" yapar
+
+3. Online olur, sync başlar
+4. Client gönderir: changedFields=[ad]
+5. Server karşılaştırır:
+   - ad: client değiştirmiş, server değiştirmemiş → client kazanır
+   - email: server değiştirmiş, client değiştirmemiş → server kazanır
+   - tel: hiçbiri değiştirmemiş → mevcut kalır
+6. Sonuç: { ad: "Veli", email: "b@x.com", tel: "555" }
+```
+
+### Aynı Alan Conflict Durumu
+
+Aynı alan her iki tarafta da değişmiş ise (true conflict):
+
+1. **Varsayılan davranış:** Server-wins uygulanır, client değeri yedeklenir.
+2. **Opsiyonel davranış:** Kullanıcıya seçim ekranı sunulur (bkz. 19.5.6 Conflict UI Bileşeni).
+3. True conflict olan alanlar loglanır ve analytics event'i gönderilir.
+
+### Riskler ve Sınırlamalar
+
+- Uygulama karmaşıklığı LWW'den önemli ölçüde yüksektir.
+- Backend'in alan bazında versiyonlama veya `changedFields` desteği sunması gerekir.
+- İç içe geçmiş (nested) veri yapılarında merge derinliği sınırlandırılmalıdır (önerilen: maksimum 2 seviye).
+- İlişkili alanların (ör. adres satırı + posta kodu) birlikte değerlendirilmesi gerekebilir.
+
+---
+
+## 19.5.4. Pattern 3: Server-Wins
+
+### Tanım
+
+Sunucu sürümü her zaman kazanır. Offline'da yapılan değişiklik sunucu verisiyle çakıştığında sunucu otoritedir; client değişikliği reddedilir ve kullanıcıya bildirim yapılır.
+
+### Ne Zaman Kullanılır
+
+- Sunucu otoriteli (server-authoritative) veriler
+- Doğruluğun kullanıcı kolaylığından daha kritik olduğu senaryolar
+- Birden fazla kaynaktan güncellenen paylaşılan veriler
+- Mevzuat veya iş kuralları gereği sunucu sürümünün geçerli sayılması gereken durumlar
+
+### Tipik Kullanım Alanları
+
+| Veri Türü | Örnek |
+|-----------|-------|
+| Finansal veriler | Fiyat, stok miktarı, hesap bakiyesi |
+| Paylaşılan kaynaklar | Randevu slotları, rezervasyon durumu, envanter |
+| Yetkilendirme verileri | Rol, izin, erişim seviyesi |
+| Sistem konfigürasyonu | Özellik bayrakları (feature flags), kurallar |
+| Sıralı iş akışları | İş emri durumu, onay adımları |
+
+### Uygulama Kuralları
+
+1. Sync sırasında sunucu, client mutation'ını kabul etmeden önce kendi versiyonuyla karşılaştırır.
+2. Conflict tespit edilirse sunucu HTTP 409 (Conflict) döner; response body'de güncel sunucu versiyonu yer alır.
+3. Client bu yanıtı alır, local cache'i sunucu versiyonuyla günceller.
+4. **Kullanıcıya bildirim zorunludur:** "İşleminiz gerçekleştirilemedi, bu veri güncellenmiş. Güncel veri gösteriliyor." Sessiz reddetme kabul edilemez.
+5. Reddedilen client mutation yedeklenir (local draft olarak saklanır). Kullanıcı isterse güncel veriyi görerek değişikliğini tekrar uygulayabilir.
+
+### Akış
+
+```
+Client (offline)                 Server
+──────────────                   ──────
+1. Kullanıcı fiyat=100 yapar     2. Admin fiyat=120 yapar
+
+3. Online olur, sync başlar
+4. Client gönderir: fiyat=100, version=V1
+5. Server karşılaştırır: server version=V2 > V1
+6. Server HTTP 409 döner: { currentPrice: 120, version: V2 }
+7. Client cache günceller: fiyat=120
+8. Kullanıcıya bildirim: "Fiyat değişmiş. Güncel fiyat: 120"
+9. Reddedilen mutation yedeklenir
+```
+
+### Riskler ve Sınırlamalar
+
+- Kullanıcı offline'da yaptığı değişikliğin reddedilmesi hayal kırıklığı yaratabilir. UX tasarımında bu durumun dikkatli ele alınması gerekir.
+- Sık çakışma yaşanan alanlarda kullanıcı deneyimi düşer; bu durumda field-level merge düşünülmelidir.
+- Backend'in versiyonlama ve 409 response desteği sunması gerekir.
+
+---
+
+## 19.5.5. Pattern 4: Custom Resolution (Özel Çözüm)
+
+### Tanım
+
+Uygulama mantığına (domain logic) göre özel conflict çözüm kuralları uygulanır. Yukarıdaki genel pattern'lerin hiçbiri tek başına yeterli olmadığında veya iş kuralları özel davranış gerektirdiğinde bu strateji devreye girer.
+
+### Ne Zaman Kullanılır
+
+- Karmaşık iş kuralları gerektiren durumlar
+- Domain-specific merge mantığı olan senaryolar
+- Birden fazla pattern'in kombinasyonunun gerektiği durumlar
+- Hesaplama, toplama veya biriktirme (accumulation) mantığı olan veriler
+
+### Tipik Kullanım Alanları
+
+| Veri Türü | Örnek | Özel Kural |
+|-----------|-------|-----------|
+| Alışveriş sepeti | Miktar değişikliği | İki taraftaki miktar farkları toplanır (additive merge) |
+| Etiket/tag sistemi | Etiket ekleme/çıkarma | Set birleştirme: eklenenler eklenir, çıkarılanlar çıkarılır |
+| Collaborative düzenleme | Metin düzenleme | CRDT veya OT (Operational Transform) uygulanır |
+| Sayaç bazlı veriler | Beğeni, görüntülenme | Artış/azalış delta olarak uygulanır (mutlak değer yerine) |
+
+### Uygulama Kuralları
+
+1. Her custom resolution kuralı kod içinde açık, izole bir fonksiyon olarak tanımlanmalıdır. Resolver fonksiyonu `(clientVersion, serverVersion, baseVersion) => resolvedVersion` imzasına sahip olmalıdır.
+2. Her resolver fonksiyonu unit test ile kapsanmalıdır. Edge case'ler (her iki taraf aynı değişikliği yapmış, bir taraf silmiş diğeri güncellemiş vb.) test edilmelidir.
+3. Custom resolution mantığı component veya hook içine gömülmemelidir; ayrı bir `resolvers/` dizininde veya ilgili feature modülünün `utils/` dizininde yer almalıdır.
+4. Çözüm sonucu loglanmalıdır: hangi resolver çalıştı, giriş verileri ne, çıkış verisi ne.
+5. Custom resolver başarısız olursa (exception fırlatırsa) fallback olarak server-wins uygulanır; hata Sentry'ye raporlanır.
+
+### Örnek: Sepet Miktarı Additive Merge
+
+```
+Client (offline)                 Server
+──────────────                   ──────
+Base state: miktar=5
+
+1. Kullanıcı +2 ekler             2. Başka kullanıcı +3 ekler
+   (client miktar=7)                 (server miktar=8)
+
+3. Online olur, sync başlar
+4. Custom resolver:
+   clientDelta = 7 - 5 = +2
+   serverDelta = 8 - 5 = +3
+   resolvedMiktar = 5 + 2 + 3 = 10
+5. Sonuç: miktar=10
+```
+
+### Riskler ve Sınırlamalar
+
+- En yüksek uygulama karmaşıklığına sahip stratejidir.
+- Her custom resolver kendi bakım maliyetini taşır.
+- Base version (ortak ata) bilgisinin saklanması gerekir — bu ek storage maliyeti demektir.
+- Yanlış resolver mantığı veri bozulmasına yol açabilir; test kapsamı kritiktir.
+
+---
+
+## 19.5.6. Conflict UI Bileşeni
+
+Field-level merge veya server-wins pattern'inde kullanıcıya seçim sunulması gereken durumlarda conflict resolution UI bileşeni kullanılır.
+
+### Zorunlu Davranışlar
+
+1. Kullanıcıya "Cihaz versiyonu" ve "Sunucu versiyonu" yan yana veya alt alta gösterilmelidir.
+2. Farklılıklar vurgulanmalıdır (diff highlight): değişen alanlar veya değerler görsel olarak işaretlenir.
+3. Şu seçenekler sunulmalıdır:
+   - "Cihaz versiyonunu kullan" — client değeri uygulanır
+   - "Sunucu versiyonunu kullan" — server değeri uygulanır
+   - "Birleştir" (uygulanabilir durumlarda) — field-level merge yapılır
+4. Kullanıcı seçim yapmadan conflict çözülmemelidir (kritik veriler için).
+5. Conflict ekranı blokleyici (modal) veya non-blokleyici (banner + detay sayfası) olabilir; veri kritikliğine göre karar verilir.
+
+### Yapılmaması Gerekenler
+
+- Conflict'i sessizce çözüp kullanıcıyı bilgilendirmeden geçmek.
+- Conflict UI'da yalnızca "Tamam" butonu göstermek (seçim hakkı vermemek).
+- Conflict bildirimini kullanıcı fark edemeyeceği bir köşeye yerleştirmek.
+
+---
+
+## 19.5.7. Strateji Seçim Matrisi
+
+Aşağıdaki matris, veri türüne göre hangi conflict resolution stratejisinin uygulanacağını özetler. Derived project'ler bu matrisi kendi domain ihtiyaçlarına göre genişletir.
+
+| Veri Türü | Strateji | Gerekçe |
+|-----------|----------|---------|
+| Kullanıcı tercihleri (tema, dil) | LWW | Düşük risk, kolayca yeniden ayarlanabilir |
+| Profil bilgileri (ad, bio) | LWW veya Field-Level Merge | Alan sayısına ve bağımsızlığına göre karar verilir |
+| Form verileri (çok alanlı) | Field-Level Merge | Farklı alanlar bağımsız güncellenebilir |
+| Paylaşılan belgeler | Field-Level Merge + Conflict UI | True conflict durumunda kullanıcıya sorulur |
+| Fiyat, stok, bakiye | Server-Wins | Sunucu otoriteli, finansal doğruluk kritik |
+| Randevu/rezervasyon | Server-Wins | Çift rezervasyon riski, sunucu otoriteli |
+| Rol ve izin verileri | Server-Wins | Güvenlik kararı, sunucu otoriteli |
+| Sepet miktarı, sayaç | Custom Resolution (additive) | Delta hesaplama gerektirir |
+| Etiket/tag listeleri | Custom Resolution (set merge) | Set birleştirme mantığı gerektirir |
+| Collaborative metin | Custom Resolution (CRDT/OT) | Karakter düzeyinde merge gerektirir |
+
+## 19.5.8. Zayıf Yaklaşımlar
+
+Aşağıdaki yaklaşımlar bu proje kapsamında zayıf kabul edilir:
+
+- Tüm veri türleri için tek strateji (yalnızca LWW) uygulamak: Kritik verilerde veri kaybına yol açar.
+- Conflict ihtimalini hiç düşünmeden kör replay yapmak: Sunucu verisi üzerine yazılır, diğer kullanıcıların değişiklikleri kaybolur.
+- Conflict çözümünü yalnızca client-side yapmak: Sunucu doğrulaması olmadan client kararlarına güvenmek güvenlik açığı oluşturur.
+- Client versiyonunu sessizce silmek: Kullanıcının offline'da ürettiği veri hiçbir koşulda sessizce silinmemelidir; en azından yedeklenmelidir.
+- Conflict bildirimi göstermemek: Kullanıcı verisinin değiştiğini bilmeden devam etmesi güven kırıcıdır.
+- Base version (ortak ata) saklamayı ihmal etmek: Field-level merge ve custom resolution stratejileri base version olmadan doğru çalışamaz.
+
+---
+
 # 20. Offline Toleransı
 
 ## 20.1. Offline-first ile offline-tolerant ayrımı

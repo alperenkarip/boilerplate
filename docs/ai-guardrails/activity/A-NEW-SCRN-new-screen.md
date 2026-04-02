@@ -2,7 +2,7 @@
 id: A-NEW-SCRN
 type: activity
 name: Yeni Ekran / Sayfa Oluşturma
-tetiklenen-domain-guardrails: [D-UIX, D-NAV, D-ERR, D-A11, D-PLT]
+tetiklenen-domain-guardrails: [D-UIX, D-NAV, D-ERR, D-A11, D-PLT, D-I18]
 araç-zorunlulukları:
   spec: zorunlu
   stitch: zorunlu
@@ -23,6 +23,7 @@ son-güncelleme: 2026-04-02
 - **D-ERR** → Loading, error, empty, success durumları ZORUNLU
 - **D-A11** → Semantic markup, focus management, contrast, screen reader
 - **D-PLT** → Platform parity, responsive layout, safe area
+- **D-I18** → Tüm user-facing string'ler i18n key ile, namespace tanımı zorunlu
 
 ## Aktiviteye Özel Kurallar
 1. Her ekranda 4 durum handle edilmeli: loading, success, error, empty

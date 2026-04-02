@@ -1,5 +1,6 @@
 # Boilerplate Codex Talimatları
 
+<!-- UPSTREAM-SYNC-START: Review Guidelines -->
 ## Review Guidelines
 - Canonical stack dışı dependency kullanımını P0 olarak işaretle
 - `eslint-disable`, `@ts-ignore`, `any` type kullanımını flagle
@@ -11,7 +12,9 @@
 - packages/ → apps/ yönünde import varsa P0 olarak işaretle
 - `--no-verify` ile commit, `it.skip`/`describe.skip` ile test bypass varsa flagle
 - Secret pattern'leri tara (.env değerleri, API key'ler, credential'lar kodda olmamalı)
+<!-- UPSTREAM-SYNC-END: Review Guidelines -->
 
+<!-- UPSTREAM-SYNC-START: Architecture Rules -->
 ## Architecture Rules
 - apps/ → packages/ yönünde bağımlılık OK
 - packages/ → apps/ yönünde bağımlılık YASAK
@@ -19,13 +22,17 @@
 - Feature kodu apps/{app}/src/features/{feature}/ altında olmalı
 - Shared kod packages/{package}/src/ altında olmalı
 - "shared/common/utils/lib" belirsiz klasörler oluşturulmamalı
+<!-- UPSTREAM-SYNC-END: Architecture Rules -->
 
+<!-- PROJECT-SPECIFIC-START: Testing Requirements -->
 ## Testing Requirements
 - Yeni utility/hook: birim testi zorunlu
 - Yeni component: render testi zorunlu
 - Yeni API entegrasyonu: integration testi zorunlu
 - Test dosyası kaynak dosya yanında: *.test.ts(x)
+<!-- PROJECT-SPECIFIC-END: Testing Requirements -->
 
+<!-- UPSTREAM-SYNC-START: Canonical Stack -->
 ## Canonical Stack (DO NOT suggest alternatives)
 - Web: React + Vite + React Router 7.x
 - Mobile: React Native + Expo SDK 55.x
@@ -40,16 +47,17 @@
 - Observability: Sentry + vendor-agnostic analytics abstraction
 - Local Storage: MMKV canonical default + Expo SecureStore (hassas veri) + Zustand persist (ADR-019)
 - New Architecture: Fabric + JSI + TurboModules + Hermes V1 zorunlu (ADR-018)
-- Watchlist: React Compiler controlled opt-in + Biome 2.x pilot/watchlist + @expo/ui 1.0 stable watch
-- Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) + Biometric (expo-local-authentication)
+- Watchlist: React Compiler controlled opt-in, Biome 2.x pilot/watchlist, @expo/ui 1.0 stable watch
+- Auth: Backend-managed HttpOnly cookies (web) + Expo SecureStore (mobile) + Biometric (expo-local-authentication) (ADR-010)
 - i18n: i18next 26.x
 - Navigation: React Router 7.x (web) + React Navigation 7.x (mobile)
-- Push Notification: expo-notifications + FCM/APNs
-- Deep Linking: expo-linking + Universal Links + App Links
-- OTA Update: EAS Update
-- In-App Purchase: RevenueCat (react-native-purchases)
+- Push Notification: expo-notifications + FCM/APNs (ADR-013)
+- Deep Linking: expo-linking + Universal Links + App Links (ADR-014)
+- OTA Update: EAS Update (ADR-015)
+- In-App Purchase: RevenueCat (react-native-purchases) (ADR-016)
 - Privacy/Compliance: GDPR + KVKK uyum çerçevesi (ADR-017)
 - SDK Upgrade: 48-expo-sdk-upgrade-strategy.md stratejisi zorunlu
+<!-- UPSTREAM-SYNC-END: Canonical Stack -->
 
 ## Design Token Rules
 - Hardcoded renk değerleri yerine semantic token kullan
@@ -57,22 +65,33 @@
 - Hardcoded tipografi yerine typography token kullan
 - Token isimlendirme: docs/design-system/22-design-tokens-spec.md kurallarına uy
 
+<!-- UPSTREAM-SYNC-START: Security Rules -->
 ## Security Rules
 - `.env` değerinin koda hardcode edilmesi — REDDET
 - `console.log` ile hassas veri yazdırılması (token, email, password) — REDDET
 - API key, token, şifre gibi değerlerin string literal olması — REDDET
 - Auth token'ların log/analytics/debug çıktısına sızması — REDDET
 - `--no-verify` ile commit bypass — REDDET
+<!-- UPSTREAM-SYNC-END: Security Rules -->
 
+<!-- UPSTREAM-SYNC-START: Exception Policy -->
 ## Exception Policy
 - Kural ihlali gerekiyorsa `44-exception-and-exemption-policy.md`'ye göre kayıt oluştur
 - Exception olmadan `eslint-disable` kullanımı kabul edilmez
 - `tooling/governance/exception-template.yaml` şablonunu kullan
+- Severity-based approval matrisi:
+  - **Minor** (tek dosya, lokal etki): PR reviewer onayı yeterli
+  - **Major** (birden fazla dosya, mimari etki): Tech lead onayı gerekli
+  - **Blocker** (canonical stack, güvenlik, a11y ihlali): Architect onayı + ADR revision gerekebilir
+<!-- UPSTREAM-SYNC-END: Exception Policy -->
 
+<!-- UPSTREAM-SYNC-START: Boundary Contract -->
 ## Boundary Contract
 - Boilerplate kuralları `45-boilerplate-project-boundary-contract.md`'ye göre miras alınır
 - Zorunlu miras kuralları (canonical stack, dependency policy, a11y baseline) override edilemez
 - Yapısal miras kuralları sıkılaştırılabilir, gevşetilemez
+- Upstream sync stratejisi: `49-upstream-sync-strategy.md`
+<!-- UPSTREAM-SYNC-END: Boundary Contract -->
 
 ## Branching Rules
 - Trunk-based development: `42-branching-and-merge-strategy.md`
@@ -80,6 +99,7 @@
 - Feature branch max 2-3 gün ömürlü
 - Squash merge varsayılan
 
+<!-- UPSTREAM-SYNC-START: Guardrail Compliance Review -->
 ## Guardrail Compliance Review
 AI araçlarının ürettiği kodun `docs/ai-guardrails/` altındaki guardrail kurallarına uyumunu denetle.
 Guardrail çerçevesi: `docs/governance/47-ai-guardrail-governance.md`
@@ -125,3 +145,4 @@ Her bulgu şu yapıda raporlanmalı:
 4. **Dosya ve Satır**: Etkilenen konum
 5. **İhlal Açıklaması**: Ne yanlış
 6. **Düzeltme Önerisi**: Ne yapılmalı
+<!-- UPSTREAM-SYNC-END: Guardrail Compliance Review -->

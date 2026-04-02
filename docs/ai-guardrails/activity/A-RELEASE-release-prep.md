@@ -2,7 +2,7 @@
 id: A-RELEASE
 type: activity
 name: Release Hazırlığı
-tetiklenen-domain-guardrails: []
+tetiklenen-domain-guardrails: [D-OBS, D-SEC]
 araç-zorunlulukları:
   spec: —
   stitch: —

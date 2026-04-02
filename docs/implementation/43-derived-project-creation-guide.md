@@ -83,11 +83,26 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 2. Temiz baslangic isteniyorsa git gecmisini temizle (`rm -rf .git && git init`)
 3. Root `package.json` icindeki proje adini (`@<org>/<yeni-proje-adi>`) ve description'i guncelle
 4. Remote origin'i yeni repo'ya bagla (`git remote add origin <url>`)
+5. **Boilerplate'i upstream remote olarak ekle** (upstream sync icin zorunlu):
+   ```bash
+   git remote add upstream <boilerplate-repo-url>
+   git fetch upstream --tags
+   ```
+6. **`.sync-config.yaml` dosyasini olustur** (upstream sync degiskenleri):
+   ```yaml
+   upstream_repo: "github.com/<org>/boilerplate"
+   project_name: "<yeni-proje-adi>"
+   org_scope: "@<org>"
+   ```
+7. **`tooling/sync/derived-projects.txt`'e yeni projeyi ekle** (boilerplate reposunda):
+   Boilerplate maintainer'a bildir veya PR ac.
 
 **Dogrulama:**
 - [ ] Repo fiziksel olarak mevcut ve proje adi root `package.json`'da dogru
 - [ ] Git gecmisi temiz veya fork olarak baglantili
 - [ ] Remote origin dogru repo'ya isaret ediyor
+- [ ] Upstream remote tanimli: `git remote get-url upstream` basarili
+- [ ] `.sync-config.yaml` proje-spesifik degerlerle doldurulmus
 
 ---
 
@@ -160,16 +175,23 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 1. `45-boilerplate-project-boundary-contract.md` belgesini oku. Ozellikle Bolum 3 (miras tipleri), Bolum 4 (override izin tablosu) ve Bolum 10 (anti-pattern'ler) onemli.
 
-2. Zorunlu miras kurallarini kabul et: canonical technical decision layer (ADR-001 → ADR-017), dependency policy (`37-dependency-policy.md`), compatibility matrix (`38-version-compatibility-matrix.md`), WCAG AA esigi, security baseline (`27-security-and-secrets-baseline.md`).
+2. Zorunlu miras kurallarini kabul et: canonical technical decision layer (ADR-001 → ADR-019), dependency policy (`37-dependency-policy.md`), compatibility matrix (`38-version-compatibility-matrix.md`), WCAG AA esigi, security baseline (`27-security-and-secrets-baseline.md`).
 
 3. Override gereksinimlerin varsa Bolum 7'deki sureci baslat ve `44-exception-and-exemption-policy.md` ile uyumlu sekilde belgele.
 
 4. Root dizinde `BOUNDARY.md` dosyasini olustur. Bu dosya boilerplate surumunu, aktif override'lari, proje-ozel eklemeleri ve son audit tarihini icerir. `BOUNDARY.md` bu rehberin hedef cikti dosyasidir; bu arşivde hazır gelmesi beklenmez. Ornek format icin `45-boilerplate-project-boundary-contract.md` Bolum 9.1'e bak.
 
+5. **Upstream sync altyapisini dogrula** (bkz. `49-upstream-sync-strategy.md`):
+   - Adim 1'de eklenen `upstream` remote'un tanimli oldugunu dogrula
+   - En guncel `bp-v*` tag'ini `BOUNDARY.md`'ye yaz (`boilerplate_upstream_hash`, `upstream_version`)
+   - `tooling/sync/upstream-sync.sh` ve `tooling/sync/partial-merge.sh` scriptlerinin calisir durumda oldugunu dogrula
+   - CLAUDE.md ve AGENTS.md'deki sentinel yorumlarinin (`UPSTREAM-SYNC-START/END`, `PROJECT-SPECIFIC-START/END`) mevcut oldugunu dogrula
+
 **Dogrulama:**
 - [ ] Boundary contract okundu ve zorunlu miras kurallari kabul edildi
 - [ ] Override gereksinimleri belirlendi ve belgelendi (varsa)
 - [ ] `BOUNDARY.md` root dizinde olusturuldu
+- [ ] Upstream sync altyapisi hazir: remote tanimli, scriptler calisir, sentinel yorumlari mevcut
 
 ---
 
@@ -291,7 +313,7 @@ Proje ADR'leri `18-adr-template.md` sablonunu kullanir. Ek zorunlu alanlar: boil
 
 ## 5.4. Celiski Yasagi
 
-Proje ADR'si hicbir durumda boilerplate ADR'sini gecersiz kilamaz. Canonical stack kararlari (ADR-001 → ADR-017) degistirilemez. Override sureci bile kurallari kaldirmaz, sadece belirli kosullarda farkli uygulanmasini mumkun kilar.
+Proje ADR'si hicbir durumda boilerplate ADR'sini gecersiz kilamaz. Canonical stack kararlari (ADR-001 → ADR-019) degistirilemez. Override sureci bile kurallari kaldirmaz, sadece belirli kosullarda farkli uygulanmasini mumkun kilar.
 
 ---
 

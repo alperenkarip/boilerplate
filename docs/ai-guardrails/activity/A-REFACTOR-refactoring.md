@@ -2,7 +2,7 @@
 id: A-REFACTOR
 type: activity
 name: Refactoring
-tetiklenen-domain-guardrails: [D-TST]
+tetiklenen-domain-guardrails: [D-TST] # Universal kurallar tüm aktiviteler için zaten geçerlidir — burada ayrıca belirtilmez
 araç-zorunlulukları:
   spec: —
   stitch: —

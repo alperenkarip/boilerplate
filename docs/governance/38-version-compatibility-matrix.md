@@ -13,7 +13,7 @@
   - `29-release-and-versioning-rules.md`
   - `36-canonical-stack-decision.md`
   - `37-dependency-policy.md`
-  - `ADR-001` → `ADR-017`
+  - `ADR-001` → `ADR-019`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `19-roadmap-to-implementation.md`
   - `20-initial-implementation-checklist.md`

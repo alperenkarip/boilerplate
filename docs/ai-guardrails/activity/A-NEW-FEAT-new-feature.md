@@ -21,6 +21,7 @@ son-güncelleme: 2026-04-02
 Feature türüne göre değişir. Minimum:
 - **Universal kurallar** → her zaman
 - **D-TST** → test zorunlulukları
+- **D-I18** → i18n namespace ve çeviri zorunlulukları
 - Feature'a özgü domain'ler (UI varsa D-UIX/D-DSY, data varsa D-DAT, form varsa D-FRM, vb.)
 
 ## Aktiviteye Özel Kurallar

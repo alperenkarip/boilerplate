@@ -1,0 +1,15 @@
+# Derived Projects — Upstream Sync Bildirim Listesi
+# Referans: docs/governance/49-upstream-sync-strategy.md Bolum 8
+#
+# Bu dosya, boilerplate release'inde otomatik bildirim gonderilecek
+# derived projelerin listesini icerir.
+#
+# Format: <org>/<repo> (her satira bir repo)
+# Bos satirlar ve # ile baslayan satirlar yorum olarak atlanir.
+#
+# Yeni derived proje olusturuldugunda bu listeye eklenir.
+# Boilerplate maintainer tarafindan guncellenir.
+
+# Ornek:
+# myorg/project-alpha
+# myorg/project-beta

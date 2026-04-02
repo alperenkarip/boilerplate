@@ -1118,6 +1118,8 @@ Bir değişiklik için test planı belirlerken şu sorular sorulmalıdır:
 ## 35.6. ADR-008 test stack kararları
 `ADR-008-testing-stack.md`: Bu belgedeki test katmanları ve stratejik kararlar, ADR-008'de verilen test araç seçimleriyle (Vitest web-side, Jest mobile-side, Testing Library, Playwright E2E) uygulanacaktır. ADR-008, bu belgenin canonical test araç otoritesidir.
 
+> **Canonical test araç versiyonları:** Vitest 4.x (web unit/integration), Jest 30.x (mobile unit/integration), Playwright 1.58.x (E2E), Testing Library (component). Detaylı versiyon tablosu ve uyumluluk bilgisi ADR-008'de tanımlanmıştır.
+
 ---
 
 # 36. Onay Kriterleri

@@ -1181,3 +1181,96 @@ export default Sentry.wrap(App);
 - **Kural:** Session replay'de hassas UI elemanları (şifre input, kredi kartı) otomatik maskelenir
 - **Saklama süresi:** Maksimum 30 gün (KVKK uyumu)
 - **Sampling:** Production'da %1-5 session sample rate
+
+---
+
+# 34. Migration Path — Mevcut Uygulamalardan Canonical Observability'ye Geçiş
+
+Bu bölüm, eski veya ad-hoc observability uygulamalarından bu belgenin tanımladığı canonical yapıya geçişin nasıl yapılacağını tanımlar. ADR-009 ile hizalıdır. Migration aşamalı yapılmalıdır; big-bang geçiş yerine katman katman ilerleme tercih edilir.
+
+## 34.1. console.log → Structured Logging Geçişi
+
+### Ne yapılmalı
+- Projedeki tüm `console.log`, `console.warn`, `console.error` kullanımları envantere alınır.
+- Bölüm 30.3'te tanımlanan logger abstraction modülü (`packages/core/src/logger/`) oluşturulur veya mevcut ise doğrulanır.
+- `console.*` çağrıları structured logger çağrılarıyla değiştirilir. Her log kaydına severity, scope/feature, timestamp ve environment bilgisi eklenir.
+- ESLint `no-console` kuralı aktifleştirilir; yalnızca logger modülü içinde console kullanımına izin verilir.
+
+### Geçiş sırası
+1. **Önce critical path'ler:** Auth flow, app init, error boundary, payment/checkout — bu alanlar en yüksek önceliklidir çünkü production'da görünürlük kaybı en çok buralarda hasar verir.
+2. **Sonra core feature'lar:** Ana ekranlar, navigation, form submit, API call katmanları.
+3. **Son olarak yardımcı alanlar:** Yardımcı utility'ler, dev-only helper'lar, secondary ekranlar.
+
+### Dikkat edilecekler
+- Migration sırasında mevcut `console.log` satırlarını silmeden önce her birinin gerçekten log mu yoksa geçici debug kalıntısı mı olduğu değerlendirilmelidir. Gereksiz olanlar silinir, anlamlı olanlar structured log'a dönüştürülür.
+- Structured log formatı Bölüm 30.2'deki JSON standardına uymalıdır.
+- Production build'de `debug` seviyesindeki log'ların çıkarıldığı CI'da doğrulanmalıdır (Bölüm 30.5).
+
+## 34.2. Genel Error Tracking → Sentry Canonical Baseline Geçişi
+
+### Ne yapılmalı
+- Projedeki rastgele `try/catch` + `console.error` kalıpları tespit edilir.
+- Sentry SDK kurulumu ve konfigürasyonu Bölüm 33'teki rehbere göre yapılır.
+- Error boundary component'leri React (web) ve React Native (mobile) için oluşturulur; yakalanmamış hatalar Sentry'ye otomatik raporlanır.
+- Kritik handled error'lar (`catch` bloklarında yakalanan ama kullanıcıyı etkileyen hatalar) `Sentry.captureException()` ile raporlanır.
+- Breadcrumb'lar eklenir: kullanıcının hataya ulaşmadan önce hangi adımlardan geçtiğini gösterecek context bilgisi Sentry'ye aktarılır.
+- Custom context (release version, user role, feature scope, route bilgisi) Sentry scope'una eklenir.
+
+### Geçiş sırası
+1. **Sentry SDK kurulumu ve init:** Bölüm 33.1 ve 33.2'ye göre. Source map upload aktifleştirilir (33.3).
+2. **Global error boundary:** App root'ta ve kritik feature modüllerinde error boundary sarılır.
+3. **Kritik handled error'lar:** Auth failure, payment failure, data corruption gibi critical-class error'lar Sentry'ye bağlanır.
+4. **Breadcrumb ve context zenginleştirme:** Navigation event'leri, user action'ları, network durumu breadcrumb olarak eklenir.
+5. **Alert kuralları:** Bölüm 33.5'teki alert yapılandırması kurulur.
+
+### Dikkat edilecekler
+- Her `try/catch` bloğu Sentry issue'su yaratmak zorunda değildir. Bölüm 21'deki Sentry kullanım sınırlarına uyulmalıdır. Beklenen kullanıcı hataları (validation error, 404 vb.) Sentry'ye gönderilmez.
+- Sentry payload'larında hassas veri bulunmamalıdır. `beforeSend` hook'u ile PII temizliği yapılmalıdır (Bölüm 33.2, ADR-017).
+- Noise kontrolü: aynı hata tipi farklı isimlerle raporlanmamalı, retry storm event'leri throttle edilmelidir.
+
+## 34.3. Ad-hoc Analytics → Event Contract-First Geçişi
+
+### Ne yapılmalı
+- Projedeki mevcut analytics event gönderimlerinin envanteri çıkarılır.
+- Vendor-agnostic analytics abstraction katmanı oluşturulur (Bölüm 7.1). Doğrudan vendor SDK çağrısı yapılmaz.
+- **Event contract zorunluluğu:** Yeni bir analytics event göndermeden önce event adı, payload şeması ve amacı tanımlanmalıdır. Tanımsız event gönderimi yasaktır.
+- Event taxonomy oluşturulur: tutarlı isimlendirme kuralları (örn. `feature.action.result` formatı), payload minimal tutulur, Bölüm 7.4'teki kurallara uyulur.
+
+### Geçiş sırası
+1. **Analytics abstraction katmanı:** Vendor-agnostic wrapper oluşturulur. Mevcut doğrudan vendor çağrıları bu wrapper'a yönlendirilir.
+2. **Event taxonomy tanımı:** Mevcut event'ler gözden geçirilir, tutarlı isimlendirme ve payload standardına kavuşturulur.
+3. **Critical flow event'leri:** Onboarding, auth, checkout, core feature completion gibi kritik akışlarda event contract'ları tanımlanır ve implement edilir.
+4. **Secondary event'ler:** Daha az kritik kullanıcı etkileşimleri event contract'ı ile tanımlanıp eklenir.
+5. **Temizlik:** Artık kullanılmayan, anlamsız veya duplicate event'ler kaldırılır.
+
+### Dikkat edilecekler
+- Analytics ve error tracking karıştırılmamalıdır (Bölüm 11). Kullanıcı davranış sinyalleri analytics'e, teknik hatalar error tracking'e akar.
+- Event payload'larında hassas kullanıcı verisi (şifre, token, kişisel bilgi) bulunmamalıdır (Bölüm 14, ADR-017).
+- "Her click'i event yap" yaklaşımı noise üretir (Bölüm 13). Her event'in karar aldırıp aldırmadığı sorgulanmalıdır.
+
+## 34.4. Debug Logları Production'da → Environment-Aware Logging Geçişi
+
+### Ne yapılmalı
+- Production build'lerde debug seviyesindeki log'ların ve geliştirme amaçlı console çıktılarının bulunmadığı doğrulanır.
+- Bölüm 30.1'deki log seviye tablosuna göre environment-aware log yönetimi kurulur: `debug` seviyesi yalnızca development'ta aktif, production'da tamamen çıkarılır.
+- `__DEV__` flag'i veya build-time elimination ile debug bloklarının production bundle'a girmesi engellenir.
+- Logger abstraction modülünde environment bazlı output yönlendirmesi yapılır (Bölüm 30.3): development'ta console (renkli, okunabilir), production'da Sentry breadcrumb + remote logging.
+
+### Geçiş sırası
+1. **Mevcut durum taraması:** Production build'de `console.*` çıktısı veya debug string kalıntısı var mı kontrol edilir. Bundle analizi yapılır.
+2. **Build-time elimination:** Babel plugin (`babel-plugin-transform-remove-console`) veya build konfigürasyonu ile production'da console çıktılarının kaldırıldığı doğrulanır (Bölüm 30.5).
+3. **Log seviye yönetimi:** Logger modülünde environment bazlı seviye filtresi eklenir. Production'da `debug` log'lar yazılmaz.
+4. **CI doğrulaması:** CI pipeline'ında production bundle'da debug log string'lerinin bulunmadığı otomatik kontrol edilir.
+
+### Dikkat edilecekler
+- Debug log'ların production'a sızması hem performans kaybı hem güvenlik riski yaratır (Bölüm 15.5, Bölüm 22).
+- Yalnızca console kaldırmak yetmez; structured logger'ın da production'da debug seviyesini yazmadığından emin olunmalıdır.
+- Diagnostics ve debug yüzeyleri (Bölüm 8, 9) production build'de devre dışı bırakılmalı veya güvenli erişim altına alınmalıdır.
+
+## 34.5. Genel Migration İlkeleri
+
+1. **Aşamalı ilerleme:** Migration big-bang yapılmaz. Her katman (logging → error tracking → analytics → environment-awareness) sırasıyla ele alınır.
+2. **Critical path öncelikli:** En çok hasar veren alanlar (auth, payment, app init) ilk geçiş yapılır.
+3. **Mevcut sinyal kaybı önleme:** Migration sırasında bir sinyal kanalı kapatılmadan yenisi devreye alınmalıdır. Geçiş sırasında kör nokta oluşturulmamalıdır.
+4. **Test ve doğrulama:** Her migration adımı sonrası ilgili ortamda (dev, staging, production) sinyallerin doğru aktığı doğrulanmalıdır.
+5. **ADR-009 referansı:** Tüm migration kararlarında ADR-009'daki canonical observability stack tanımı temel referanstır. Migration, ADR-009'un belirlediği yapıya yakınsamayı hedefler.

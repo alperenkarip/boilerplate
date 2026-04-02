@@ -15,6 +15,7 @@
   - `08-navigation-and-flow-rules.md`
   - `26-platform-adaptation-rules.md`
   - `27-security-and-secrets-baseline.md`
+  - `ADR-018-new-architecture-migration-and-readiness-strategy.md`
 - **Etkilediği belgeler:**
   - `19-roadmap-to-implementation.md`
   - `20-initial-implementation-checklist.md`
@@ -40,6 +41,8 @@ Bu boilerplate kapsamında mobile runtime ve native strategy için aşağıdaki 
 Bu kararın özü şudur:
 
 > Mobile temel, çıplak React Native veya platforma dağılmış custom native wiring değil; Expo-first, React Native tabanlı, kontrollü native genişlemeye izin veren, documentation-first yönetilen bir foundation olacaktır.
+
+**New Architecture zorunluluğu:** Expo SDK 55 ve React Native 0.82+ ile New Architecture (Fabric renderer + JSI + TurboModules + Hermes V1) artık kapatılamayan varsayılan gerçekliktir. Bu, projeye eklenen her native dependency'nin New Architecture uyumlu olmasını zorunlu kılar. Detaylı strateji ve uyumluluk kontrol süreci ADR-018'de tanımlanmıştır.
 
 ---
 
@@ -195,13 +198,21 @@ Expo ekosisteminde `Expo Go`, öğrenme ve sınırlı sandbox denemeleri için y
 ### 6.2.7. Bootstrap doğrulama kapısı
 
 Mobile bootstrap tamamlandı sayılmadan önce şu doğrulamalar zorunludur:
-- `expo-doctor` temiz geçer,
+
+**Temel doğrulamalar:**
+- `expo-doctor` temiz geçer (New Architecture uyumsuzluğu dahil),
 - development build fiziksel cihaz veya emülatörde açılır,
 - config plugin zinciri ve autolinking beklenen paketleri görür,
-- appearance/theming zinciri için `userInterfaceStyle: "automatic"` ve gerekli durumda `expo-system-ui` doğrulanır,
+- appearance/theming zinciri için `userInterfaceStyle: "automatic"` ve gerekli durumda `expo-system-ui` doğrulanır.
+
+**New Architecture doğrulamaları (ADR-018 ile entegre):**
+- Fabric renderer aktif olmalı (React DevTools'ta "Fabric: true" görünmeli),
+- TurboModules lazy-loading çalışıyor olmalı,
+- Hermes V1 aktif olmalı (`global.HermesInternal` mevcudiyeti ile doğrulanabilir),
+- Bridge-only dependency kalmamış olmalı,
 - New Architecture varsayımıyla çelişen bağımlılık kalmaz.
 
-Bu dört sinyalden biri yoksa mobile foundation hazır sayılmaz.
+Bu sinyallerden herhangi biri yoksa mobile foundation hazır sayılmaz.
 
 ---
 
@@ -590,6 +601,7 @@ Bu ADR aşağıdakileri çözmez:
 - OTA policy detayları
 - analytics vendor seçimi
 - tüm device capability matrix’i
+- New Architecture’ın tam paket uyumluluk stratejisi, migration detayları ve risk yönetimi (bu konular ADR-018’de tanımlanmıştır)
 
 Bunlar sonraki ADR ve policy belgelerinde kapanmalıdır.
 

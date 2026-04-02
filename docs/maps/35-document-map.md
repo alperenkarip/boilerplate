@@ -98,6 +98,7 @@ Bu aile, boilerplate ile türetilen projeler arasındaki sınırları, dallanma 
 | `43-derived-project-creation-guide.md` | Türetilen proje oluşturma rehberi | Guide |
 | `44-exception-and-exemption-policy.md` | İstisna ve muafiyet politikası | Governance |
 | `48-expo-sdk-upgrade-strategy.md` | Expo SDK major upgrade operasyonel stratejisi | Governance |
+| `49-upstream-sync-strategy.md` | Boilerplate → derived proje upstream sync mekanizması | Governance |
 
 ### Operations Ailesi
 
@@ -827,7 +828,219 @@ Kapsam dışı:
 
 ---
 
-# 19. Kısa Sonuç
+# 19. Fiziksel Dizin Yapısı Haritası
+
+Bu bölüm, doküman setindeki kısa dosya adları ile gerçek dizin yollarını eşleştirir. Agent, yeni geliştirici veya CI aracı, bir dokümana ulaşmak istediğinde bu tabloya başvurmalıdır.
+
+## 19.1. Dizin Yapısı
+
+```
+docs/
+├── adr/                          # ADR'ler ve ADR şablonu
+│   ├── 18-adr-template.md
+│   ├── ADR-001-web-runtime-and-application-shell.md
+│   ├── ADR-002-mobile-runtime-and-native-strategy.md
+│   ├── ADR-003-monorepo-package-manager-and-build-orchestration.md
+│   ├── ADR-004-state-management.md
+│   ├── ADR-005-data-fetching-cache-and-mutation-model.md
+│   ├── ADR-006-forms-and-validation.md
+│   ├── ADR-007-styling-tokens-and-theming-implementation.md
+│   ├── ADR-008-testing-stack.md
+│   ├── ADR-009-observability-stack.md
+│   ├── ADR-010-auth-session-and-secure-storage-baseline.md
+│   ├── ADR-011-internationalization-baseline.md
+│   ├── ADR-012-navigation-baseline.md
+│   ├── ADR-013-push-notification-strategy.md
+│   ├── ADR-014-deep-linking-and-universal-links.md
+│   ├── ADR-015-ota-update-strategy.md
+│   ├── ADR-016-in-app-purchase-and-subscription.md
+│   ├── ADR-017-privacy-and-data-protection-framework.md
+│   ├── ADR-018-new-architecture-migration-and-readiness-strategy.md
+│   └── ADR-019-local-storage-and-offline-first-strategy.md
+├── ai-guardrails/                # AI guardrail kuralları
+│   ├── domain/                   # Domain guardrail'ler (26 adet)
+│   │   ├── D-3RD-third-party.md
+│   │   ├── D-A11-accessibility.md
+│   │   ├── D-AIX-ai-intelligence-ux.md
+│   │   ├── D-BIO-biometric-auth.md
+│   │   ├── D-DAT-data-fetching.md
+│   │   ├── D-DPL-deep-linking.md
+│   │   ├── D-DSY-design-system.md
+│   │   ├── D-ERR-error-empty-loading.md
+│   │   ├── D-FIR-firebase-firestore.md
+│   │   ├── D-FRM-forms-validation.md
+│   │   ├── D-I18-internationalization.md
+│   │   ├── D-MOT-motion-interaction.md
+│   │   ├── D-NAV-navigation.md
+│   │   ├── D-NTF-push-notification.md
+│   │   ├── D-OBS-observability.md
+│   │   ├── D-OFL-offline-local-storage.md
+│   │   ├── D-PAY-payment-subscription.md
+│   │   ├── D-PLT-platform-adaptation.md
+│   │   ├── D-PRF-performance.md
+│   │   ├── D-PRI-privacy-compliance.md
+│   │   ├── D-SEC-security.md
+│   │   ├── D-STA-state-management.md
+│   │   ├── D-STY-styling.md
+│   │   ├── D-TST-testing.md
+│   │   ├── D-UIX-ui-ux-hig.md
+│   │   └── D-VIS-visual-fidelity.md
+│   └── activity/                 # Aktivite guardrail'ler (30 adet)
+│       ├── A-3RD-third-party-integration.md
+│       ├── A-AI-FEAT-ai-ml-feature.md
+│       ├── A-ANALYTICS-event-tracking.md
+│       ├── A-AUTH-auth-changes.md
+│       ├── A-CONFIG-config-ci-changes.md
+│       ├── A-DEEPLINK-deep-linking.md
+│       ├── A-DEP-dependency-changes.md
+│       ├── A-DOCS-documentation.md
+│       ├── A-FIREBASE-firebase-operations.md
+│       ├── A-FIX-bug-fix.md
+│       ├── A-FORM-form-development.md
+│       ├── A-MEDIA-file-media.md
+│       ├── A-MIGRATION-migration.md
+│       ├── A-NAV-navigation-changes.md
+│       ├── A-NEW-API-new-api-integration.md
+│       ├── A-NEW-COMP-new-component.md
+│       ├── A-NEW-FEAT-new-feature.md
+│       ├── A-NEW-HOOK-new-hook-utility.md
+│       ├── A-NEW-SCRN-new-screen.md
+│       ├── A-NOTIFICATION-push-notification.md
+│       ├── A-OFFLINE-offline-support.md
+│       ├── A-OTA-over-the-air-update.md
+│       ├── A-PAYMENT-in-app-purchase.md
+│       ├── A-PRIVACY-compliance.md
+│       ├── A-REALTIME-realtime-push.md
+│       ├── A-REFACTOR-refactoring.md
+│       ├── A-RELEASE-release-prep.md
+│       ├── A-SDK-UPGRADE-sdk-framework-upgrade.md
+│       ├── A-STATE-state-changes.md
+│       └── A-STYLE-styling-theming.md
+├── architecture/                 # Mimari standartlar
+│   ├── 06-application-architecture.md
+│   ├── 07-module-boundaries-and-code-organization.md
+│   ├── 08-navigation-and-flow-rules.md
+│   ├── 09-state-management-strategy.md
+│   ├── 10-data-fetching-cache-sync.md
+│   └── 11-forms-inputs-and-validation.md
+├── checklists/                   # Denetim ve tamamlanma
+│   ├── 31-audit-checklist.md
+│   └── 32-definition-of-done.md
+├── design-system/                # Tasarım sistemi
+│   ├── 03-ui-ux-quality-standard.md
+│   ├── 04-design-system-architecture.md
+│   ├── 05-theming-and-visual-language.md
+│   ├── 22-design-tokens-spec.md
+│   ├── 23-component-governance-rules.md
+│   ├── 24-motion-and-interaction-standard.md
+│   ├── 25-error-empty-loading-states.md
+│   ├── 26-platform-adaptation-rules.md
+│   ├── 33-visual-implementation-contract.md
+│   ├── 34-hig-enforcement-strategy.md
+│   └── 39-default-screens-and-components-spec.md
+├── foundation/                   # Temel ilkeler
+│   ├── 00-project-charter.md
+│   ├── 01-working-principles.md
+│   └── 02-product-platform-philosophy.md
+├── governance/                   # Yönetişim ve politika
+│   ├── 15-quality-gates-and-ci-rules.md
+│   ├── 16-tooling-and-governance.md
+│   ├── 17-technology-decision-framework.md
+│   ├── 29-release-and-versioning-rules.md
+│   ├── 30-contribution-guide.md
+│   ├── 36-canonical-stack-decision.md
+│   ├── 37-dependency-policy.md
+│   ├── 38-version-compatibility-matrix.md
+│   ├── 40-ai-workflow-and-tooling.md
+│   ├── 41-ai-instruction-standards.md
+│   ├── 42-branching-and-merge-strategy.md
+│   ├── 44-exception-and-exemption-policy.md
+│   ├── 45-boilerplate-project-boundary-contract.md
+│   ├── 46-stitch-pipeline-spec.md
+│   ├── 47-ai-guardrail-governance.md
+│   ├── 48-expo-sdk-upgrade-strategy.md
+│   ├── 49-upstream-sync-strategy.md
+│   └── ai-integration-documentation-plan.md
+├── implementation/               # Uygulama geçiş belgeleri
+│   ├── 19-roadmap-to-implementation.md
+│   ├── 20-initial-implementation-checklist.md
+│   ├── 21-repo-structure-spec.md
+│   └── 43-derived-project-creation-guide.md
+├── maps/                         # Navigasyon
+│   └── 35-document-map.md
+├── onboarding/                   # Adaptasyon rehberleri
+│   ├── ilk-30-dakika.md
+│   └── rol-bazli-okuma-rehberi.md
+├── operations/                   # Operasyonel prosedürler
+│   └── runbook-and-incident-response.md
+└── quality/                      # Kalite standartları
+    ├── 12-accessibility-standard.md
+    ├── 13-performance-standard.md
+    ├── 14-testing-strategy.md
+    ├── 27-security-and-secrets-baseline.md
+    └── 28-observability-and-debugging.md
+```
+
+## 19.2. Kısa Ad → Tam Yol Eşleştirme Tablosu
+
+Bu haritada dosyalar kısa numara/adlarıyla referans edilir. Aşağıdaki tablo kısa adı gerçek dizin yoluyla eşleştirir.
+
+| Kısa Ad | Tam Yol |
+|---------|---------|
+| `00` | `docs/foundation/00-project-charter.md` |
+| `01` | `docs/foundation/01-working-principles.md` |
+| `02` | `docs/foundation/02-product-platform-philosophy.md` |
+| `03` | `docs/design-system/03-ui-ux-quality-standard.md` |
+| `04` | `docs/design-system/04-design-system-architecture.md` |
+| `05` | `docs/design-system/05-theming-and-visual-language.md` |
+| `06` | `docs/architecture/06-application-architecture.md` |
+| `07` | `docs/architecture/07-module-boundaries-and-code-organization.md` |
+| `08` | `docs/architecture/08-navigation-and-flow-rules.md` |
+| `09` | `docs/architecture/09-state-management-strategy.md` |
+| `10` | `docs/architecture/10-data-fetching-cache-sync.md` |
+| `11` | `docs/architecture/11-forms-inputs-and-validation.md` |
+| `12` | `docs/quality/12-accessibility-standard.md` |
+| `13` | `docs/quality/13-performance-standard.md` |
+| `14` | `docs/quality/14-testing-strategy.md` |
+| `15` | `docs/governance/15-quality-gates-and-ci-rules.md` |
+| `16` | `docs/governance/16-tooling-and-governance.md` |
+| `17` | `docs/governance/17-technology-decision-framework.md` |
+| `18` | `docs/adr/18-adr-template.md` |
+| `19` | `docs/implementation/19-roadmap-to-implementation.md` |
+| `20` | `docs/implementation/20-initial-implementation-checklist.md` |
+| `21` | `docs/implementation/21-repo-structure-spec.md` |
+| `22` | `docs/design-system/22-design-tokens-spec.md` |
+| `23` | `docs/design-system/23-component-governance-rules.md` |
+| `24` | `docs/design-system/24-motion-and-interaction-standard.md` |
+| `25` | `docs/design-system/25-error-empty-loading-states.md` |
+| `26` | `docs/design-system/26-platform-adaptation-rules.md` |
+| `27` | `docs/quality/27-security-and-secrets-baseline.md` |
+| `28` | `docs/quality/28-observability-and-debugging.md` |
+| `29` | `docs/governance/29-release-and-versioning-rules.md` |
+| `30` | `docs/governance/30-contribution-guide.md` |
+| `31` | `docs/checklists/31-audit-checklist.md` |
+| `32` | `docs/checklists/32-definition-of-done.md` |
+| `33` | `docs/design-system/33-visual-implementation-contract.md` |
+| `34` | `docs/design-system/34-hig-enforcement-strategy.md` |
+| `35` | `docs/maps/35-document-map.md` |
+| `36` | `docs/governance/36-canonical-stack-decision.md` |
+| `37` | `docs/governance/37-dependency-policy.md` |
+| `38` | `docs/governance/38-version-compatibility-matrix.md` |
+| `39` | `docs/design-system/39-default-screens-and-components-spec.md` |
+| `40` | `docs/governance/40-ai-workflow-and-tooling.md` |
+| `41` | `docs/governance/41-ai-instruction-standards.md` |
+| `42` | `docs/governance/42-branching-and-merge-strategy.md` |
+| `43` | `docs/implementation/43-derived-project-creation-guide.md` |
+| `44` | `docs/governance/44-exception-and-exemption-policy.md` |
+| `45` | `docs/governance/45-boilerplate-project-boundary-contract.md` |
+| `46` | `docs/governance/46-stitch-pipeline-spec.md` |
+| `47` | `docs/governance/47-ai-guardrail-governance.md` |
+| `48` | `docs/governance/48-expo-sdk-upgrade-strategy.md` |
+| `49` | `docs/governance/49-upstream-sync-strategy.md` |
+
+---
+
+# 20. Kısa Sonuç
 
 Bu dokümanın ana çıktısı şudur:
 

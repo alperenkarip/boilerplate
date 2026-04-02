@@ -126,6 +126,9 @@ Artık çalışan bir sisteminiz var. Şimdi rolünüze göre belgeleri okuyun:
 - **Developer** → `docs/onboarding/rol-bazli-okuma-rehberi.md` § Developer Fast Track
 - **Designer** → `docs/onboarding/rol-bazli-okuma-rehberi.md` § Designer Fast Track
 - **Tech Lead** → `docs/onboarding/rol-bazli-okuma-rehberi.md` § Tech Lead Fast Track
+- **Mobile Developer** → Ek olarak ADR-018 (New Architecture: Fabric + JSI + TurboModules + Hermes V1 zorunlu) ve ADR-019 (Local Storage: MMKV + SecureStore + Zustand persist, offline-first) dokümanlarını okuyun.
+
+> **Not:** Proje toplam 19 ADR içerir (ADR-001 → ADR-019). Tüm canonical kararlar bu ADR'lerde tanımlanmıştır.
 
 ---
 

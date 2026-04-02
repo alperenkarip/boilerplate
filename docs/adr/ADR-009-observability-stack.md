@@ -893,7 +893,7 @@ Bu ADR aşağıdakileri çözmez:
 - alert routing / on-call policy
 - data warehouse / BI pipeline choice
 
-Bu alanlar sonraki policy ve setup belgelerinde kapanacaktır.
+Sentry React Native kurulum reçetesi bu ADR'nin bölüm 42'sinde tanımlanmıştır. Diğer alanlar sonraki policy ve setup belgelerinde kapanacaktır.
 
 ---
 
@@ -1032,7 +1032,126 @@ Production’da bir crash raporu geldiğinde:
 
 ---
 
-# 42. Kısa Sonuç
+# 42. Sentry React Native Kurulum Reçetesi
+
+Bu bölüm, bootstrap sırasında Sentry'nin mobile tarafta nasıl kurulacağını adım adım tanımlar. Web tarafı için `@sentry/react`, mobile tarafı için `@sentry/react-native` kullanılır.
+
+## 42.1. Paket Kurulumu
+
+```bash
+# Mobile (Expo)
+npx expo install @sentry/react-native
+
+# Web
+pnpm add @sentry/react
+```
+
+`@sentry/react-native` Expo config plugin olarak çalışır. `app.config.ts` içinde plugin dizisine eklenmesi gerekir:
+
+```typescript
+// app.config.ts
+export default {
+  plugins: [
+    [
+      "@sentry/react-native/expo",
+      {
+        organization: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+      },
+    ],
+  ],
+};
+```
+
+## 42.2. Sentry Başlatma (Init)
+
+Sentry, uygulamanın en erken noktasında — app entry dosyasında — başlatılmalıdır. Başlatma, environment-aware olmalıdır: development ortamında Sentry aktif olmamalı, gereksiz gürültü ve kota tüketimi önlenmelidir.
+
+```typescript
+// packages/observability/src/sentry.ts
+import * as Sentry from "@sentry/react-native";
+
+export function initSentry() {
+  if (__DEV__) return; // geliştirme ortamında Sentry kapalı
+
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: process.env.EXPO_PUBLIC_APP_ENV ?? "production",
+    release: `${Application.applicationId}@${Application.nativeApplicationVersion}+${Application.nativeBuildVersion}`,
+    tracesSampleRate: 0.2,       // performans trace'lerinin %20'si
+    profilesSampleRate: 0.1,      // profiling'in %10'u
+    attachScreenshot: true,       // crash anında ekran görüntüsü
+    enableAutoSessionTracking: true,
+    // hassas veri sızıntısını önle
+    beforeSend(event) {
+      // auth token, email gibi hassas veriyi payload'dan temizle
+      if (event.request?.headers) {
+        delete event.request.headers["Authorization"];
+      }
+      return event;
+    },
+    beforeBreadcrumb(breadcrumb) {
+      // console.log breadcrumb'larını filtrele (gürültü azaltma)
+      if (breadcrumb.category === "console" && breadcrumb.level === "debug") {
+        return null;
+      }
+      return breadcrumb;
+    },
+  });
+}
+```
+
+## 42.3. Error Boundary Entegrasyonu
+
+React error boundary ile Sentry entegrasyonu, yakalanmamış render hatalarını otomatik raporlar. Bu, app shell seviyesinde global error boundary içinde kullanılmalıdır.
+
+```typescript
+// mobile app entry
+import * as Sentry from "@sentry/react-native";
+
+// Root component'i Sentry.wrap ile sar — bu navigation, performance ve crash izleme entegrasyonlarını aktif eder
+export default Sentry.wrap(App);
+```
+
+## 42.4. Custom Context ve Tag Kullanımı
+
+Kullanıcı bağlamı ve iş mantığı tag'leri, hata analizi sırasında sorunun hangi kullanıcı segmentinde, hangi feature'da oluştuğunu belirlemeye yarar. Hassas veri (email, telefon, TC kimlik) bu bağlamda **asla** gönderilmemelidir.
+
+```typescript
+// kullanıcı oturum açtığında
+Sentry.setUser({ id: userId }); // email veya isim GÖNDERİLMEZ
+
+// feature bazlı tag
+Sentry.setTag("feature", "checkout");
+Sentry.setTag("subscription_tier", "premium");
+```
+
+## 42.5. Breadcrumb Entegrasyonu
+
+Breadcrumb'lar, bir hatanın oluşmadan önceki kullanıcı yolculuğunu anlamaya yarar. Navigation geçişleri, API çağrıları ve kullanıcı etkileşimleri otomatik olarak breadcrumb olarak kaydedilir. Custom breadcrumb eklemek için:
+
+```typescript
+Sentry.addBreadcrumb({
+  category: "user.action",
+  message: "Ödeme formunu doldurdu",
+  level: "info",
+  data: { step: "payment_form_completed" },
+});
+```
+
+## 42.6. Kurulum Doğrulama Adımları
+
+Bootstrap tamamlanmadan önce şu kontroller yapılmalıdır:
+
+1. `expo-doctor` Sentry plugin'ini görmeli
+2. Development build'de `Sentry.captureMessage("test")` çağrısı Sentry dashboard'a ulaşmalı
+3. Source map upload CI pipeline'ında çalışmalı (bölüm 41.2'de tanımlandığı gibi)
+4. `beforeSend` filtresinin hassas veriyi temizlediği unit test ile doğrulanmalı
+5. Production build'de crash simülasyonu yapılarak Sentry'de doğru stack trace görünmeli
+
+---
+
+# 43. Kısa Sonuç
 
 Bu ADR’nin ana çıktısı şudur:
 

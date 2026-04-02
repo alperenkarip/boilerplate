@@ -115,7 +115,7 @@ Asagidaki tablo, her kural kaynaginin miras tipini ve override iznini tek yerde 
 
 | # | Kural Kaynagi | Miras Tipi | Override Izni | Aciklama |
 |---|---|---|---|---|
-| 1 | ADR-001 → ADR-017 (canonical stack) | Zorunlu miras | Override yasak, sadece ADR revision ile | Teknoloji secimi, mimari omurga, testing/styling/state/data/auth/i18n/navigation kararlari degistirilemez |
+| 1 | ADR-001 → ADR-019 (canonical stack) | Zorunlu miras | Override yasak, sadece ADR revision ile | Teknoloji secimi, mimari omurga, testing/styling/state/data/auth/i18n/navigation kararlari degistirilemez |
 | 2 | `37-dependency-policy.md` | Zorunlu miras | Ek kural eklenebilir, base kaldirilamaz | Proje-ozel dependency kural ekleyebilir (ornegin "X kategorisinde sadece Y kullanilir") ama base policy gevsetilemez |
 | 3 | `38-version-compatibility-matrix.md` | Zorunlu miras | Extend edilebilir, base kaldirilamaz | Proje ek satir ekleyebilir (proje-ozel dependency icin), ama boilerplate'in base satir ve bantlari degistirilemez |
 | 4 | `22-design-tokens-spec.md` (token hiyerarsisi) | Yapisal miras | Token degerleri proje-ozel, hiyerarsi sabit | raw -> semantic -> component katman yapisi degistirilemez. Naming convention degistirilemez. Degerler (renkler, spacing, radius vb.) proje-ozel |
@@ -135,6 +135,34 @@ Asagidaki tablo, her kural kaynaginin miras tipini ve override iznini tek yerde 
 | 18 | `.claude/skills/` (guardrail skill'leri) | Yapisal miras | Proje ek skill ekleyebilir, base skill kaldirilamaz | Guardrail skill dosyalari derived project'e aktarilir |
 | 19 | `.claude/settings.json` (hook tanimlari) | Yapisal miras | Proje ek hook ekleyebilir, base hook devre disi birakilamaz | PreToolUse/PostToolUse guardrail hook'lari korunur |
 | 20 | AGENTS.md guardrail bolumleri | Zorunlu miras | Ek kural eklenebilir, base kaldirilamaz | Guardrail compliance review kurallari derived project'te gecerli |
+
+## 4.1. Gevsetme Siniri Matrisi
+
+Yukaridaki tablo her kuralin miras tipini ve override iznini gosterir, ancak **her kural alani icin gevsetme sinirinin nerede basladigi ve nerede bittigi** belirsiz kalabilir. Bu alt bolum, kural alanlarini "ne kadar esneklik var, sinir nedir" perspektifinden detaylandirir.
+
+**Terminoloji:**
+
+- **%0 — override yasak:** Kural hicbir kosulda degistirilemez; yalnizca boilerplate ADR revision ile mumkundur.
+- **%0 — sadece sikilastirabilir:** Kural gevsetilemez veya kaldirilamaz, ancak daha siki hale getirilebilir.
+- **Daraltilabilir:** Ek kural/convention/madde eklenebilir, mevcut cikarilmaz. Yapi korunur, kapsam genisletilebilir.
+- **Uyarlanabilir:** Temel model ve prensip korunmak kaydiyla, proje-ozel uygulama detaylari proje tarafindan belirlenebilir.
+
+| # | Kural Alani | Kaynak Dokuman | Miras Turu | Gevsetme Izni | Sikilastirma Izni | Sinir Aciklamasi |
+|---|---|---|---|---|---|---|
+| 1 | Canonical stack (teknoloji secimi) | ADR-001 → ADR-019, 36 | Zorunlu | %0 — override yasak | Uygulanamaz | Teknoloji secimleri (React, Expo, Zustand, TanStack Query, Zod, Tailwind, Vitest, Sentry vb.) hicbir kosulda degistirilemez. Alternatif onerme, degerlendirme veya deneme yasaktir. Degisiklik yalnizca boilerplate ADR revision sureci ile mumkundur. |
+| 2 | Dependency policy (base kurallar) | 37-dependency-policy.md | Zorunlu | %0 — override yasak | Daraltilabilir | Base paket ekleme/cikarma kurallari, minimumReleaseAge, allowBuilds, trustPolicy degistirilemez. Proje ek kategorik kisitlama ekleyebilir (ornegin "analytics kategorisinde sadece X kullanilir") ama base policy'nin hicbir maddesi gevsetilemez veya kaldirilmaz. |
+| 3 | Compatibility matrix (base satirlar) | 38-version-compatibility-matrix.md | Zorunlu | %0 — override yasak | Daraltilabilir | Boilerplate tarafindan tanimlanan versiyon bantlari (orn. Expo SDK 55.x ↔ React Native 0.79.x) degistirilemez. Proje ek dependency icin yeni satir ekleyebilir, mevcut satirlari daraltabilir (bant daralir), ama mevcut bantlari genisletemez veya kaldiramaz. |
+| 4 | WCAG AA accessibility baseline | 12-accessibility-standard.md | Zorunlu | %0 — sadece sikilastirabilir | AAA'ya yukseltilebilir | WCAG AA minimum esiktir; AA altina dusurme, AA kriterlerinden herhangi birini atlama veya "proje-ozel istisna" ilan etme yasaktir. Proje WCAG AAA hedefleyebilir, ek accessibility standartlari (ornegin platforma ozel VoiceOver/TalkBack testleri) ekleyebilir. |
+| 5 | Security baseline | 27-security-and-secrets-baseline.md | Zorunlu | %0 — sadece sikilastirabilir | Ek guvenlik kurali eklenebilir | Mevcut guvenlik kurallari (secret yonetimi, auth token politikasi, Sentry payload hassasiyet kurallari, .env korumasi) gevsetilemez veya kaldirilmaz. Proje ek guvenlik katmani ekleyebilir (ornegin ek encryption, daha siki CSP, ek penetrasyon testi gereksinimleri). |
+| 6 | Design token naming convention | 22-design-tokens-spec.md | Yapisal | Daraltilabilir | Ek prefix/suffix eklenebilir | raw → semantic → component katman hiyerarsisi ve mevcut naming convention (ornegin `color-primary-500`, `spacing-md`) degistirilemez. Proje ek prefix/suffix ekleyebilir (ornegin `brand-color-primary-500`), ek token kategorisi tanimlayabilir, ama mevcut convention'i rename edemez veya katman sirasini bozamaz. |
+| 7 | Component governance (naming, lifecycle) | 23-component-governance-rules.md | Yapisal | Daraltilabilir | Ek governance kurali eklenebilir | Component acma kriterleri, lifecycle adimlari (proposal → draft → stable → deprecated), API disiplini ve naming convention base olarak gecerlidir. Proje ek lifecycle adimi (ornegin "compliance-review" adimi), ek naming convention (ornegin proje prefix'i) ekleyebilir ama mevcut adimlari cikaramaz veya gevsetemez. |
+| 8 | Testing strategy (coverage esikleri) | 14-testing-strategy.md, ADR-008 | Yapisal | Daraltilabilir | Ek test turu eklenebilir, esikler yukseltilebilir | Mevcut coverage esikleri (orn. %80 unit, %70 integration) dusurulemez. Test framework secimleri (Vitest/Jest/Playwright) canonical stack oldugu icin degistirilemez. Proje ek test turu (orn. visual regression, contract test, chaos test) ekleyebilir, mevcut esikleri yukseltebilir (orn. %80 → %90). |
+| 9 | Branching strategy | 42-branching-and-merge-strategy.md | Yapisal | Uyarlanabilir | Ek branch tipi eklenebilir | Trunk-based development modeli korunmalidir; long-lived feature branch, GitFlow veya benzeri modele gecis yasaktir. Branch naming convention (feature/, fix/, hotfix/, release/, chore/) base olarak gecerlidir. Proje ek branch tipi ekleyebilir (ornegin experiment/, spike/), merge strategy detaylarini uyarlayabilir, ama trunk-based modeli terk edemez. |
+| 10 | CI quality gates | 15-quality-gates-and-ci-rules.md | Yapisal | Daraltilabilir | Gate eklenebilir, esikler yukseltilebilir | Mevcut gate'ler (type-check, lint, unit test, build validation, a11y check) kaldirilmaz veya gevsetilmez. Proje ek gate ekleyebilir (ornegin security scan, bundle size check, license audit). Mevcut gate'lerin esikleri yalnizca yukari dogru (daha siki) degistirilebilir. |
+| 11 | i18n baseline | ADR-011 | Yapisal | Daraltilabilir | Ek locale ve namespace eklenebilir | i18next framework secimi canonical'dir (degistirilemez). Namespace-based yaklasim korunmalidir; flat key yapisi veya namespace'siz yaklasima gecis yasaktir. Proje ek locale ekleyebilir, ek namespace tanimlayabilir, fallback stratejisini daraltabilir (daha siki), ama mevcut namespace yapisini bozamaz veya base locale destegini kaldiramaz. |
+| 12 | Observability baseline | ADR-009 | Yapisal | Daraltilabilir | Ek metric/alert eklenebilir | Sentry entegrasyonu canonical'dir (kaldirilmaz, devre disi birakilmaz). Vendor-agnostic analytics abstraction katmani korunmalidir. Proje ek observability araci ekleyebilir (ornegin custom dashboard, ek APM), ek metric ve alert tanimlayabilir, ama Sentry baseline'ini kaldiramaz veya analytics abstraction katmanini bypass edemez. |
+
+> **Not:** Bu matristeki "override yasak" ifadesi, degisikligin mumkun olmadigi anlamina gelmez. Degisiklik yalnizca **boilerplate ADR revision sureci** ile yapilabilir (bkz. bolum 7.2). Derived project tek basina override uygulayamaz.
 
 ---
 
@@ -424,25 +452,30 @@ Asagidaki davranislar boundary contract ihlali olarak tanimlanir ve audit'te blo
 
 # 11. Boilerplate Guncelleme Yayilimi
 
-Boilerplate guncellendiginde derived project'lere yayilim su kurallarla yonetilir:
+Boilerplate guncellendiginde derived project'lere yayilim su kurallarla yonetilir.
+
+**Implementasyon:** Bu bolumun tam implementasyonu `49-upstream-sync-strategy.md`'de tanimlanmistir. Versiyonlama (bp-v tag sistemi), sync manifest, sync script, drift detection CI job'u ve bildirim workflow'u bu belgeye referansla calisir.
 
 ## 11.1. Zorunlu Miras Guncellemeleri
 
 - Derived project'lere zorunlu olarak yansitilir.
 - Yansitma suresi: Boilerplate release'inden itibaren 2 sprint (maximum 4 hafta).
 - Yansitilmayan derived project audit'te blocker alir.
+- **Tag mapping:** `bp-v` tag'inde MAJOR versiyon artisi (bkz. `49-upstream-sync-strategy.md` Bolum 3)
 
 ## 11.2. Yapisal Miras Guncellemeleri
 
 - Derived project'lere onerilerek yansitilir.
 - Proje-ozel icerik etkilenmez, yalnizca yapisal degisiklikler uygulanir.
 - Yansitma suresi: 4 sprint (maximum 8 hafta).
+- **Tag mapping:** `bp-v` tag'inde MINOR versiyon artisi
 
 ## 11.3. Felsefi Miras Guncellemeleri
 
 - Derived project'lere bilgilendirme olarak iletilir.
 - Proje-ozel yorum guncellenmesi projenin insiyatifindedir.
 - Zorunlu yansitma suresi yoktur, ancak audit'te celiski kontrolu yapilir.
+- **Tag mapping:** `bp-v` tag'inde PATCH versiyon artisi
 
 ---
 

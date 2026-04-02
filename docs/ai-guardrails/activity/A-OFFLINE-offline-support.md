@@ -2,7 +2,7 @@
 id: A-OFFLINE
 type: activity
 name: Offline Support / Cache Persistence
-tetiklenen-domain-guardrails: [D-DAT, D-PLT]
+tetiklenen-domain-guardrails: [D-DAT, D-PLT, D-OFL]
 araç-zorunlulukları:
   spec: zorunlu
   stitch: —

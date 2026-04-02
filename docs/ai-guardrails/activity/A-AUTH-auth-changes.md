@@ -2,7 +2,7 @@
 id: A-AUTH
 type: activity
 name: Auth Flow Değişikliği
-tetiklenen-domain-guardrails: [D-SEC]
+tetiklenen-domain-guardrails: [D-SEC, D-BIO]
 araç-zorunlulukları:
   spec: zorunlu
   stitch: —
@@ -19,6 +19,11 @@ son-güncelleme: 2026-04-02
 
 ## Aktif Domain Guardrail'ler
 - **D-SEC** → Token yönetimi, secret, session, client-side güvenlik
+- **D-BIO** → Biometric auth (Face ID, Touch ID, fingerprint) güvenlik ve UX kuralları
+
+## Kaynak Doküman Referansları
+- ADR-010 — Auth, session ve secure storage kararları
+- 27-security-and-secrets-baseline.md — Güvenlik temeli
 
 ## Aktiviteye Özel Kurallar
 1. Web: HttpOnly cookie — localStorage/sessionStorage yasak (ADR-010)

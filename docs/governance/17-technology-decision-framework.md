@@ -18,7 +18,7 @@
   - `16-tooling-and-governance.md`
   - `37-dependency-policy.md`
   - `38-version-compatibility-matrix.md`
-  - `ADR-001` → `ADR-017`
+  - `ADR-001` → `ADR-019`
 - **Doğrudan etkileyeceği dokümanlar:**
   - `18-adr-template.md`
   - `19-roadmap-to-implementation.md`
@@ -697,7 +697,7 @@ Bu doküman yeterli kabul edilir eğer:
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate kapsamında teknoloji seçimi artık serbest araştırma alanı değildir. Çekirdek teknoloji omurgası ADR-001 → ADR-017 ile kapanmıştır; dependency kabul rejimi `37-dependency-policy.md`, sürüm uyum rejimi ise `38-version-compatibility-matrix.md` ile tanımlanmıştır. Bundan sonra yeni teknoloji önerileri ancak problem-fit, mimari uyum, security/a11y/testability, dependency riski ve compatibility güvenliği üzerinden; gerektiğinde ADR ve POC ile değerlendirilecektir.
+> Bu boilerplate kapsamında teknoloji seçimi artık serbest araştırma alanı değildir. Çekirdek teknoloji omurgası ADR-001 → ADR-019 ile kapanmıştır; dependency kabul rejimi `37-dependency-policy.md`, sürüm uyum rejimi ise `38-version-compatibility-matrix.md` ile tanımlanmıştır. Bundan sonra yeni teknoloji önerileri ancak problem-fit, mimari uyum, security/a11y/testability, dependency riski ve compatibility güvenliği üzerinden; gerektiğinde ADR ve POC ile değerlendirilecektir.
 
 
 ---

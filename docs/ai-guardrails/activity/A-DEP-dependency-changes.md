@@ -21,6 +21,10 @@ son-güncelleme: 2026-04-02
 - **D-3RD** → Wrapper pattern, lisans, güvenlik
 - **D-SEC** → Güvenlik taraması
 
+## Kaynak Doküman Referansları
+- 37-dependency-policy.md — Dependency onay ve yönetim politikası
+- 38-version-compatibility-matrix.md — Versiyon uyumluluk matrisi
+
 ## Aktiviteye Özel Kurallar
 
 ### Ekleme

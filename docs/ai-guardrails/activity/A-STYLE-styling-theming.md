@@ -2,7 +2,7 @@
 id: A-STYLE
 type: activity
 name: Styling / Theme Değişikliği
-tetiklenen-domain-guardrails: [D-STY, D-DSY, D-UIX]
+tetiklenen-domain-guardrails: [D-STY, D-DSY, D-UIX, D-VIS]
 araç-zorunlulukları:
   spec: —
   stitch: önerilen
@@ -11,6 +11,12 @@ son-güncelleme: 2026-04-02
 ---
 
 # A-STYLE: Styling/Theme Değişikliği Guardrail
+
+## Aktif Domain Guardrail'ler
+- **D-STY** → Styling kuralları, Tailwind/NativeWind kullanımı
+- **D-DSY** → Semantic token, token hiyerarşisi
+- **D-UIX** → Görsel tutarlılık, HIG uyumu
+- **D-VIS** → Visual fidelity, tasarım-kod uyumu, pixel-perfect doğrulama
 
 ## Ön Koşullar
 1. D-STY ve D-DSY guardrail'lerini oku

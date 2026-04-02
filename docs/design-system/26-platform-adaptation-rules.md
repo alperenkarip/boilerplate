@@ -909,6 +909,8 @@ Bu nedenle splash screen yalnızca teknik bir gereklilik değil, marka deneyimin
 
 **Dosya formatı:** PNG tercih edilir (şeffaflık desteği). Boyut: Makul dosya boyutunda tutulmalı (100-300 KB ideal). Çok büyük splash image uygulama başlatma süresini olumsuz etkiler.
 
+**Performans kuralı:** Splash screen süresi performans standardına (13-performance-standard.md) tabidir. Splash → ilk anlamlı ekran süresi 2 saniyeyi aşarsa P0 performans ihlali sayılır.
+
 ## S58.5. Dark Mode Splash
 
 Cihaz dark mode'dayken splash screen da karanlık temaya uymalıdır. Aksi halde uygulama açılırken beyaz flaş etkisi oluşur ve kullanıcı deneyimi bozulur.
