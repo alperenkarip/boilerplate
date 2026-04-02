@@ -219,6 +219,29 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm build
 
+  expo-doctor:
+    name: Expo Doctor
+    needs: [repo-mode, setup]
+    if: needs.repo-mode.outputs.bootstrap_ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            **/node_modules
+          key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Run expo-doctor
+        working-directory: apps/mobile
+        run: npx expo-doctor
+
   boundary:
     name: Boundary Check
     needs: [repo-mode, setup]
