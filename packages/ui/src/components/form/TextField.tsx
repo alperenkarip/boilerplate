@@ -1,4 +1,6 @@
 // C15 — TextField
+// @MX:ANCHOR: [AUTO] Primary text input component — used by 18+ files for all form inputs
+// @MX:REASON: Core form primitive with a11y integration; prop changes affect every form screen
 import { type InputHTMLAttributes, forwardRef } from 'react';
 
 interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {

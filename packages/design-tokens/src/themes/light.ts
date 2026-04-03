@@ -1,4 +1,6 @@
 // Light tema — semantic token degerleri
+// @MX:ANCHOR: [AUTO] Light theme token set — consumed by ThemeProvider and all themed components
+// @MX:REASON: Token value changes cascade to entire light mode UI; must match SemanticTokenSet contract
 import { gray, blue, green, red, amber, white } from '../raw/colors';
 import type { SemanticTokenSet } from '../semantic/types';
 

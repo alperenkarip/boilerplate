@@ -1,4 +1,6 @@
 // C29 — ListItem
+// @MX:ANCHOR: [AUTO] List row component — used by 3+ files for settings, menus, and data lists
+// @MX:REASON: Shared list pattern; layout/interaction changes affect multiple list-based screens
 import { type ReactNode } from 'react';
 
 interface ListItemProps {

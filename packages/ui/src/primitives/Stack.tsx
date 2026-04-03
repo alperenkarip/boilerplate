@@ -1,4 +1,6 @@
 // C04 — Stack primitive: dikey layout (gap-based)
+// @MX:ANCHOR: [AUTO] Core layout primitive — used by 51+ files across web and mobile screens
+// @MX:REASON: Highest fan_in in UI layer; signature changes break all screen layouts
 import { type HTMLAttributes, type ReactNode } from 'react';
 
 interface StackProps extends HTMLAttributes<HTMLDivElement> {

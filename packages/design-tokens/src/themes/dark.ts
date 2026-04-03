@@ -1,4 +1,6 @@
 // Dark tema — semantic token degerleri
+// @MX:ANCHOR: [AUTO] Dark theme token set — consumed by ThemeProvider and all themed components
+// @MX:REASON: Token value changes cascade to entire dark mode UI; must match SemanticTokenSet contract
 import { gray, blue, green, red, amber, white } from '../raw/colors';
 import type { SemanticTokenSet } from '../semantic/types';
 

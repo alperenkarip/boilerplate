@@ -1,4 +1,6 @@
 // C01 — Text primitive: tipografi temel birimi
+// @MX:ANCHOR: [AUTO] Typography body primitive — used by 46+ files for all text content
+// @MX:REASON: Core text rendering; variant/color changes cascade to every screen
 import { type HTMLAttributes, type ReactNode } from 'react';
 
 type TextVariant = 'body' | 'caption' | 'label' | 'overline';

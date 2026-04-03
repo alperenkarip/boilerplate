@@ -1,4 +1,6 @@
 // C35 — Spinner
+// @MX:ANCHOR: [AUTO] Loading indicator component — used by 4+ files for async state feedback
+// @MX:REASON: Shared loading UI; animation/size changes affect all loading states
 interface SpinnerProps {
   size?: number;
   color?: string;

@@ -1,4 +1,6 @@
 // C02 — Heading primitive: baslik seviyeleri (h1-h6)
+// @MX:ANCHOR: [AUTO] Typography heading primitive — used by 47+ files for all heading elements
+// @MX:REASON: Second highest fan_in; level/color prop changes affect entire UI hierarchy
 import { type HTMLAttributes, type ReactNode } from 'react';
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;

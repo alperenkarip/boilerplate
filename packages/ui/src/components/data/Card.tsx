@@ -1,4 +1,6 @@
 // C28 — Card
+// @MX:ANCHOR: [AUTO] Content container component — used by 15+ files for grouped content display
+// @MX:REASON: Primary surface component; padding/border changes affect all card-based layouts
 import { type HTMLAttributes, type ReactNode } from 'react';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {

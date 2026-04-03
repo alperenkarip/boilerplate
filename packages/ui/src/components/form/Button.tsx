@@ -1,4 +1,6 @@
 // C13 — Button
+// @MX:ANCHOR: [AUTO] Primary interactive component — used by 37+ files for all user actions
+// @MX:REASON: Most-used form component; variant/size API changes break action flows across app
 import { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
