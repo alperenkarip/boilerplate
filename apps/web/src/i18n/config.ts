@@ -13,6 +13,9 @@ import trValidation from './locales/tr/validation.json';
 
 // EN locale dosyalari
 import enCommon from './locales/en/common.json';
+import enAuth from './locales/en/auth.json';
+import enShell from './locales/en/shell.json';
+import enValidation from './locales/en/validation.json';
 
 export const defaultLocale = 'tr';
 export const supportedLocales = ['tr', 'en'] as const;
@@ -31,6 +34,9 @@ i18n.use(initReactI18next).init({
     },
     en: {
       common: enCommon,
+      auth: enAuth,
+      shell: enShell,
+      validation: enValidation,
     },
   },
   lng: defaultLocale,

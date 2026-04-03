@@ -5,3 +5,4 @@ export { DividerWithLabel } from './DividerWithLabel';
 export { PullToRefreshWrapper } from './PullToRefreshWrapper';
 export { InfiniteScrollList } from './InfiniteScrollList';
 export { StickyFooter } from './StickyFooter';
+export { SkipToContent } from './SkipToContent';

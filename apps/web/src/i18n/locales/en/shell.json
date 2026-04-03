@@ -1,0 +1,142 @@
+{
+  "system": {
+    "offline": {
+      "title": "No Connection",
+      "description": "Check your internet connection and try again.",
+      "action": "Refresh"
+    },
+    "maintenance": {
+      "title": "Maintenance Mode",
+      "description": "The system is temporarily unavailable due to maintenance."
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "description": "The page you're looking for doesn't exist or has been removed."
+    },
+    "error": {
+      "title": "An Unexpected Error Occurred",
+      "description": "The application encountered an unexpected situation.",
+      "action": "Try Again"
+    },
+    "loading": { "title": "Loading" }
+  },
+  "sample": {
+    "list": {
+      "title": "Records",
+      "addNew": "Add New",
+      "loading": "Loading records...",
+      "empty": {
+        "title": "No Records Found",
+        "description": "No records have been added yet.",
+        "action": "Add New Record"
+      }
+    },
+    "detail": {
+      "back": "Back",
+      "createdAt": "Created At",
+      "status": "Status",
+      "loading": "Loading record...",
+      "notFound": "Record not found",
+      "archivedStatus": "Archived"
+    },
+    "form": {
+      "title": "Create New Record",
+      "fields": { "title": "Title", "description": "Description", "status": "Status" },
+      "placeholders": { "title": "Record title", "description": "Record description" },
+      "cancel": "Cancel",
+      "save": "Save",
+      "statusOptions": { "active": "Active", "archived": "Archived" }
+    }
+  },
+  "onboarding": {
+    "slide1": { "title": "Welcome", "description": "Are you ready to explore your app?" },
+    "slide2": {
+      "title": "Secure and Fast",
+      "description": "Your data is safe, your experience is seamless."
+    },
+    "slide3": {
+      "title": "Get Started",
+      "description": "Create your profile and start using the app."
+    },
+    "getStarted": "Get Started"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "subtitle": "We need the following permissions for a better experience.",
+    "continue": "Continue",
+    "skip": "Skip for Now",
+    "notifications": {
+      "title": "Notifications",
+      "description": "Receive notifications for important updates and reminders."
+    },
+    "location": {
+      "title": "Location",
+      "description": "Access to your location so we can show nearby services."
+    },
+    "camera": {
+      "title": "Camera",
+      "description": "Camera access to take profile photos and scan documents."
+    }
+  },
+  "profileSetup": {
+    "title": "Complete Your Profile",
+    "subtitle": "Just a few more details and you're all set.",
+    "fields": { "displayName": "Full Name", "phone": "Phone", "birthDate": "Date of Birth" },
+    "placeholders": { "displayName": "Your Full Name", "phone": "+1 XXX XXX XXXX" },
+    "submit": "Complete"
+  },
+  "profile": {
+    "displayName": "Username",
+    "edit": "Edit Profile",
+    "fields": { "email": "Email", "phone": "Phone", "joinDate": "Join Date" }
+  },
+  "editProfile": {
+    "title": "Edit Profile",
+    "fields": { "displayName": "Full Name", "phone": "Phone" }
+  },
+  "settings": {
+    "title": "Settings",
+    "sections": { "appearance": "Appearance", "account": "Account", "info": "Info" },
+    "darkMode": "Dark Mode",
+    "profile": "Profile",
+    "notifications": "Notification Preferences",
+    "changePassword": "Change Password",
+    "about": "About",
+    "deleteAccount": "Delete Account"
+  },
+  "notificationPrefs": {
+    "title": "Notification Preferences",
+    "subtitle": "Choose which notifications you'd like to receive.",
+    "push": "Push Notifications",
+    "email": "Email Notifications",
+    "marketing": "Marketing Notifications"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "New Password (Confirm)",
+    "submit": "Update Password"
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "warning": "This action cannot be undone. All your data will be permanently deleted.",
+    "description": "Are you sure you want to delete your account? Type 'DELETE' below to confirm.",
+    "confirmLabel": "Confirmation",
+    "confirmPlaceholder": "DELETE",
+    "submit": "Permanently Delete My Account",
+    "dialogTitle": "Are you sure?",
+    "dialogMessage": "This action cannot be undone.",
+    "dialogConfirm": "Yes, Delete"
+  },
+  "about": {
+    "title": "About",
+    "appVersion": "App Version",
+    "buildNumber": "Build Number",
+    "platform": "Platform",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "licenses": "Open Source Licenses",
+    "copyright": "© 2026 Boilerplate. All rights reserved."
+  }
+}

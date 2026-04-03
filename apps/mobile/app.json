@@ -7,6 +7,18 @@
     "userInterfaceStyle": "automatic",
     "scheme": "boilerplate",
     "platforms": ["ios", "android"],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       [
         "expo-build-properties",
@@ -14,17 +26,44 @@
           "ios": { "newArchEnabled": true },
           "android": { "newArchEnabled": true }
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-local-authentication"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.project.boilerplate"
+      "bundleIdentifier": "com.project.boilerplate",
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Guvenli giris icin biyometrik dogrulama kullanilir."
+      },
+      "associatedDomains": ["applinks:example.com"]
     },
     "android": {
       "package": "com.project.boilerplate",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "example.com",
+              "pathPrefix": "/"
+            },
+            {
+              "scheme": "http",
+              "host": "example.com",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     }
   }
 }

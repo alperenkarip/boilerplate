@@ -38,9 +38,11 @@ export {
   Radio,
   FormGroup,
   FormActions,
-  // Feedback (2)
+  // Feedback (4)
   Toast,
   Banner,
+  ConsentBanner,
+  NetworkStatusBanner,
   // State (6)
   Skeleton,
   Spinner,
@@ -75,7 +77,7 @@ export {
   SegmentedControl,
   Header,
   TabBar,
-  // Utility (7)
+  // Utility (8)
   Accordion,
   CountdownTimer,
   WebViewPlaceholder,
@@ -83,4 +85,7 @@ export {
   PullToRefreshWrapper,
   InfiniteScrollList,
   StickyFooter,
+  SkipToContent,
+  // Quality (1)
+  AppLockScreen,
 } from './components';

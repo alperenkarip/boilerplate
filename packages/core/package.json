@@ -10,7 +10,12 @@
     "lint": "eslint .",
     "test": "echo \"no tests yet\""
   },
+  "peerDependencies": {
+    "react": "catalog:"
+  },
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "react": "catalog:",
     "typescript": "catalog:"
   }
 }

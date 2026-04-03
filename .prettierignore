@@ -1,0 +1,4 @@
+node_modules
+.claude
+.moai
+pnpm-lock.yaml
