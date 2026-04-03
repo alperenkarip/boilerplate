@@ -148,19 +148,77 @@ pnpm clean                # node_modules + dist temizligi
 
 ### AI Workflow ve Arac Zinciri
 
-Bu projede AI-assisted gelistirme altyapisi aktiftir:
+Bu projede AI-assisted gelistirme altyapisi aktiftir. Ilk kurulumda asagidaki adimlari tamamlayin.
 
-#### MoAI-ADK
+#### MoAI-ADK Kurulumu
+
+```bash
+# 1. MoAI-ADK'yi kur
+npm install -g moai-adk
+
+# 2. Proje icinde init et (mevcut CLAUDE.md korunur, .moai/ dizini olusur)
+moai init
+
+# 3. Calistigini dogrula
+/moai project
+
+# 4. Karmasik gorevlerde SPEC olustur
+/moai plan "gorev aciklamasi"
+# SPEC dosyasi .moai/specs/ altinda olusur
+```
 
 - SPEC-first yaklasim: karmasik gorevlerde once `/moai plan` ile SPEC olusturulur
 - TRUST 5 kalite kurallari gecerlidir
 - `.moai/specs/` dizininde implementasyon planlari tutulur
+- Referans: `.moai/specs/SPEC-IMP-001-implementation-roadmap.md` (bu projenin implementasyon plani)
 
-#### Claude Code
+#### Claude Code Kurulumu
+
+```bash
+# 1. Claude Code CLI'yi kur
+npm install -g @anthropic-ai/claude-code
+
+# 2. Proje dizininde calistir — CLAUDE.md otomatik okunur
+claude
+
+# 3. Hook'lari dogrula (pre/post edit guardrail)
+ls .claude/hooks/
+# pre-edit-guardrail.sh ve post-edit-guardrail.sh mevcut olmali
+
+# 4. Settings dogrula
+cat .claude/settings.json
+# hooks ve MCP konfigurasyonu gorunur
+```
 
 - `CLAUDE.md` proje talimatlari, `AGENTS.md` review kurallari
-- `.claude/hooks/` ile pre/post edit guardrail hook'lari
+- `.claude/hooks/` ile pre/post edit guardrail hook'lari otomatik calisir
 - `.claude/settings.json` ile hook + MCP konfigurasyonu
+
+#### Stitch MCP Kurulumu
+
+```bash
+# 1. .claude/settings.json icinde Stitch MCP yapilandirmasi dogrula
+cat .claude/settings.json | grep -A5 "stitch"
+
+# 2. Figma'dan tasarim verisi cekmek icin:
+# - Figma dosyasini ac
+# - Stitch plugin'i calistir
+# - DESIGN.md dosyasi proje kokune export et
+
+# 3. Component uretiminde DESIGN.md otomatik referans alinir
+```
+
+#### Codex Kurulumu
+
+```bash
+# 1. GitHub repo'ya Codex app ekle
+# https://github.com/apps/codex adresinden Install
+
+# 2. Repo'yu sec ve yetkilendir
+
+# 3. Dogrula: PR acildiginda @codex otomatik review yapmali
+# AGENTS.md dosyasi review kurallarini tanimlar
+```
 
 #### Guardrail Sistemi
 
@@ -175,14 +233,63 @@ Kod uretimi veya duzenleme yapmadan ONCE guardrail protokolu otomatik tetiklenir
 
 Guardrail dokumanlari: `docs/ai-guardrails/domain/` ve `docs/ai-guardrails/activity/`
 
-#### Stitch MCP
+Detay: `docs/governance/47-ai-guardrail-governance.md`
 
-- Tasarim verileri `.claude/settings.json` uzerinden Stitch MCP ile cekilebilir
-- `DESIGN.md` dosyasi varsa component uretiminde referans alinir
+#### Sentry Kurulumu
+
+```bash
+# 1. Sentry'de yeni proje olustur (React + React Native)
+# https://sentry.io → Create Project
+
+# 2. DSN'yi .env.local'a ekle
+VITE_SENTRY_DSN=https://xxx@o123.ingest.sentry.io/456
+EXPO_PUBLIC_SENTRY_DSN=https://xxx@o123.ingest.sentry.io/456
+
+# 3. Sentry otomatik baslatilir (apps/web/src/main.tsx icinde initSentry)
+# 4. Hassas veri filtreleme beforeSend ile aktif (Authorization, Cookie header'lari)
+```
+
+#### EAS (Expo Application Services) Kurulumu
+
+```bash
+# 1. EAS CLI kur
+npm install -g eas-cli
+
+# 2. Expo hesabina giris yap
+eas login
+
+# 3. EAS projesi olustur
+cd apps/mobile
+eas build:configure
+
+# 4. eas.json zaten mevcut (development, preview, production profilleri)
+# 5. Ilk build
+eas build --platform ios --profile development
+```
+
+Detay: `docs/adr/ADR-015-ota-update-strategy.md`
 
 #### pnpm Catalog (Single-Source Versioning)
 
 Tum canonical dependency versiyonlari `pnpm-workspace.yaml` icindeki `catalog:` bloğunda tanimlidir. Package.json'larda `"react": "catalog:"` seklinde tuketilir — versiyon tek noktadan yonetilir.
+
+```yaml
+# pnpm-workspace.yaml ornegi
+catalog:
+  react: 19.2.0
+  typescript: ^5.9.3
+  zustand: ^5.0.12
+  # ... diger canonical dependency'ler
+```
+
+#### Implementasyon Yol Haritasi
+
+Bu projenin implementasyon plani SPEC-IMP-001 olarak belgelenmistir:
+
+- **Dosya:** `.moai/specs/SPEC-IMP-001-implementation-roadmap.md`
+- **Kapsam:** Gate C → Faz A-R (bootstrap → vertical slice → first audit)
+- **Durum:** 395/395 checkbox tamamlandi
+- **Referans:** `docs/roadmap/19-roadmap-to-implementation.md`, `docs/implementation/20-initial-implementation-checklist.md`
 
 ### Ortam Degiskenleri
 
