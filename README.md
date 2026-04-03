@@ -46,7 +46,7 @@ Bu kararlar ADR-001 → ADR-019 ile kilitlenmistir. Alternatif onermek, sorgulat
 | Forms              | React Hook Form + Zod                                    | 7.x / 4.x           | ADR-006 |
 | Styling/tokens     | Tailwind CSS + NativeWind                                | 4.x / 5.x           | ADR-007 |
 | Testing            | Vitest + Jest + Playwright                               | 4.x / 30.x / 1.58.x | ADR-008 |
-| Component lab      | Storybook + Storybook Test                               | 10.x                | ADR-008 |
+| Component lab      | Storybook + Storybook Test                               | 8.x                 | ADR-008 |
 | Observability      | Sentry + vendor-agnostic analytics                       | -                   | ADR-009 |
 | Auth               | HttpOnly cookies (web) + SecureStore (mobil) + Biometric | -                   | ADR-010 |
 | i18n               | i18next, namespace-based                                 | 26.x                | ADR-011 |
@@ -112,12 +112,77 @@ pnpm dev:web
 pnpm dev:mobile
 # Development build gereklidir (Expo Go yeterli degildir)
 
+# Storybook (Component Lab)
+cd apps/web && npx storybook dev -p 6006
+# http://localhost:6006 adresinde acilir
+# 61 story, 65 component
+
+# Mobile development build (ilk seferde zorunlu)
+cd apps/mobile
+npx expo prebuild
+npx expo run:ios    # veya run:android
+
+# expo-doctor ile saglik kontrolu
+npx expo-doctor
+
 # Kalite kontrolleri
 pnpm typecheck        # TypeScript tip kontrolu
 pnpm lint             # ESLint kontrolu
 pnpm test             # Tum testler
 pnpm build            # Tum workspace'i derle
 ```
+
+### Workspace Komutlari
+
+```bash
+# Workspace komutlari
+pnpm dev:web              # Web dev server (port 3000)
+pnpm dev:mobile           # Expo dev client
+pnpm build                # Tum workspace build
+pnpm typecheck            # TypeScript kontrolu
+pnpm lint                 # ESLint kontrolu
+pnpm test                 # Tum testler (Vitest + Jest)
+pnpm verify               # typecheck + lint + test (CI gate)
+pnpm clean                # node_modules + dist temizligi
+```
+
+### AI Workflow ve Arac Zinciri
+
+Bu projede AI-assisted gelistirme altyapisi aktiftir:
+
+#### MoAI-ADK
+
+- SPEC-first yaklasim: karmasik gorevlerde once `/moai plan` ile SPEC olusturulur
+- TRUST 5 kalite kurallari gecerlidir
+- `.moai/specs/` dizininde implementasyon planlari tutulur
+
+#### Claude Code
+
+- `CLAUDE.md` proje talimatlari, `AGENTS.md` review kurallari
+- `.claude/hooks/` ile pre/post edit guardrail hook'lari
+- `.claude/settings.json` ile hook + MCP konfigurasyonu
+
+#### Guardrail Sistemi
+
+Kod uretimi veya duzenleme yapmadan ONCE guardrail protokolu otomatik tetiklenir:
+
+| Asama                  | Skill              | Aciklama                      |
+| ---------------------- | ------------------ | ----------------------------- |
+| Is baslangici          | `/guardrail-check` | Ilgili domain kurallarini oku |
+| Is tamamlandiginda     | `/guardrail-audit` | Toplu denetim raporu          |
+| Dependency degisikligi | `/dep-check`       | Policy kontrolu               |
+| PR/commit oncesi       | `/pre-pr`          | Kapsamli kalite kontrolu      |
+
+Guardrail dokumanlari: `docs/ai-guardrails/domain/` ve `docs/ai-guardrails/activity/`
+
+#### Stitch MCP
+
+- Tasarim verileri `.claude/settings.json` uzerinden Stitch MCP ile cekilebilir
+- `DESIGN.md` dosyasi varsa component uretiminde referans alinir
+
+#### pnpm Catalog (Single-Source Versioning)
+
+Tum canonical dependency versiyonlari `pnpm-workspace.yaml` icindeki `catalog:` bloğunda tanimlidir. Package.json'larda `"react": "catalog:"` seklinde tuketilir — versiyon tek noktadan yonetilir.
 
 ### Ortam Degiskenleri
 
@@ -139,61 +204,70 @@ pnpm build            # Tum workspace'i derle
 
 ```
 /
-├── apps/                          # Uygulamalar
-│   ├── web/                       # React + Vite web uygulamasi
-│   │   └── src/
-│   │       ├── features/          # Feature-first organizasyon
-│   │       ├── routes/            # Route tanimlari
-│   │       └── app.tsx            # Uygulama giris noktasi
-│   └── mobile/                    # React Native + Expo uygulamasi
-│       └── src/
-│           ├── features/          # Feature-first organizasyon
-│           ├── navigation/        # React Navigation tanimlari
-│           └── App.tsx            # Uygulama giris noktasi
-│
-├── packages/                      # Paylasilan paketler
-│   ├── design-tokens/             # Semantic token tanimlari
-│   ├── ui/                        # Cross-platform UI component'leri
-│   └── utils/                     # Utility fonksiyonlari
-│
-├── docs/                          # Dokumantasyon (130+ dosya)
-│   ├── foundation/                # Proje vizyonu ve prensipler
-│   ├── adr/                       # Architecture Decision Records (ADR-001 → ADR-019)
-│   ├── architecture/              # Mimari kurallar ve sinirlar
-│   ├── design-system/             # Design system standartlari
-│   ├── quality/                   # Kalite, guvenlik, performans
-│   ├── governance/                # Policy, release, dependency kurallari
-│   ├── ai-guardrails/             # AI agent kurallari (domain + aktivite)
-│   ├── checklists/                # Audit ve Definition of Done
-│   ├── implementation/            # Kurulum rehberi ve repo yapisi
-│   ├── onboarding/                # Baslangic rehberleri
-│   └── maps/                      # Dokuman haritasi
-│
-├── tooling/                       # Araclar ve otomasyon
-│   ├── ci/                        # CI pipeline sablonlari
-│   ├── sync/                      # Upstream sync mekanizmasi
-│   ├── agents/                    # Dizin-bazli agent talimatlari
-│   └── governance/                # Exception sablonlari
-│
-├── .claude/                       # Claude AI altyapisi
-│   ├── hooks/                     # Pre/post edit guardrail hook'lari
-│   ├── skills/                    # 7 guardrail skill'i
-│   └── settings.json              # Hook konfigurasyonu
-│
-├── .github/workflows/             # CI/CD pipeline'lari
-├── CLAUDE.md                      # AI proje talimatlari
-├── AGENTS.md                      # AI review kurallari
-├── CHANGELOG.md                   # Versiyonlanmis degisiklik kaydi
-└── BOUNDARY.md                    # Derived project sinir sozlesmesi (turetilmis projelerde)
+├── apps/
+│   ├── web/                        # React + Vite 8 web uygulamasi
+│   │   ├── src/
+│   │   │   ├── pages/              # Sayfa component'leri (S01-S27)
+│   │   │   ├── features/           # Feature modulleri
+│   │   │   ├── auth/               # Auth hook + session
+│   │   │   ├── state/              # Zustand store'lar
+│   │   │   ├── i18n/               # i18next config + locale JSON'lar
+│   │   │   ├── observability/      # Sentry + analytics + logger
+│   │   │   ├── styles/             # globals.css (Tailwind + CSS variables)
+│   │   │   ├── layouts/            # RootLayout
+│   │   │   ├── App.tsx             # Provider composition root
+│   │   │   ├── main.tsx            # Entry point
+│   │   │   └── router.tsx          # React Router 7.x routes
+│   │   ├── e2e/                    # Playwright E2E testler
+│   │   ├── .storybook/             # Storybook config
+│   │   └── vite.config.ts
+│   └── mobile/                     # React Native + Expo SDK 55
+│       ├── src/
+│       │   ├── screens/            # Mobile ekranlar (S01-S27)
+│       │   ├── auth/               # Biometric + SecureStore
+│       │   ├── state/              # Zustand persist + offline queue
+│       │   ├── storage/            # MMKV (plain + encrypted)
+│       │   ├── theme/              # NativeWind strategy
+│       │   ├── observability/      # Sentry mobile
+│       │   └── App.tsx             # Provider composition root
+│       ├── app.json                # Expo config
+│       └── eas.json                # EAS Build config
+├── packages/
+│   ├── core/                       # Domain logic, types, auth boundary
+│   ├── design-tokens/              # Raw + semantic tokens, light/dark tema
+│   ├── ui/                         # 65 component (12 primitive + 53 tier 2-3+)
+│   ├── config-typescript/          # Shared TS config (base, web, mobile, library)
+│   ├── config-eslint/              # Shared ESLint flat config
+│   └── testing/                    # Test helpers, fixtures, mocks
+├── project/
+│   └── adr/                        # Proje-spesifik karar kayitlari (PDR)
+├── scripts/                        # Operasyonel scriptler
+├── docs/                           # 130+ dokuman
+├── tooling/                        # CI sablonlari, sync scriptleri, AI araclar
+├── .claude/                        # Claude Code hooks + skills + settings
+├── .moai/                          # MoAI-ADK config + specs
+├── .github/workflows/              # CI (ci.yml) + Deploy (deploy.yml)
+├── .husky/                         # Pre-commit hooks (lint-staged)
+├── package.json                    # Workspace root (pnpm@10.33.0)
+├── pnpm-workspace.yaml             # Workspace + catalog: tanimlari
+├── turbo.json                      # Turborepo task pipeline
+├── tsconfig.base.json              # → config-typescript extends
+├── eslint.config.js                # → config-eslint extends
+├── prettier.config.js              # Formatting standartlari
+├── .nvmrc                          # Node 20.19
+├── .npmrc                          # pnpm guvenlik baseline
+├── .env.example                    # Ortam degisken sablonu
+├── CLAUDE.md                       # AI proje talimatlari
+└── AGENTS.md                       # AI review kurallari
 ```
 
 ### Import Yonu Kurallari
 
 ```
-apps/web   ──→ packages/ui     ✓ OK
-apps/mobile──→ packages/utils  ✓ OK
-packages/ui──→ apps/web        ✗ YASAK
-feature A  ──→ feature B       ✗ YASAK (ortak ihtiyac packages/'a tasinir)
+apps/web   ──→ packages/ui      ✓ OK
+apps/mobile──→ packages/core    ✓ OK
+packages/ui──→ apps/web         ✗ YASAK
+feature A  ──→ feature B        ✗ YASAK (ortak ihtiyac packages/'a tasinir)
 ```
 
 Bu kurallar CI'da otomatik olarak denetlenir. Ihlal tespit edildiginde pipeline FAIL olur.
