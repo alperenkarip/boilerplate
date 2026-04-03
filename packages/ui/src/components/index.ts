@@ -1,7 +1,19 @@
 // Tier 2-3 Components barrel export
 
-// Form (6)
-export { Button, IconButton, TextField, FieldShell, Switch, Select } from './form';
+// Form (11)
+export {
+  Button,
+  IconButton,
+  TextField,
+  TextArea,
+  FieldShell,
+  Switch,
+  Select,
+  Checkbox,
+  Radio,
+  FormGroup,
+  FormActions,
+} from './form';
 
 // Feedback (2)
 export { Toast, Banner } from './feedback';
@@ -12,14 +24,30 @@ export { Skeleton, Spinner, ProgressBar, EmptyState, ErrorState, LoadingState } 
 // Data Display (7)
 export { Avatar, Badge, Chip, Card, ListItem, SectionHeader, KeyValueRow } from './data';
 
-// Overlay (5)
-export { Modal, ConfirmDialog, BottomSheet, ActionSheet, Drawer } from './overlay';
+// Overlay (7)
+export {
+  Modal,
+  ConfirmDialog,
+  BottomSheet,
+  ActionSheet,
+  Drawer,
+  Tooltip,
+  Popover,
+} from './overlay';
 
-// Navigation (2)
-export { StepIndicator, SegmentedControl } from './navigation';
+// Navigation (4)
+export { StepIndicator, SegmentedControl, Header, TabBar } from './navigation';
 
-// Utility (4)
-export { Accordion, CountdownTimer, WebViewPlaceholder, DividerWithLabel } from './utility';
+// Utility (7)
+export {
+  Accordion,
+  CountdownTimer,
+  WebViewPlaceholder,
+  DividerWithLabel,
+  PullToRefreshWrapper,
+  InfiniteScrollList,
+  StickyFooter,
+} from './utility';
 
 // Input (5)
 export { PasswordField, PhoneInput, SearchBar, DatePicker, Slider } from './input';

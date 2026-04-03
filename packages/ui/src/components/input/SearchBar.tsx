@@ -29,7 +29,7 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
 
   /** Input degisim handler'i */
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange?.(e.target.value);
+    onChange?.((e.target as any).value);
   };
 
   /** Temizle butonuna tiklandiginda */

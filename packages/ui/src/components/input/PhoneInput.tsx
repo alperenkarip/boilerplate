@@ -70,7 +70,7 @@ export function PhoneInput({
   /** Ulke kodu degistiginde */
   const handleCountryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     onChange?.({
-      countryCode: e.target.value,
+      countryCode: (e.target as any).value,
       number: value?.number ?? '',
     });
   };
@@ -79,7 +79,7 @@ export function PhoneInput({
   const handleNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange?.({
       countryCode: currentDialCode,
-      number: e.target.value,
+      number: (e.target as any).value,
     });
   };
 

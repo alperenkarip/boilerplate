@@ -1,6 +1,11 @@
 export { Button } from './Button';
 export { IconButton } from './IconButton';
 export { TextField } from './TextField';
+export { TextArea } from './TextArea';
 export { FieldShell } from './FieldShell';
 export { Switch } from './Switch';
 export { Select } from './Select';
+export { Checkbox } from './Checkbox';
+export { Radio } from './Radio';
+export { FormGroup } from './FormGroup';
+export { FormActions } from './FormActions';

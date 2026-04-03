@@ -46,7 +46,7 @@ export const Slider = forwardRef<HTMLInputElement, SliderProps>(function Slider(
 
   /** Input degisim handler'i */
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange?.(Number(e.target.value));
+    onChange?.(Number((e.target as any).value));
   };
 
   return (
