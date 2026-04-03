@@ -440,6 +440,7 @@ expand_and_sync "tooling/governance/exception-template.yaml" "exact"
 expand_and_sync "tooling/sync/upstream-sync-manifest.yaml" "exact"
 expand_and_sync "tooling/sync/upstream-sync.sh" "exact"
 expand_and_sync "tooling/sync/partial-merge.sh" "exact"
+expand_and_sync "tooling/derive/create-project.sh" "exact"
 
 # Yapisal miras (structural) dosyalari
 echo ""

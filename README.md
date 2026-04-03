@@ -8,6 +8,7 @@ React (web) ve React Native/Expo (mobil) uzerinde kurulu, documentation-first, k
 
 - [Proje Tanitimi](#proje-tanitimi)
 - [Baslangic Rehberi](#baslangic-rehberi)
+- [Yeni Proje Turetme Rehberi](#yeni-proje-turetme-rehberi)
 - [Proje Yapisi](#proje-yapisi)
 - [Gelistirme Sureci](#gelistirme-sureci)
 - [Build, Deploy ve Ortam Yonetimi](#build-deploy-ve-ortam-yonetimi)
@@ -101,6 +102,28 @@ cp .env.example .env.local
 pnpm turbo run build --dry-run
 ```
 
+### Ortam Degiskenleri
+
+`.env.example` dosyasini `.env.local` olarak kopyalayin. Asagidaki tum degiskenleri yapilandirin:
+
+| Degisken                         | ADR     | Aciklama                 | Nereden Alinir                         |
+| -------------------------------- | ------- | ------------------------ | -------------------------------------- |
+| `VITE_APP_NAME`                  | —       | Uygulama adi             | Proje adi                              |
+| `VITE_API_BASE_URL`              | —       | Backend API adresi       | Backend ekibi                          |
+| `VITE_SENTRY_DSN`                | ADR-009 | Web Sentry DSN           | sentry.io → Proje → Client Keys        |
+| `EXPO_PUBLIC_SENTRY_DSN`         | ADR-009 | Mobile Sentry DSN        | Ayni Sentry projesi                    |
+| `VITE_ANALYTICS_KEY`             | ADR-009 | Web analytics API key    | Vendor paneli (Segment, Amplitude vb.) |
+| `EXPO_PUBLIC_ANALYTICS_KEY`      | ADR-009 | Mobile analytics key     | Ayni vendor                            |
+| `VITE_DEEP_LINK_DOMAIN`          | ADR-014 | Universal Links domain   | Proje domain'i                         |
+| `EXPO_PUBLIC_DEEP_LINK_DOMAIN`   | ADR-014 | App Links domain         | Ayni domain                            |
+| `EXPO_PUBLIC_EAS_PROJECT_ID`     | ADR-015 | EAS Update proje ID      | `eas init` komutu                      |
+| `EXPO_PUBLIC_FCM_SENDER_ID`      | ADR-013 | Firebase Cloud Messaging | Firebase Console → Project settings    |
+| `EXPO_PUBLIC_REVENUECAT_API_KEY` | ADR-016 | In-app purchase API key  | app.revenuecat.com                     |
+| `VITE_PRIVACY_POLICY_URL`        | ADR-017 | Gizlilik politikasi URL  | Hukuk ekibi                            |
+| `VITE_TERMS_OF_SERVICE_URL`      | ADR-017 | Kullanim sartlari URL    | Hukuk ekibi                            |
+
+> `.env` dosyalari `.gitignore` ile korunur. Gercek credential'lar asla repo'ya girmez.
+
 ### Ilk Calistirma
 
 ```bash
@@ -111,25 +134,152 @@ pnpm dev:web
 # Mobile development server (Expo dev client)
 pnpm dev:mobile
 # Development build gereklidir (Expo Go yeterli degildir)
+```
 
-# Storybook (Component Lab)
+### Storybook (Component Lab)
+
+Projede 85+ component, her birinin Storybook story'si bulunur.
+
+```bash
 cd apps/web && npx storybook dev -p 6006
 # http://localhost:6006 adresinde acilir
-# 61 story, 65 component
+```
 
-# Mobile development build (ilk seferde zorunlu)
+**Story yazma convention:** Her component'in yaninda `ComponentName.stories.tsx` dosyasi bulunur. Yeni component olustururken story dosyasi zorunludur.
+
+```typescript
+// Ornek: Button.stories.tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { Button } from './Button';
+
+const meta: Meta<typeof Button> = {
+  component: Button,
+  title: 'Form/Button',
+};
+export default meta;
+
+type Story = StoryObj<typeof Button>;
+
+export const Primary: Story = {
+  args: { children: 'Tikla', variant: 'primary' },
+};
+```
+
+Detay: `apps/web/.storybook/` (main.ts, preview.ts)
+
+### Mobile Ilk Build (Zorunlu)
+
+Expo Go, New Architecture (Fabric, JSI, TurboModules) ve native moduller nedeniyle **yeterli degildir**. Development client build gereklidir:
+
+```bash
 cd apps/mobile
+
+# 1. Native projeleri olustur
 npx expo prebuild
-npx expo run:ios    # veya run:android
 
-# expo-doctor ile saglik kontrolu
+# 2. iOS simulator'da calistir
+npx expo run:ios
+
+# 3. Android emulator'da calistir
+npx expo run:android
+
+# 4. Saglik kontrolu
 npx expo-doctor
+```
 
-# Kalite kontrolleri
+**Ne zaman `prebuild` tekrar gerekir:**
+
+- Yeni native modul eklediginde (expo install ile)
+- app.json'da plugin degisikligi yaptiginda
+- Expo SDK upgrade yaptiginda
+
+### Expo Hesap ve EAS Kurulumu
+
+EAS (Expo Application Services) build, submit ve OTA update icin gereklidir.
+
+```bash
+# 1. EAS CLI kur
+npm install -g eas-cli
+
+# 2. Expo hesabina giris yap
+eas login
+
+# 3. Proje olustur (Project ID alinir)
+cd apps/mobile
+eas init
+
+# 4. app.json'a Project ID yaz
+# expo.updates.url → "https://u.expo.dev/<PROJECT_ID>"
+```
+
+**EAS Build profilleri** (`apps/mobile/eas.json`):
+
+| Profil        | Amac                               | Komut                             |
+| ------------- | ---------------------------------- | --------------------------------- |
+| `development` | Dev client build, internal dagitim | `eas build --profile development` |
+| `preview`     | Test build, iOS simulator destekli | `eas build --profile preview`     |
+| `production`  | Store submission, auto-increment   | `eas build --profile production`  |
+
+### App Store / Play Store Hazirligi
+
+**iOS — Apple Developer Account:**
+
+1. developer.apple.com'da hesap olustur veya ekibe katil
+2. Bundle ID olustur (Certificates, Identifiers & Profiles)
+3. `eas.json`'da `appleId` ve `ascAppId` degerlerini doldur
+4. Provisioning profile ve signing certificate EAS tarafindan yonetilir
+
+**Android — Google Play Console:**
+
+1. play.google.com/console'da hesap olustur
+2. Uygulama olustur, package name gir (app.json'daki `android.package`)
+3. Service account key olustur → `google-services-key.json` olarak kaydet
+4. `eas.json`'da `serviceAccountKeyPath`'i dogrula
+
+### Uygulama Ikon ve Splash Ekrani
+
+Asset dosyalari `apps/mobile/assets/` altindadir:
+
+| Dosya               | Boyut        | Kullanim                         |
+| ------------------- | ------------ | -------------------------------- |
+| `icon.png`          | 1024x1024 px | iOS ve Android uygulama ikonu    |
+| `adaptive-icon.png` | 1024x1024 px | Android adaptive icon foreground |
+| `splash.png`        | 1284x2778 px | Splash screen gorseli            |
+
+Olusturma araclari: [icon.kitchen](https://icon.kitchen), Figma, veya tasarim ekibinden alinir.
+
+### Analytics Vendor Secimi
+
+Projede vendor-agnostic analytics abstraction katmani kullanilir (ADR-009). Varsayilan olarak no-op adapter aktiftir.
+
+Vendor secimi yapildiginda:
+
+1. Vendor SDK'sini yukle (orn: `pnpm add @segment/analytics-react-native`)
+2. `apps/*/src/observability/analytics.ts` dosyasindaki adapter'i implement et
+3. `.env`'deki `VITE_ANALYTICS_KEY` / `EXPO_PUBLIC_ANALYTICS_KEY` degerlerini doldur
+
+Desteklenen vendor ornekleri: Segment, Amplitude, Mixpanel, PostHog.
+
+### Sentry Kurulumu
+
+**Web** (hazir): `@sentry/react` dependency'de, `apps/web/src/observability/sentry.ts` config hazir. Sadece `VITE_SENTRY_DSN` degiskeni doldurulmali.
+
+**Mobile** (kurulum gerekli):
+
+1. `cd apps/mobile && pnpm add @sentry/react-native`
+2. `apps/mobile/src/observability/sentry.ts` dosyasindaki conditional import otomatik aktif olacak
+3. `EXPO_PUBLIC_SENTRY_DSN` degiskenini doldur
+
+Sentry DSN almak: sentry.io → Proje olustur → Settings → Client Keys (DSN)
+
+### Kalite Kontrolleri
+
+```bash
 pnpm typecheck        # TypeScript tip kontrolu
 pnpm lint             # ESLint kontrolu
-pnpm test             # Tum testler
+pnpm test             # Tum testler (Vitest web, Jest mobile)
 pnpm build            # Tum workspace'i derle
+pnpm verify           # typecheck + lint + test hepsini calistirir
 ```
 
 ### Workspace Komutlari
@@ -293,15 +443,189 @@ Bu projenin implementasyon plani SPEC-IMP-001 olarak belgelenmistir:
 
 ### Ortam Degiskenleri
 
-`.env.example` dosyasini `.env.local` olarak kopyalayin. Asagidaki degiskenler tanimlanmalidir:
+Ortam degiskenleri detayli tablosu icin yukardaki [Ortam Degiskenleri](#ortam-degiskenleri) bolumune bakin.
 
-| Degisken              | Aciklama           | Ornek                       |
-| --------------------- | ------------------ | --------------------------- |
-| `VITE_API_BASE_URL`   | Backend API adresi | `https://api.example.com`   |
-| `SENTRY_DSN`          | Sentry hata izleme | `https://xxx@sentry.io/xxx` |
-| `EXPO_PUBLIC_API_URL` | Mobil API adresi   | `https://api.example.com`   |
+---
 
-> `.env` dosyalari `.gitignore` ile korunur. Gercek credential'lar asla repo'ya girmez.
+## Yeni Proje Turetme Rehberi
+
+Bu boilerplate'ten yeni bir proje turetmek icin asagidaki adimlari izleyin. Surecin buyuk bolumu `create-project.sh` scripti ile otomatize edilmistir.
+
+### On Kosullar
+
+| Gereksinim          | Aciklama                                               |
+| ------------------- | ------------------------------------------------------ |
+| Node.js 20.x        | `nvm use` veya `.nvmrc` ile saglanan exact hat         |
+| pnpm 10.x           | `corepack enable && corepack prepare` ile saglanir     |
+| Git 2.40+           | Repo olusturmak ve upstream remote tanimlamak icin     |
+| jq                  | JSON dosyalarini donusturmek icin (script bagimliligi) |
+| Boilerplate erisimi | Bu repo'yu clone edebilme veya fork yapabilme          |
+
+### Hizli Baslangic (Otomatik)
+
+```bash
+# 1. Boilerplate'i klonla
+git clone <BOILERPLATE_REPO_URL> my-project
+cd my-project
+
+# 2. Git gecmisini temizle (temiz baslangic icin)
+rm -rf .git
+git init
+git add -A
+git commit -m "Boilerplate'ten turetildi"
+
+# 3. Turetme scriptini calistir
+./tooling/derive/create-project.sh \
+  --name "myapp" \
+  --scope "@myapp" \
+  --display-name "My App" \
+  --bundle-id "com.myorg.myapp" \
+  --domain "myapp.com" \
+  --description "Proje aciklamasi" \
+  --upstream-url "https://github.com/org/boilerplate.git"
+
+# 4. Ilk commit
+git add -A
+git commit -m "Proje olusturuldu: My App"
+
+# 5. Remote'a push
+git remote add origin <PROJE_REPO_URL>
+git push -u origin main
+```
+
+### Script Ne Yapar?
+
+`create-project.sh` tek komutla su islemleri gerceklestirir:
+
+| Faz           | Islem                | Detay                                                           |
+| ------------- | -------------------- | --------------------------------------------------------------- |
+| **Kimlik**    | Scope rename         | Tum `package.json` dosyalarinda `@project/` → `@{scope}/`       |
+| **Kimlik**    | Import guncelleme    | Kaynak koddaki `@project/` referanslarini gunceller             |
+| **Platform**  | Expo config          | `app.json`'da ad, slug, bundle ID, domain gunceller             |
+| **Platform**  | Web config           | `index.html` title, `.env.example` app name gunceller           |
+| **Platform**  | CI/CD                | Workflow dosyalarindaki scope ve yorum referanslarini gunceller |
+| **Dokuman**   | BOUNDARY.md          | Upstream sync contract dosyasini olusturur                      |
+| **Dokuman**   | .sync-config.yaml    | Adaptive sync degiskenlerini olusturur                          |
+| **Dokuman**   | CHANGELOG.md         | Projenin ilk CHANGELOG girdisini olusturur                      |
+| **Dokuman**   | CLAUDE.md            | Proje Kimligi bolumunu gunceller                                |
+| **Dokuman**   | AGENTS.md            | Basligi gunceller                                               |
+| **Uyarlama**  | derived-projects.txt | Boilerplate listesini temizler                                  |
+| **Uyarlama**  | notify workflow      | Push trigger'i devre disi birakir                               |
+| **Uyarlama**  | PDR dosyalari        | Icerik sifirlanir, sablon birakilir                             |
+| **Dogrulama** | Kontrol              | Kalan referanslari tarar, typecheck ve build calistirir         |
+
+### Script Parametreleri
+
+| Parametre        | Zorunlu | Aciklama               | Ornek                           |
+| ---------------- | ------- | ---------------------- | ------------------------------- |
+| `--name`         | Evet    | Proje slug'i           | `myapp`                         |
+| `--scope`        | Evet    | npm scope              | `@myapp`                        |
+| `--display-name` | Evet    | Insan-okur ad          | `My App`                        |
+| `--bundle-id`    | Evet    | iOS/Android identifier | `com.myorg.myapp`               |
+| `--domain`       | Evet    | Deep link domain       | `myapp.com`                     |
+| `--description`  | Hayir   | Proje aciklamasi       | `E-ticaret uygulamasi`          |
+| `--upstream-url` | Hayir   | Boilerplate repo URL   | `https://github.com/org/bp.git` |
+| `--skip-install` | Hayir   | pnpm install atla      | —                               |
+| `--skip-verify`  | Hayir   | Dogrulama atla         | —                               |
+
+### Script Sonrasi Manuel Adimlar
+
+Script mekanik donusumleri halleder. Asagidaki adimlar manuel tamamlanmalidir:
+
+#### 1. Ortam Degiskenleri
+
+```bash
+cp .env.example .env.local
+# .env.local dosyasini gercek degerlerle doldurun
+```
+
+#### 2. Design Token'lar
+
+Projenin gorsel kimligini design token sistemine girin. Token dosyalari `packages/design-tokens/src/` altindadir.
+
+| Dosya               | Icerigi                                |
+| ------------------- | -------------------------------------- |
+| `raw/colors.ts`     | Renk paleti (brand, neutral, semantic) |
+| `raw/typography.ts` | Font ailesi, boyut, satir yuksekligi   |
+| `raw/spacing.ts`    | Spacing scale                          |
+| `themes/light.ts`   | Light tema semantic degerleri          |
+| `themes/dark.ts`    | Dark tema semantic degerleri           |
+
+Token hiyerarsisi: `raw (palette) → semantic (roles) → component (consumption)`. Bu yapi degistirilemez.
+
+#### 3. EAS Yapilandirmasi
+
+`apps/mobile/eas.json` dosyasindaki placeholder'lari doldurun:
+
+```json
+{
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "GERCEK_APPLE_ID",
+        "ascAppId": "GERCEK_ASC_APP_ID"
+      }
+    }
+  }
+}
+```
+
+#### 4. README Guncelleme
+
+Bu README dosyasini projenize uygun iceritle guncelleyin. "Proje Tanitimi" bolumundeki boilerplate aciklamasini projenizin tanitimi ile degistirin.
+
+#### 5. AI ile Yeniden Olusturulmasi Gereken Dosyalar
+
+Turetme sonrasi asagidaki dosyalar hala boilerplate icerigi tasir. Claude Code veya MoAI ile projeye ozel yeniden uretilmelidir:
+
+**Hemen (turetme sonrasi):**
+
+| Dosya                         | Komut / Yontem   | Aciklama                                    |
+| ----------------------------- | ---------------- | ------------------------------------------- |
+| `.moai/project/product.md`    | `/moai project`  | Boilerplate urun tanimi → proje urun tanimi |
+| `.moai/project/structure.md`  | `/moai project`  | Dizin yapisi haritasi                       |
+| `.moai/project/tech.md`       | `/moai project`  | Teknik detaylar                             |
+| `.moai/project/codemaps/*.md` | `/moai codemaps` | Kod haritalari (5 dosya)                    |
+
+**Ilk hafta:**
+
+| Dosya                                        | Yontem                            | Aciklama                                  |
+| -------------------------------------------- | --------------------------------- | ----------------------------------------- |
+| `docs/onboarding/ilk-30-dakika.md`           | Manuel veya AI ile yaz            | Projeye ozel onboarding rehberi           |
+| `docs/onboarding/rol-bazli-okuma-rehberi.md` | Manuel veya AI ile yaz            | Ekip yapisina gore okuma rehberi          |
+| `.moai/design/system.md`                     | Design token doldurulduktan sonra | Projenin gorsel kimlik dokumani           |
+| `README.md` Proje Tanitimi bolumu            | Manuel                            | Boilerplate aciklamasi → proje aciklamasi |
+
+#### 6. Kalite Kontrolu
+
+```bash
+pnpm typecheck   # TypeScript kontrolu
+pnpm lint        # ESLint kontrolu
+pnpm test        # Test suite
+pnpm build       # Production build
+```
+
+Tum komutlar basariyla gecmelidir. CI pipeline (`.github/workflows/ci.yml`) push ve PR'larda bu kontrolleri otomatik calistirir.
+
+### Upstream Sync (Surekli Guncel Kalma)
+
+Turetilen proje, boilerplate guncellemelerini periyodik olarak alir. Bu mekanizma otomatik kurulur:
+
+```bash
+# Boilerplate'in yeni versiyonunu al
+git fetch upstream --tags
+git tag -l 'bp-v*' --sort=-v:refname | head -5
+
+# Sync calistir
+./tooling/sync/upstream-sync.sh bp-v1.2.0
+```
+
+Sync mekanizmasinin detaylari: `docs/governance/49-upstream-sync-strategy.md`
+Sync rehberi: `docs/onboarding/upstream-sync-rehberi.md`
+
+### Detayli Rehber
+
+Adim adim tum surec (10 adim, dogrulama kriterleriyle): `docs/implementation/43-derived-project-creation-guide.md`
 
 ---
 
@@ -662,25 +986,20 @@ Exception olmadan kural bypass'i kabul edilmez.
 
 ### Turetilmis Proje (Derived Project) Olusturma
 
+Proje turetme islemini otomatize eden script mevcuttur:
+
 ```bash
-# 1. Boilerplate'i klonla
 git clone <boilerplate-url> my-new-project
 cd my-new-project
+rm -rf .git && git init && git add -A && git commit -m "init"
 
-# 2. Git gecmisini temizle
-rm -rf .git && git init
-
-# 3. Upstream remote ekle (sync icin zorunlu)
-git remote add upstream <boilerplate-url>
-
-# 4. Proje-ozel yapilandirma
-# CLAUDE.md, AGENTS.md, package.json guncelle
-
-# 5. BOUNDARY.md olustur
-# 6. .sync-config.yaml olustur
-
-# Detay: docs/implementation/43-derived-project-creation-guide.md
+./tooling/derive/create-project.sh \
+  --name "myapp" --scope "@myapp" --display-name "My App" \
+  --bundle-id "com.myorg.myapp" --domain "myapp.com" \
+  --upstream-url "<boilerplate-url>"
 ```
+
+Detay: Yukardaki [Yeni Proje Turetme Rehberi](#yeni-proje-turetme-rehberi) bolumu ve `docs/implementation/43-derived-project-creation-guide.md`
 
 ### Upstream Sync (Boilerplate Guncellemelerini Alma)
 
@@ -826,6 +1145,25 @@ npx expo start --clear
 | `docs/governance/45-boilerplate-project-boundary-contract.md` | Miras modeli                |
 | `docs/governance/49-upstream-sync-strategy.md`                | Upstream sync stratejisi    |
 | `docs/checklists/32-definition-of-done.md`                    | Is tamamlama kriterleri     |
+
+### Proje Turetme ve Tooling
+
+| Dokuman                                                    | Aciklama                           |
+| ---------------------------------------------------------- | ---------------------------------- |
+| `docs/implementation/43-derived-project-creation-guide.md` | Turetme sureci (10 adim)           |
+| `tooling/derive/README.md`                                 | create-project.sh kullanim rehberi |
+| `tooling/ci/README.md`                                     | CI/CD pipeline aciklamasi          |
+| `CONTRIBUTING.md`                                          | Katki rehberi                      |
+
+### Alt Dizin Dokumanlari
+
+| Dokuman                            | Aciklama                           |
+| ---------------------------------- | ---------------------------------- |
+| `apps/web/README.md`               | Web uygulamasi setup ve gelistirme |
+| `apps/mobile/README.md`            | Mobile uygulama, Expo, EAS rehberi |
+| `packages/design-tokens/README.md` | Design token sistemi kullanimi     |
+| `packages/ui/README.md`            | Component library rehberi          |
+| `packages/core/README.md`          | Shared utilities ve hook'lar       |
 
 ### Tam Dokuman Haritasi
 
