@@ -91,14 +91,17 @@ Bu yeni aile ayrımı, eski versiyondan farklı olarak ADR + dependency + compat
 
 Bu aile, boilerplate ile türetilen projeler arasındaki sınırları, dallanma stratejisini, yeni proje türetme sürecini ve istisna politikasını tanımlar.
 
-| Dosya                                         | Açıklama                                              | Tür        |
-| --------------------------------------------- | ----------------------------------------------------- | ---------- |
-| `45-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi                  | Governance |
-| `42-branching-and-merge-strategy.md`          | Branching ve merge stratejisi                         | Process    |
-| `43-derived-project-creation-guide.md`        | Türetilen proje oluşturma rehberi                     | Guide      |
-| `44-exception-and-exemption-policy.md`        | İstisna ve muafiyet politikası                        | Governance |
-| `48-expo-sdk-upgrade-strategy.md`             | Expo SDK major upgrade operasyonel stratejisi         | Governance |
-| `49-upstream-sync-strategy.md`                | Boilerplate → derived proje upstream sync mekanizması | Governance |
+| Dosya                                         | Açıklama                                                                              | Tür          |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- | ------------ |
+| `45-boilerplate-project-boundary-contract.md` | Boilerplate-project sınır sözleşmesi                                                  | Governance   |
+| `42-branching-and-merge-strategy.md`          | Branching ve merge stratejisi                                                         | Process      |
+| `43-derived-project-creation-guide.md`        | Türetilen proje oluşturma rehberi                                                     | Guide        |
+| `44-exception-and-exemption-policy.md`        | İstisna ve muafiyet politikası                                                        | Governance   |
+| `48-expo-sdk-upgrade-strategy.md`             | Expo SDK major upgrade operasyonel stratejisi                                         | Governance   |
+| `49-upstream-sync-strategy.md`                | Boilerplate → derived proje upstream sync mekanizması                                 | Governance   |
+| `50-coding-standards-and-file-conventions.md` | Dosya boyut limitleri, naming, import, TypeScript, component, form, token kuralları   | Architecture |
+| `51-service-layer-patterns.md`                | Repository, UseCase, Factory, ErrorBoundary, State FSM, Component Facade pattern'leri | Architecture |
+| `52-ai-development-standards.md`              | AI geliştirme HARD kuralları, guardrail otomasyonu, TRUST 5, MoAI entegrasyonu        | Governance   |
 
 ### Operations Ailesi
 
@@ -995,7 +998,9 @@ docs/
 │   ├── 08-navigation-and-flow-rules.md
 │   ├── 09-state-management-strategy.md
 │   ├── 10-data-fetching-cache-sync.md
-│   └── 11-forms-inputs-and-validation.md
+│   ├── 11-forms-inputs-and-validation.md
+│   ├── 50-coding-standards-and-file-conventions.md
+│   └── 51-service-layer-patterns.md
 ├── checklists/                   # Denetim ve tamamlanma
 │   ├── 31-audit-checklist.md
 │   └── 32-definition-of-done.md
@@ -1033,6 +1038,7 @@ docs/
 │   ├── 47-ai-guardrail-governance.md
 │   ├── 48-expo-sdk-upgrade-strategy.md
 │   ├── 49-upstream-sync-strategy.md
+│   ├── 52-ai-development-standards.md
 │   └── ai-integration-documentation-plan.md
 ├── implementation/               # Uygulama geçiş belgeleri
 │   ├── 19-roadmap-to-implementation.md
@@ -1110,6 +1116,9 @@ Bu haritada dosyalar kısa numara/adlarıyla referans edilir. Aşağıdaki tablo
 | `47`    | `docs/governance/47-ai-guardrail-governance.md`                   |
 | `48`    | `docs/governance/48-expo-sdk-upgrade-strategy.md`                 |
 | `49`    | `docs/governance/49-upstream-sync-strategy.md`                    |
+| `50`    | `docs/architecture/50-coding-standards-and-file-conventions.md`   |
+| `51`    | `docs/architecture/51-service-layer-patterns.md`                  |
+| `52`    | `docs/governance/52-ai-development-standards.md`                  |
 
 ---
 

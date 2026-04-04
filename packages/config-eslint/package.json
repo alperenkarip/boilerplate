@@ -1,8 +1,9 @@
 {
   "name": "@project/config-eslint",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Shared ESLint flat config — boilerplate kodlama standartlarini enforce eder",
   "main": "./eslint.config.js",
   "scripts": {}
 }
