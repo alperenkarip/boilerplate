@@ -1,7 +1,7 @@
 # Bağımlılık Grafiği
 
-Son güncelleme: 2026-04-03
-Versiyon: 1.0.0
+Son güncelleme: 2026-06-05
+Versiyon: 1.1.0
 
 ---
 
@@ -10,13 +10,13 @@ Versiyon: 1.0.0
 Oklar bağımlılık yönünü gösterir (A → B: A, B'yi kullanır).
 
 ```
-apps/web ──────────────────────────────────────┐
-  │                                             │
-  ├──→ packages/ui ──→ packages/design-tokens  │
-  ├──→ packages/core                            │
-  └──→ packages/testing (dev)                  │
-                                               │
-apps/mobile ───────────────────────────────────┘
+apps/web ──────────────────────────────────────────────────────────┐
+  │                                                                │
+  ├──→ packages/ui ──→ packages/design-tokens                     │
+  ├──→ packages/core                                              │
+  └──→ packages/testing (dev)                                     │
+                                                                  │
+apps/mobile ────────────────────────────────────────────────────── ┘
   │
   ├──→ packages/ui ──→ packages/design-tokens
   ├──→ packages/core
@@ -29,33 +29,59 @@ packages/ui ──→ packages/config-eslint (dev)
 packages/core ──→ packages/config-typescript (dev)
 
 packages/testing ──→ packages/config-typescript (dev)
+
+packages/design-tokens (bağımlılık yok — pure data)
+
+packages/eslint-plugin-bp (bağımlılık yok — ESLint 9 peer only)
+packages/config-eslint ──→ packages/eslint-plugin-bp (dahili kullanım)
+
+Root eslint.config.js ──→ packages/config-eslint + packages/eslint-plugin-bp
 ```
 
-**Yasaklı Yönler:**
-- `packages/* → apps/*` — Ters bağımlılık yasaktır
-- `apps/web → apps/mobile` — Uygulama çapraz bağımlılığı yasaktır
-- `apps/mobile → apps/web` — Uygulama çapraz bağımlılığı yasaktır
+**Döngüsel Bağımlılık Kontrolü:** Yok. Yukarıdaki graf yönlü ve asiklik (DAG) yapıdadır. Turborepo görev grafı da döngüsel bağımlılığı CI'da engeller.
 
-Bu kurallar CI'da `boundary` görevi ve `boundary-check` skill'i tarafından otomatik denetlenir.
+**Yasaklı Yönler:**
+
+| Yön | Durum | Zorunlu Kılan |
+|-----|-------|---------------|
+| `packages/* → apps/*` | YASAK | `no-direct-repo-import` ESLint kuralı |
+| `apps/web → apps/mobile` | YASAK | `no-direct-repo-import` ESLint kuralı |
+| `apps/mobile → apps/web` | YASAK | `no-direct-repo-import` ESLint kuralı |
+| `packages/ui → packages/core` | YASAK | `no-direct-repo-import` ESLint kuralı |
+
+Bu kurallar CI'da `boundary` görevi ve `eslint-plugin-bp no-direct-repo-import` kuralı tarafından otomatik denetlenir.
 
 ---
 
 ## pnpm Catalog Yapısı
 
-Versiyon tekilliliğini (single source of truth) sağlamak için pnpm workspace catalog kullanılır. Tüm kritik bağımlılık versiyonları `pnpm-workspace.yaml` içindeki `catalog:` bloğunda merkezi olarak tanımlanır.
+Versiyon tekilliliğini sağlamak için pnpm workspace catalog kullanılır. Tüm kritik bağımlılık versiyonları `pnpm-workspace.yaml` içindeki `catalog:` bloğunda merkezi olarak tanımlanır.
 
 ```yaml
-# pnpm-workspace.yaml (örnek yapı)
+# pnpm-workspace.yaml catalog bloğu (örnekler)
 catalog:
-  react: "^19.0.0"
-  react-native: "^0.79.0"
-  typescript: "^5.8.0"
-  zustand: "^5.0.0"
-  "@tanstack/react-query": "^5.0.0"
-  ...
+  react: "19.2.0"
+  react-dom: "19.2.0"
+  react-native: "~0.83"
+  vite: "8.x"
+  vitest: "4.x"
+  react-router-dom: "7.x"
+  zustand: "5.x"
+  "@tanstack/react-query": "5.x"
+  react-hook-form: "7.x"
+  zod: "4.x"
+  i18next: "26.x"
+  tailwindcss: "4.x"
+  nativewind: "5.x"
+  "react-native-mmkv": "3.3.3"
+  "react-native-reanimated": "4.x"
+  expo: "~55.x"
+  "@sentry/react": "10.x"
+  "@sentry/react-native": "10.x"
+  playwright: "1.58.x"
 ```
 
-Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans verilir; böylece monorepo genelinde versiyon tutarlılığı garantilenir.
+Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans verilir; bu sayede monorepo genelinde versiyon tutarlılığı garantilenir.
 
 ---
 
@@ -65,10 +91,11 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 
 | Paket | Versiyon | Platform | ADR |
 |-------|----------|----------|-----|
-| react | 19.x | web + mobile | ADR-001/002 |
-| react-native | 0.79.x | mobile | ADR-002 |
+| react | 19.2.0 | web + mobile | ADR-001/002 |
+| react-dom | 19.2.0 | web | ADR-001 |
+| react-native | ~0.83 | mobile | ADR-002 |
 | expo | SDK 55.x | mobile | ADR-002 |
-| vite | 6.x | web | ADR-001 |
+| vite | 8.x | web | ADR-001 |
 | react-router-dom | 7.x | web | ADR-001/012 |
 | @react-navigation/native | 7.x | mobile | ADR-012 |
 
@@ -86,7 +113,7 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 | Paket | Versiyon | Platform | ADR |
 |-------|----------|----------|-----|
 | tailwindcss | 4.x | web | ADR-007 |
-| nativewind | 5.x (candidate) | mobile | ADR-007 |
+| nativewind | 5.x | mobile | ADR-007 |
 
 ### Auth ve Güvenlik
 
@@ -102,12 +129,14 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 | i18next | 26.x | web + mobile | ADR-011 |
 | react-i18next | latest | web + mobile | ADR-011 |
 
+**i18n namespace'leri:** common, shell, auth, validation — her biri tr ve en için ayrı JSON dosyaları.
+
 ### Observability
 
 | Paket | Versiyon | Platform | ADR |
 |-------|----------|----------|-----|
-| @sentry/react | latest | web | ADR-009 |
-| @sentry/react-native | latest | mobile | ADR-009 |
+| @sentry/react | 10.x | web | ADR-009 |
+| @sentry/react-native | 10.x | mobile | ADR-009 |
 
 ### Mobile Platform Özellikleri
 
@@ -115,7 +144,8 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 |-------|----------|-------|-----|
 | expo-notifications | latest | Push bildirim | ADR-013 |
 | expo-linking | latest | Deep linking | ADR-014 |
-| react-native-mmkv | latest | Yerel depolama | ADR-019 |
+| react-native-mmkv | 3.3.3 | Yerel depolama | ADR-019 |
+| react-native-reanimated | 4.x | Animasyon | ADR-018 |
 | react-native-purchases | latest | Uygulama içi satın alma | ADR-016 |
 
 ---
@@ -131,12 +161,14 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 | @testing-library/react | latest | web | ADR-008 |
 | @testing-library/react-native | latest | mobile | ADR-008 |
 | playwright | 1.58.x | E2E | ADR-008 |
+| jest-expo | latest | mobile (preset) | ADR-008 |
 
 ### Bileşen Geliştirme
 
 | Paket | Versiyon | Amaç |
 |-------|----------|-------|
 | storybook | 10.x | Bileşen lab |
+| @storybook/react-vite | latest | Vite entegrasyon |
 | @storybook/test | latest | Storybook test |
 
 ### Kod Kalitesi
@@ -146,12 +178,13 @@ Paket `package.json` dosyalarında `"react": "catalog:"` şeklinde referans veri
 | typescript | 5.x | Tip güvenliği |
 | eslint | 9.x | Lint (flat config) |
 | prettier | latest | Kod formatlama |
+| @project/eslint-plugin-bp | workspace | 19 proje-özgü kural |
 
 ---
 
 ## Kritik Bağımlılık Politikaları
 
-**Yeni Bağımlılık Ekleme:** `docs/governance/37-dependency-policy.md` kontrol edilmeden ekleme yapılamaz.
+**Yeni Bağımlılık Ekleme:** `docs/governance/37-dependency-policy.md` kontrol edilmeden ve `dep-check` skill'i çalıştırılmadan ekleme yapılamaz.
 
 **Versiyon Uyumluluğu:** `docs/governance/38-version-compatibility-matrix.md` referans alınır.
 
