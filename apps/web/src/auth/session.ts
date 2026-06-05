@@ -22,8 +22,15 @@ export async function checkSession(): Promise<{ status: AuthStatus; userId: stri
       return { status: 'unauthenticated', userId: null };
     }
     return { status: 'expired', userId: null };
-  } catch {
-    return { status: 'unauthenticated', userId: null };
+  } catch (err) {
+    // Network/offline/DNS/CORS hatasi != oturum kapali. Kullaniciyi login'e
+    // zorlamamak icin kurtarilabilir 'expired' statusu dondur ve hatayi logla
+    // (sessiz yutma debug'i imkansiz kilar).
+    console.warn(
+      '[Auth] checkSession failed (network/offline), returning recoverable status:',
+      err,
+    );
+    return { status: 'expired', userId: null };
   }
 }
 
