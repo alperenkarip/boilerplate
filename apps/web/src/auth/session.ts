@@ -9,6 +9,8 @@ import type { AuthStatus } from '@project/core';
  * Backend /api/auth/me endpoint'ine istek atar.
  * HttpOnly cookie otomatik gonderilir.
  */
+// @MX:ANCHOR: [AUTO] External system integration point — backend /api/auth/me session check; relies on HttpOnly cookie (frontend never touches the token, ADR-010). Return-shape {status,userId} is the auth boundary contract.
+// @MX:REASON: Backend integration boundary (fan_in=1: useAuth.ts). Cookie-preferred design and the 401->unauthenticated / other->expired mapping are invariants downstream auth state depends on.
 export async function checkSession(): Promise<{ status: AuthStatus; userId: string | null }> {
   try {
     const res = await fetch('/api/auth/me', { credentials: 'include' });
@@ -27,7 +29,16 @@ export async function checkSession(): Promise<{ status: AuthStatus; userId: stri
 
 /**
  * Logout — backend'e istek at, cookie'yi temizle.
+ * Best-effort: server logout basarisiz olsa bile (network/5xx) bu fonksiyon
+ * hata firlatmaz, boylece cagiran taraftaki client teardown (cache temizleme,
+ * state reset) her zaman calisir (L.1.7 wrong-user leak onleme).
  */
 export async function logout(): Promise<void> {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (err) {
+    // Server logout best-effort — hata yutulur ve loglanir, rethrow yok.
+    // Client tarafi teardown'in atlanmamasi icin promise reject etmemeli.
+    console.warn('[auth] server logout failed (best-effort, ignored):', err);
+  }
 }
