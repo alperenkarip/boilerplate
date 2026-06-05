@@ -48,4 +48,12 @@ catalog:
 
   # State (ADR-004)
   zustand: ^5.0.12
+
+# Pin react + react-dom to the exact same patch (38-matrix Blocker #2: minor/patch mismatch forbidden).
+# Transitive peers (react-i18next, react-router-dom, @testing-library/react, storybook) were
+# resolving react-dom@19.2.4 against react@19.2.0; this override forces the catalog pin onto them.
+overrides:
+  react: 19.2.0
+  react-dom: 19.2.0
+
 minimumReleaseAge: 0
