@@ -1,10 +1,12 @@
 # Teknoloji Stack'i
 
+Son Güncelleme: 2026-06-05
+
 ## Genel Bakış
 
-Bu proje, React ve React Native (Expo) üzerine kurulu cross-platform bir boilerplate'tir. Web tarafı Vite ile derlenen React SPA olarak, mobil taraf ise Expo SDK 55 üzerinde çalışan React Native uygulaması olarak konumlandırılmıştır. Tüm teknoloji seçimleri ADR-001'den ADR-019'a kadar uzanan mimari karar kayıtlarıyla kilitlenmiş olup alternatif öneri veya tartışma yasaktır.
+Bu proje, React ve React Native (Expo) uzerine kurulu cross-platform bir boilerplate'tir. Web tarafi Vite 8 ile derlenen React 19 SPA olarak, mobil taraf ise Expo SDK 55 uzerinde calisan React Native 0.83 uygulamasi olarak konumlandirilmistir. Tüm teknoloji secimleri ADR-001'den ADR-019'a kadar uzanan mimari karar kayitlariyla kilitlenmis olup alternatif öneri veya tartisma yasaktir.
 
-Monorepo yapısı pnpm 10 ve Turborepo 2 ile yönetilmektedir. TypeScript 5.9 strict mode tüm platformlarda zorunludur. State yönetiminden test altyapısına, kimlik doğrulamadan gizlilik uyumuna kadar her katman için canonical bir seçim belirlenmiş ve governance dokümanlarıyla güvence altına alınmıştır.
+Monorepo yapisi pnpm 10 ve Turborepo 2 ile yonetilmektedir. TypeScript 5.9 strict mode tüm platformlarda zorunludur. State yonetiminden test altyapisina, kimlik dogrulamadan gizlilik uyumuna kadar her katman için canonical bir seçim belirlenmis ve governance dokumanlariyla güvence altina alinmistir.
 
 ---
 
@@ -12,105 +14,109 @@ Monorepo yapısı pnpm 10 ve Turborepo 2 ile yönetilmektedir. TypeScript 5.9 st
 
 | Teknoloji | Versiyon | Platform | ADR |
 |-----------|----------|----------|-----|
-| TypeScript | 5.9.3 | Tüm platformlar | — |
+| TypeScript | 5.9.x | Tüm platformlar | — |
 | React | 19.2.0 | Web + Mobile | ADR-001, ADR-002 |
 | React DOM | 19.2.0 | Web | ADR-001 |
-| React Native | ~0.83.0 | Mobile | ADR-002 |
+| React Native | ~0.83 | Mobile | ADR-002 |
 | Expo SDK | ~55.0.0 | Mobile | ADR-002 |
-| Vite | 8.0.0 | Web build aracı | ADR-001 |
-| Turborepo | 2.9.3 | Monorepo orkestrasyon | ADR-003 |
-| pnpm | 10.33.0 | Paket yöneticisi | ADR-003 |
+| Vite | 8.x | Web build araci | ADR-001 |
+| Turborepo | 2.x | Monorepo orkestrasyon | ADR-003 |
+| pnpm | 10.x | Paket yoneticisi | ADR-003 |
 
-Web runtime olarak React + Vite + React Router 7.x SPA-first yaklaşımla (ADR-001), mobil runtime olarak React Native + Expo SDK 55.x (ADR-002) seçilmiştir. Monorepo yönetimi pnpm 10.x + Turborepo 2.x kombinasyonuyla sağlanmaktadır (ADR-003). Güvenli kurulum için `minimumReleaseAge`, `allowBuilds` ve `trustPolicy` politikaları aktiftir.
+**Not:** `react-dom` 19.2.0 ile `react` 19.2.0 pnpm `overrides` ile birlikte sabitlenmistir. Gecikmeli bağımlılıklar `react-dom@19.2.4` cekmekteydi; override bu uyumsuzlugu kapatir.
+
+Web runtime olarak React 19 + Vite 8 + React Router 7 SPA-first yaklasimla (ADR-001), mobil runtime olarak React Native 0.83 + Expo SDK 55 (ADR-002) secilmistir. Monorepo yönetimi pnpm 10.x + Turborepo 2.x kombinasyonuyla saglanmaktadir (ADR-003). Guvenli kurulum için `minimum-release-age=3d`, `onlyBuiltDependencies` allowlist (esbuild, @swc/core) politikalari aktiftir.
 
 ---
 
 ## State Management
 
-ADR-004 (client state) ve ADR-005 (server state) ile belirlenmiş iki katmanlı state mimarisi kullanılmaktadır. Client state için Zustand tercih edilmiş, server state, önbellekleme ve mutation yönetimi için TanStack Query benimsenmişdir. Veri çekme katmanında fetch-first yaklaşım varsayılan olup TanStack Query koşullu query-layer track'i ile uygulanmaktadır.
+ADR-004 (client state) ve ADR-005 (server state) ile belirlenmis iki katmanli state mimarisi kullanilmaktadir. Client state için Zustand tercih edilmis, server state, onbellekleme ve mutation yönetimi için TanStack Query benimsenmistir. Veri çekme katmaninda fetch-first yaklasim varsayilan olup TanStack Query kosullu query-layer track'i ile uygulanmaktadir.
 
-| Teknoloji | Versiyon | Amaç |
+| Teknoloji | Versiyon | Amac |
 |-----------|----------|------|
-| Zustand | 5.0.12 | Client state yönetimi |
-| TanStack Query | 5.0.0 | Server state, önbellekleme, mutation |
+| Zustand | 5.x | Client state yönetimi |
+| TanStack Query | 5.x | Server state, onbellekleme, mutation |
 
 ---
 
 ## Forms ve Validation
 
-ADR-006 ile belirlenmiş form katmanı, React Hook Form ve Zod'un birlikte kullanımına dayanmaktadır. Zod, schema authority olarak tanımlanmıştır; tüm validasyon kuralları Zod schema'larında merkezi olarak tutulur ve `@hookform/resolvers` aracılığıyla RHF ile entegre edilir.
+ADR-006 ile belirlenmis form katmanı, React Hook Form ve Zod'un birlikte kullanimina dayanmaktadir. Zod, schema authority olarak tanimlanmistir; tüm validasyon kurallari Zod schema'larinda merkezi olarak tutulur ve `@hookform/resolvers` araciligiyla RHF ile entegre edilir.
 
-| Teknoloji | Versiyon | Amaç |
+| Teknoloji | Versiyon | Amac |
 |-----------|----------|------|
-| React Hook Form | 7.72.0 | Form state yönetimi |
-| Zod | 4.3.6 | Schema validasyonu (authority) |
-| @hookform/resolvers | 5.2.2 | RHF + Zod entegrasyon köprüsü |
+| React Hook Form | 7.x | Form state yönetimi |
+| Zod | 4.x | Schema validasyonu (authority) |
+| @hookform/resolvers | — | RHF + Zod entegrasyon koprusu |
 
 ---
 
 ## Styling ve Design System
 
-ADR-007 ile tanımlanan semantic token-first yaklaşım benimsenmiştir. Web'de Tailwind CSS 4.x, mobilde NativeWind 5.x candidate track kullanılmaktadır. Hardcoded renk, spacing veya font değerleri yasaktır; tüm değerler design token katmanından gelmelidir. NativeWind 5.x için bootstrap öncesinde release-status doğrulaması zorunludur.
+ADR-007 ile tanimlanan semantic token-first yaklasim benimsenmistir. Web'de Tailwind CSS 4.x, mobilde NativeWind 5.x candidate track kullanilmaktadir. Hardcoded renk, spacing veya font değerleri yasaktir; tüm degerler design token katmanindan gelmelidir.
 
 | Teknoloji | Versiyon | Platform |
 |-----------|----------|----------|
-| Tailwind CSS | 4.2.2 | Web |
-| NativeWind | 5.0.0 | Mobile (candidate track) |
-| Design Tokens | Özel paket | Cross-platform |
+| Tailwind CSS | 4.x | Web |
+| NativeWind | 5.x | Mobile (candidate track) |
+| packages/design-tokens | Özel paket | Cross-platform |
 
-Design token paketi `packages/design-tokens/` altında konumlandırılmıştır. Token çıktıları `docs/design-system/22-design-tokens-spec.md` katmanlarıyla eşleşmelidir.
+Design token paketi `packages/design-tokens/` altinda konumlandirilmistir. Token katmanları: raw → semantic → themes. Web için `css.ts` (generateCSSVariables, flattenTokens) CSS variable export'u saglar. Token ciktilari `docs/design-system/22-design-tokens-spec.md` katmanlariyla eslesmis olmalidir.
 
 ---
 
 ## Navigation
 
-ADR-012 ile platform bazlı navigasyon mimarisi belirlenmiştir. Web'de React Router 7.x, mobilde React Navigation 7.x kullanılmaktadır. Navigasyon kuralları ve pattern'ler için `docs/architecture/08-navigation-and-flow-rules.md` referans alınmalıdır.
+ADR-012 ile platform bazli navigasyon mimarisi belirlenmistir. Web'de React Router 7.x, mobilde React Navigation 7.x kullanilmaktadir.
 
 | Teknoloji | Versiyon | Platform |
 |-----------|----------|----------|
-| React Router | 7.0.0 | Web |
-| React Navigation | 7.2.2 | Mobile |
+| React Router | 7.x | Web |
+| React Navigation | 7.x | Mobile |
+
+Navigasyon kurallari ve pattern'ler için `docs/architecture/08-navigation-and-flow-rules.md` referans alinmalidir.
 
 ---
 
 ## Testing
 
-ADR-008 ile üç katmanlı test piramidi tanımlanmıştır. Web birim ve component testleri için Vitest, mobil birim testleri için Jest, web E2E testleri için Playwright kullanılmaktadır. Component testing için her iki platformda da Testing Library tercih edilmiştir. Storybook, component lab ve canlı dokümantasyon ortamı olarak hizmet vermektedir.
+ADR-008 ile uc katmanli test piramidi tanimlanmistir. Web birim ve component testleri için Vitest (jsdom ortami), mobil birim testleri için jest-expo, web E2E testleri için Playwright kullanilmaktadir. Component testing için her iki platformda da Testing Library tercih edilmistir. Storybook, component lab ve canli dokumantasyon ortami olarak hizmet vermektedir.
 
-| Teknoloji | Versiyon | Amaç |
+| Teknoloji | Versiyon | Amac |
 |-----------|----------|------|
-| Vitest | 4.1.2 | Web birim/component testleri |
-| Jest | 29.7.0 | Mobile birim testleri |
-| Playwright | 1.58.0 | Web E2E testleri |
-| Testing Library React | 16.3.2 | Web component testing |
-| Testing Library RN | 13.3.3 | Mobile component testing |
-| Storybook | 8.6.18 | Component lab ve dokümantasyon |
+| Vitest | 4.x | Web birim/component testleri (jsdom) |
+| jest-expo | — | Mobile birim testleri |
+| Playwright | 1.58.x | Web E2E testleri |
+| Testing Library React | — | Web component testing |
+| Testing Library RN | — | Mobile component testing |
+| Storybook | 8.6.x | Component lab ve dokumantasyon |
 
-Test dosyaları kaynak dosyanın yanında `*.test.ts(x)` uzantısıyla konumlandırılır. Minimum kapsam hedefi %85'tir.
+Test dosyalari kaynak dosyanin yaninda `*.test.ts(x)` uzantiyla konumlandirilir. Minimum kapsam hedefi %85'tir.
 
 ---
 
 ## Observability
 
-ADR-009 ile tanımlanan observability katmanı, Sentry tabanlı hata takibi ve vendor-agnostic analytics soyutlamasından oluşmaktadır. Web ve mobile için ayrı Sentry paketleri kullanılmakta, analytics katmanı ise belirli bir vendor'a bağımlı olmayan bir abstraction arkasında tutulmaktadır. Sentry payload'larında hassas veri bulundurulmamalıdır.
+ADR-009 ile tanimlanan observability katmanı, Sentry 10.x tabanli hata takibi ve vendor-agnostic analytics soyutlamasindan olusturmaktadir. Web ve mobile için ayri Sentry paketleri kullanilmakta, analytics katmanı ise belirli bir vendor'a bagimli olmayan bir abstraction arkasindan tutulmaktadir. Sentry payload'larinda hassas veri bulundurulmamalidir.
 
-| Teknoloji | Platform | Amaç |
-|-----------|----------|------|
-| @sentry/react | Web | Hata takibi, performans izleme |
-| @sentry/react-native | Mobile | Hata takibi, performans izleme |
-| Custom analytics abstraction | Cross-platform | Vendor-agnostic analytics |
-| Custom logger | Cross-platform | Merkezi logging katmanı |
+| Teknoloji | Versiyon | Platform | Amac |
+|-----------|----------|----------|------|
+| @sentry/react | 10.x | Web | Hata takibi, performans izleme |
+| @sentry/react-native | 10.x | Mobile | Hata takibi, performans izleme |
+| Custom analytics abstraction | — | Cross-platform | Vendor-agnostic analytics |
+| Custom logger | — | Cross-platform | Merkezi logging katmanı |
 
 ---
 
 ## Auth ve Security
 
-ADR-010 ile platform bazlı kimlik doğrulama mimarisi belirlenmiştir. Web'de backend tarafından yönetilen HttpOnly cookie'ler, mobilde Expo SecureStore şifreli depolama, destekleyici olarak da biyometrik kimlik doğrulama kullanılmaktadır. Auth token'ları kesinlikle log'lara yazılmamalıdır.
+ADR-010 ile platform bazli kimlik doğrulama mimarisi belirlenmistir. Web'de backend tarafindan yonetilen HttpOnly cookie'ler, mobilde Expo SecureStore sifreleme, destekleyici olarak da biyometrik kimlik doğrulama kullanilmaktadir. Auth token'lari kesinlikle log'lara yazilmamalidir.
 
-| Teknoloji | Platform | Amaç |
+| Teknoloji | Platform | Amac |
 |-----------|----------|------|
 | HttpOnly Cookies (backend-managed) | Web | Oturum yönetimi |
-| expo-secure-store | Mobile | Şifreli yerel depolama |
+| expo-secure-store | Mobile | Sifreli yerel depolama |
 | expo-local-authentication | Mobile | Biyometrik kimlik doğrulama |
 
 Detay için: `docs/adr/ADR-010-...` ve `docs/quality/27-security-and-secrets-baseline.md`
@@ -119,28 +125,56 @@ Detay için: `docs/adr/ADR-010-...` ve `docs/quality/27-security-and-secrets-bas
 
 ## i18n
 
-ADR-011 ile namespace tabanlı uluslararasılaştırma mimarisi belirlenmiştir. i18next 26.x framework olarak, react-i18next ise React binding olarak kullanılmaktadır. Inline user-facing string yasaktır; tüm metinler i18n key aracılığıyla yönetilmelidir.
+ADR-011 ile namespace tabanli uluslararasılastirma mimarisi belirlenmistir. i18next 26.x framework olarak, react-i18next ise React binding olarak kullanilmaktadir. Namespace'ler: `common`, `shell`, `auth`, `validation` — her ikisi de Turkce (tr) ve Ingilizce (en) desteklenmektedir. Inline user-facing string yasaktir; tüm metinler i18n key araciligiyla yonetilmelidir.
 
-| Teknoloji | Versiyon | Amaç |
+| Teknoloji | Versiyon | Amac |
 |-----------|----------|------|
-| i18next | 26.0.3 | i18n framework |
-| react-i18next | 17.0.2 | React binding |
+| i18next | 26.x | i18n framework |
+| react-i18next | 17.x | React binding |
 
 ---
 
 ## Native Modules (Mobile)
 
-Mobil platformda performans kritik yerel modüller kullanılmaktadır. Yerel depolama için MMKV canonical default olarak belirlenmiştir (ADR-019). Animasyon katmanı Reanimated 4.x ile sağlanmakta, hareket algılama Gesture Handler ile yönetilmektedir.
+Mobil platformda performans kritik yerel moduller kullanilmaktadir. Yerel depolama için MMKV canonical default olarak belirlenmistir (ADR-019). Animasyon katmanı Reanimated 4.x ile saglanmakta, hareket algilama Gesture Handler ile yonetilmektedir.
 
-| Teknoloji | Versiyon | Amaç |
+| Teknoloji | Versiyon | Amac |
 |-----------|----------|------|
-| react-native-mmkv | 3.3.3 | Yüksek performanslı yerel depolama (canonical) |
-| react-native-reanimated | 4.2.1 | Animasyon motoru |
-| react-native-gesture-handler | ~2.30.1 | Jest algılama |
-| react-native-screens | 4.23.0 | Native ekran container'ları |
-| react-native-safe-area-context | 5.6.2 | Safe area yönetimi |
+| react-native-mmkv | 3.3.3 | Yüksek performansli yerel depolama (canonical) |
+| react-native-reanimated | 4.x | Animasyon motoru |
+| react-native-gesture-handler | ~2.30.x | Jest algilama |
+| react-native-screens | — | Native ekran container'lari |
+| react-native-safe-area-context | — | Safe area yönetimi |
 
-New Architecture (Fabric + JSI + TurboModules + Hermes V1) zorunludur ve kapatılamaz (ADR-018). Yerel depolama stratejisi için `docs/adr/ADR-019-local-storage-and-offline-first-strategy.md` referans alınmalıdır.
+New Architecture (Fabric + JSI + TurboModules + Hermes V1) zorunludur ve kapatılamaz (ADR-018). Yerel depolama stratejisi için `docs/adr/ADR-019-local-storage-and-offline-first-strategy.md` referans alinmalidir.
+
+---
+
+## Linting ve Kod Kalitesi
+
+ESLint 9 flat config mimarisi benimsenmistir. `packages/config-eslint`, platform bazinda (web/mobile/library) `createConfig()` factory fonksiyonu saglar. `packages/eslint-plugin-bp` ise projeye özel 19 kurali barindiran özel ESLint plugin'idir.
+
+| Teknoloji | Versiyon | Amac |
+|-----------|----------|------|
+| ESLint | 9.x | Statik kod analizi (flat config) |
+| packages/config-eslint | Özel paket | Platform bazli ESLint factory |
+| packages/eslint-plugin-bp | Özel paket | 19 kuralli özel plugin |
+| Prettier | 3.x | Kod formatlama |
+| Husky | — | Pre-commit hook yönetimi |
+| lint-staged | — | Commit oncesi staged dosya kontrolu |
+
+### eslint-plugin-bp Kural Kategorileri
+
+| Kural Grubu | Kurallari | Amac |
+|---|---|---|
+| Token disiplini | `no-hardcoded-color`, `no-hardcoded-spacing`, `no-hardcoded-font-size`, `no-hardcoded-font-weight`, `no-hardcoded-dimension`, `require-design-token`, `no-token-category-mismatch` | Hardcoded değer kullanimi engelleme |
+| Mimari sinir | `no-direct-repo-import` | `packages→apps` ve `apps↔apps` sinir zorlamasi |
+| Mobile ham API | `no-raw-pressable`, `no-raw-touchable`, `no-rn-text`, `no-raw-modal`, `no-animated-api` | Platform primitive kullanimi yerine UI paket zorlama |
+| Form disiplini | `require-form-hook` | Dogrudan input state yönetimi yerine RHF zorlama |
+| Erisilebilirlik | `require-accessibility-props` | a11y prop eksikligini yakalama |
+| Import kalitesi | `no-barrel-import`, `no-direct-phosphor-import`, `no-direct-vector-icons-import`, `no-inline-text-style` | Import temizligi ve stil disiplini |
+
+TypeScript strict mode zorunludur; `any` tipi yasaktir. ESLint `disable` ve `@ts-ignore` kullanimi `44-exception-and-exemption-policy.md` kapsaminda exception policy gerektirir.
 
 ---
 
@@ -148,39 +182,38 @@ New Architecture (Fabric + JSI + TurboModules + Hermes V1) zorunludur ve kapatı
 
 **Zorunlu Sürüm Gereksinimleri:**
 
-| Araç | Gereksinim |
+| Arac | Gereksinim |
 |------|-----------|
 | Node.js | >=20.19.0 <21.0.0 (LTS zorunlu) |
 | pnpm | >=10.0.0 <11.0.0 |
 
-**Geliştirme Araçları:**
+---
 
-| Araç | Versiyon | Amaç |
-|------|----------|------|
-| ESLint | 10.1.0 | Statik kod analizi (flat config) |
-| Prettier | 3.8.1 | Kod formatlama |
-| Husky | — | Pre-commit hook yönetimi |
-| lint-staged | — | Commit öncesi staged dosya kontrolü |
+## Turbo Pipeline
 
-TypeScript strict mode zorunludur; `any` tipi yasaktır. ESLint `disable` ve `@ts-ignore` kullanımı `44-exception-and-exemption-policy.md` kapsamında exception policy gerektirir.
+Turborepo pipeline sirasi (turbo.json):
+
+```
+typecheck → lint → test → build
+```
+
+Ayrica: `dev` (paralel geliştirme sunuculari), `verify` (boundary ve SDK saglik kontrolleri), `clean` (artifact temizleme).
 
 ---
 
 ## CI/CD Pipeline
 
-GitHub Actions tabanlı otomasyon pipeline'ı dört iş akışından oluşmaktadır:
+GitHub Actions tabanli otomasyon pipeline'i dort is akisindan olusturmaktadir:
 
 | Workflow | Tetikleyici | Kapsam |
 |----------|-------------|--------|
 | `ci.yml` | PR + push | typecheck → lint → test → build → security |
 | `deploy.yml` | Main branch merge | Deployment otomasyonu |
-| `scheduled-audit.yml` | Periyodik (cron) | Güvenlik taraması |
-| Boundary check | CI içi | Import yönü doğrulama |
-| expo-doctor | CI içi | SDK sağlık kontrolü |
+| `scheduled-audit.yml` | Periyodik (cron) | Güvenlik taramasi |
+| Boundary check | CI ici | Import yonu doğrulama (eslint-plugin-bp) |
+| expo-doctor | CI ici | SDK saglik kontrolu |
 
-Turborepo pipeline sırası: `build → typecheck → lint → test → verify`
-
-expo-doctor temiz geçmeden SDK upgrade merge edilmez. Boundary check, import yönü kuralını (feature → shared OK, shared → feature YASAK) otomatik olarak doğrular.
+expo-doctor temiz gecmeden SDK upgrade merge edilmez. Boundary check, `no-direct-repo-import` kurali araciligiyla import yonu kuralini otomatik olarak dogrular.
 
 ---
 
@@ -189,7 +222,7 @@ expo-doctor temiz geçmeden SDK upgrade merge edilmez. Boundary check, import y�
 **Web:**
 
 - Geliştirme: `pnpm dev:web` (Vite dev server)
-- Production build: Vite tabanlı statik çıktı
+- Production build: Vite tabanli statik çıktı
 
 **Mobile:**
 
@@ -202,25 +235,70 @@ expo-doctor temiz geçmeden SDK upgrade merge edilmez. Boundary check, import y�
 - Orkestrasyon: Turborepo 2.x pipeline
 - Komutlar: `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm test`
 
-EAS Update stratejisi ve OTA uyumluluk etkisi için `docs/adr/ADR-015-ota-update-strategy.md` referans alınmalıdır. `runtimeVersion` değişikliği OTA uyumluluk etkisiyle birlikte değerlendirilir.
+EAS Update stratejisi ve OTA uyumluluk etkisi için `docs/adr/ADR-015-ota-update-strategy.md` referans alinmalidir. `runtimeVersion` degisikligi OTA uyumluluk etkisiyle birlikte degerlendirilir.
 
 ---
 
-## Canonical Stack Referansları
+## pnpm Güvenlik Baseline
 
-Tüm teknoloji seçimleri aşağıdaki ADR'larla kilitlenmiştir. Alternatifleri tartışmak veya bypass etmek yasaktır:
+| Politika | Değer | Amac |
+|---|---|---|
+| `minimum-release-age` | 3 gun | Yeni yayinlanan paketlerin otomatik cekilmesini engeller |
+| `onlyBuiltDependencies` allowlist | esbuild, @swc/core | Yalnizca izin verilen native build paketlerine izin verir |
+| `trustPolicy` | — | Paket guven politikasi |
+
+---
+
+## Tam Versiyon Tablosu
+
+| Teknoloji | Sabitlenen Versiyon | Kategori |
+|-----------|---------------------|---------|
+| React | 19.2.0 | Runtime |
+| react-dom | 19.2.0 (pnpm override ile sabitlenmis) | Runtime |
+| React Native | ~0.83 | Runtime |
+| Expo SDK | ~55.0.0 | Runtime |
+| Vite | 8.x | Build |
+| React Router | 7.x | Navigation |
+| React Navigation | 7.x | Navigation |
+| TanStack Query | 5.x | State |
+| Zustand | 5.x | State |
+| React Hook Form | 7.x | Forms |
+| Zod | 4.x | Validation |
+| i18next | 26.x | i18n |
+| react-i18next | 17.x | i18n |
+| Tailwind CSS | 4.x | Styling |
+| NativeWind | 5.x | Styling |
+| react-native-mmkv | 3.3.3 | Storage |
+| react-native-reanimated | 4.x | Animation |
+| react-native-gesture-handler | ~2.30.x | Gesture |
+| @sentry/react | 10.x | Observability |
+| @sentry/react-native | 10.x | Observability |
+| Playwright | 1.58.x | Testing |
+| Storybook | 8.6.x | Testing |
+| TypeScript | 5.9.x | Tooling |
+| ESLint | 9.x | Tooling |
+| Prettier | 3.x | Tooling |
+| pnpm | 10.x | Tooling |
+| Turborepo | 2.x | Tooling |
+| Node.js | >=20.19.0 <21.0.0 | Environment |
+
+---
+
+## Canonical Stack Referanslari
+
+Tüm teknoloji secimleri asagidaki ADR'larla kilitlenmistir. Alternatifleri tartismak veya bypass etmek yasaktir:
 
 | ADR | Konu |
 |-----|------|
-| ADR-001 | Web runtime (React + Vite + React Router 7.x, SPA-first) |
-| ADR-002 | Mobile runtime (React Native + Expo SDK 55.x) |
+| ADR-001 | Web runtime (React 19 + Vite 8 + React Router 7.x, SPA-first) |
+| ADR-002 | Mobile runtime (React Native 0.83 + Expo SDK 55.x) |
 | ADR-003 | Monorepo (pnpm 10.x + Turborepo 2.x) |
 | ADR-004 | State management (Zustand 5.x) |
 | ADR-005 | Data fetching (fetch-first + TanStack Query 5.x) |
 | ADR-006 | Forms (React Hook Form 7.x + Zod 4.x) |
 | ADR-007 | Styling/tokens (Tailwind CSS 4.x + NativeWind 5.x) |
-| ADR-008 | Testing (Vitest 4.x + Jest 30.x + Playwright 1.58.x) |
-| ADR-009 | Observability (Sentry + vendor-agnostic analytics) |
+| ADR-008 | Testing (Vitest 4.x + jest-expo + Playwright 1.58.x) |
+| ADR-009 | Observability (Sentry 10.x + vendor-agnostic analytics) |
 | ADR-010 | Auth (HttpOnly cookies + SecureStore + Biometric) |
 | ADR-011 | i18n (i18next 26.x, namespace-based) |
 | ADR-012 | Navigation (React Router 7.x web + React Navigation 7.x mobile) |
@@ -232,9 +310,9 @@ Tüm teknoloji seçimleri aşağıdaki ADR'larla kilitlenmiştir. Alternatifleri
 | ADR-018 | New Architecture (Fabric + JSI + TurboModules + Hermes V1) |
 | ADR-019 | Local Storage (MMKV + SecureStore + Zustand persist) |
 
-**Governance dokümanları:**
+**Governance dokumanlari:**
 
-- `docs/governance/36-canonical-stack-decision.md` — Canonical stack kararları
-- `docs/governance/37-dependency-policy.md` — Dependency ekleme politikası
+- `docs/governance/36-canonical-stack-decision.md` — Canonical stack kararlari
+- `docs/governance/37-dependency-policy.md` — Dependency ekleme politikasi
 - `docs/governance/38-version-compatibility-matrix.md` — Versiyon uyumluluk matrisi
 - `docs/governance/48-expo-sdk-upgrade-strategy.md` — SDK upgrade stratejisi
