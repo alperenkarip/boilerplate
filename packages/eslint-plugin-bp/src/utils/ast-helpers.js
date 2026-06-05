@@ -2,6 +2,8 @@
  * AST yardimci fonksiyonlari — ESLint kural dosyalarinda ortak kullanim.
  */
 
+// @MX:ANCHOR: [AUTO] Shared react-native import detector used by all RN-wrapper lint rules
+// @MX:REASON: fan_in=5 distinct rule files depend on this predicate; a false negative here disables enforcement across multiple rules
 /**
  * Import node'unun react-native'den gelip gelmedigini kontrol eder.
  * @param {import('estree').ImportDeclaration} node
@@ -47,6 +49,8 @@ export function isInsideStyleSheet(node) {
   return false;
 }
 
+// @MX:ANCHOR: [AUTO] Shared Reanimated-scope detector used to exempt animated values from hardcoded-value rules
+// @MX:REASON: fan_in=5 distinct rule files; misclassifying animated scope causes false positives across hardcoded-spacing/color/font rules
 /**
  * Node'un Reanimated useAnimatedStyle / withTiming vb. icerisinde
  * olup olmadigini kontrol eder.
@@ -101,6 +105,8 @@ export function getJSXAttributeValue(attr) {
   return attr.value;
 }
 
+// @MX:ANCHOR: [AUTO] Shared exception-file gate consulted by nearly every lint rule before reporting
+// @MX:REASON: fan_in=8 distinct rule files — highest in this package; a regression here would suppress or over-trigger violations plugin-wide
 /**
  * Dosyanin istisna listesindeki bir pattern'e uyup uymadigini kontrol eder.
  * @param {string} filename - Dosya yolu

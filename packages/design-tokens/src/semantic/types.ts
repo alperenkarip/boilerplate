@@ -59,6 +59,8 @@ export interface OverlayTokens {
   readonly focusRing: string;
 }
 
+// @MX:ANCHOR: [AUTO] Central semantic token shape — all themes and consumers conform to this contract
+// @MX:REASON: fan_in=5 (ThemeProvider, nativewindStrategy, light theme, dark theme, css generator); adding/removing a token category breaks every theme and themed consumer
 export interface SemanticTokenSet {
   readonly content: ContentTokens;
   readonly surface: SurfaceTokens;

@@ -37,6 +37,8 @@ export function CountdownTimer({ seconds, onComplete, format = 'mm:ss' }: Countd
   }, [onComplete]);
 
   // Her saniye geri sayimi guncelle
+  // @MX:WARN: [AUTO] setTimeout(handleComplete, 0) is not tracked by cleanup — fires parent callback even after unmount
+  // @MX:REASON: only the interval is cleared on unmount; the deferred onComplete timer can run on a torn-down component
   useEffect(() => {
     if (remaining <= 0) {
       handleComplete();

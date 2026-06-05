@@ -36,6 +36,8 @@ export async function fetchSampleItem(id: string): Promise<SampleItem | null> {
   return mockItems.find((item) => item.id === id) ?? null;
 }
 
+// @MX:WARN: [AUTO] Mutates module-level mutable state (mockItems.push) — shared array persists across the whole app session.
+// @MX:REASON: This mock mutation leaks state between consumers and test runs (no reset); when replaced by a real API the in-memory write must be removed or it will mask server-side persistence bugs.
 export async function createSampleItem(
   data: Omit<SampleItem, 'id' | 'createdAt'>,
 ): Promise<SampleItem> {

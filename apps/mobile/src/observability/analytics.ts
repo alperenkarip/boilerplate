@@ -50,6 +50,8 @@ const noopAdapter: AnalyticsAdapter = {
 
 let currentAdapter: AnalyticsAdapter = noopAdapter;
 
+// @MX:WARN: [AUTO] mutates module-level mutable singleton `currentAdapter` (global state mutation)
+// @MX:REASON: Shared process-wide singleton; a late or duplicate call silently reroutes all analytics traffic with no per-caller isolation
 /** Vendor-specific analytics adapter'i ayarlar */
 export function setAnalyticsAdapter(adapter: AnalyticsAdapter): void {
   currentAdapter = adapter;

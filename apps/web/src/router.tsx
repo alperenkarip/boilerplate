@@ -4,6 +4,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from './layouts/RootLayout';
 
+// @MX:ANCHOR: [AUTO] Central routing contract — defines the full navigation surface (S01-S27) and the lazy-load + RootLayout nesting that every screen depends on.
+// @MX:REASON: Architectural routing boundary (fan_in=1: App.tsx); any path/nesting change here propagates to the entire app. Treated as invariant per route-table anchor rule.
 export const router = createBrowserRouter([
   // Onboarding (S14-S16)
   { path: '/onboarding', lazy: () => import('./pages/onboarding/WelcomeSlidesPage') },

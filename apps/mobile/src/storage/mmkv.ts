@@ -72,7 +72,6 @@ function generateEncryptionKey(): string {
 
   // Fallback — Math.random (kriptografik olarak guvenli degil)
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    // eslint-disable-next-line no-console
     console.warn('[MMKV] crypto.getRandomValues mevcut degil — encryption key guvenli olmayabilir');
   }
   let result = '';
@@ -82,6 +81,8 @@ function generateEncryptionKey(): string {
   return result;
 }
 
+// @MX:WARN: [AUTO] async function without try/catch; getToken/saveToken throw SecureStorageError and also mutates module-level `encryptedMMKV`
+// @MX:REASON: An unhandled SecureStore rejection here leaves encryptedMMKV null, silently degrading all encrypted persistence; caller must guard the await
 /** Encrypted MMKV instance'ini baslat
  * Uygulama acilisinda bir kez cagirilmali.
  * Encryption key SecureStore'da saklanir (D-OFL #34, D-OFL #36)

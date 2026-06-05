@@ -4,6 +4,8 @@ interface KeyValueRowProps {
   value: string | number;
 }
 
+// @MX:ANCHOR: [AUTO] Label/value row component — used by 3+ files for detail and summary views
+// @MX:REASON: fan_in=3; prop shape (label/value) is a contract relied on by every key-value display
 export function KeyValueRow({ label, value }: KeyValueRowProps) {
   return (
     <div

@@ -20,6 +20,8 @@ const MESSAGE_BG_ONLY =
 const MESSAGE_BORDER_ONLY =
   '"{{token}}" sadece border- prefix\'i ile kullanilabilir. Hatali kullanim: "{{usage}}".';
 
+// @MX:WARN: [AUTO] Module-level stateful regex (/g flag) shared across all rule invocations
+// @MX:REASON: lastIndex persists between calls; findMismatches must reset lastIndex=0 each time or matches silently skip — fragile shared mutable state
 // bp- token'i iceren class regex: (prefix)-(bp-token-name)
 const BP_TOKEN_CLASS_REGEX = /(?:^|\s)(?:(?:[\w-]+:)*)(bg|text|border|ring|outline|shadow|accent|caret|fill|stroke|decoration|placeholder|divide|from|via|to)-(bp-[\w-]+)/g;
 

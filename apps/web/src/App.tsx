@@ -36,6 +36,8 @@ function ErrorFallback(error: Error, reset: () => void) {
   );
 }
 
+// @MX:ANCHOR: [AUTO] Provider composition root — fixed ordering (ErrorBoundary > ThemeProvider > QueryClientProvider > Router) is a contract; reordering breaks error capture and query/theme context availability.
+// @MX:REASON: Single app mount point (fan_in=1: main.tsx). Provider nesting order is an invariant per SPEC-IMP-001 Faz J; downstream hooks assume this chain.
 export function App() {
   return (
     <ErrorBoundary fallback={ErrorFallback}>

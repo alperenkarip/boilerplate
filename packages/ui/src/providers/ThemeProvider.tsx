@@ -44,6 +44,8 @@ interface ThemeProviderProps {
   defaultMode?: ThemeMode;
 }
 
+// @MX:ANCHOR: [AUTO] Theme context root — provides resolved mode + design tokens to the entire app tree
+// @MX:REASON: fan_in=7; every styled subtree depends on this provider wrapping the app; context value shape is a contract
 export function ThemeProvider({ children, defaultMode = 'system' }: ThemeProviderProps) {
   const [mode, setModeState] = useState<ThemeMode>(defaultMode);
   const [resolvedMode, setResolvedMode] = useState<'light' | 'dark'>(() =>
@@ -92,6 +94,8 @@ export function ThemeProvider({ children, defaultMode = 'system' }: ThemeProvide
  * Aktif tema bilgisine eris
  * ThemeProvider icerisinde kullanilmali
  */
+// @MX:ANCHOR: [AUTO] Theme access hook — sole supported way to read mode/tokens/setMode/toggle from context
+// @MX:REASON: fan_in=3; return-shape is a contract for consumers; throws when used outside ThemeProvider
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) {

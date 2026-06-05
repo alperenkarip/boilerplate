@@ -15,6 +15,8 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
+// @MX:ANCHOR: [AUTO] Global error-catching boundary — wraps app sections to render fallback + report errors (Sentry)
+// @MX:REASON: fan_in=4; onError/fallback contract is the single crash-recovery boundary for downstream trees
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);

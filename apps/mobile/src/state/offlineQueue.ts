@@ -5,6 +5,8 @@
 
 import { onlineManager, type QueryClient } from '@tanstack/react-query';
 
+// @MX:WARN: [AUTO] mutates global `onlineManager` state and registers globalThis online/offline listeners without lifecycle ownership
+// @MX:REASON: Calling this more than once stacks duplicate listeners; the cleanup closure is returned to onlineManager, so callers cannot detach them, risking a listener leak
 /**
  * Offline queue yapilandirmasi.
  * QueryClient'a baglanir, ag durumuna gore mutation pause/resume yapar.
