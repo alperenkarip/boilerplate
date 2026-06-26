@@ -136,6 +136,13 @@ Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 - **Web runtime:** React 19.x + Vite 8.x stable baseline + React Router 7.x
 - **Web router entry mode:** React Router 7 data-router / `RouterProvider`-first SPA shell
 - **Mobile runtime:** React Native 0.83.x + Expo SDK 55.x
+- **Backend & data platform:** Firebase (BaaS) — zorunlu canonical (ADR-020)
+- **Database:** Cloud Firestore (NoSQL, koleksiyon-merkezli) (ADR-020)
+- **Server logic:** Cloud Functions for Firebase (canonical yazma yolu, onCall/onRequest) (ADR-020)
+- **Backend auth:** Firebase Auth (client SDK + ID token; backend session/cookie yok) (ADR-021)
+- **Object storage:** Cloud Storage for Firebase (ADR-020)
+- **Scheduled/async jobs:** Cloud Scheduler (cron) + Cloud Tasks (async queue) — Inngest/BullMQ yasak (ADR-020)
+- **Push delivery:** FCM (Firebase Cloud Messaging) (ADR-013 / ADR-020)
 - **Repo/workspace:** Monorepo + pnpm 10.x + Turborepo 2.x
 - **Workspace install security:** pnpm `minimumReleaseAge` + `allowBuilds` + `trustPolicy` baseline
 - **Type system:** TypeScript 5.9.x baseline
@@ -153,7 +160,7 @@ Bu boilerplate için canonical teknik stack aşağıdaki gibidir:
 - **Error tracking:** Sentry
 - **Analytics:** abstraction-first, vendor-agnostic
 - **Tooling watchlist:** React Compiler controlled opt-in, Biome 2.x pilot/watchlist, @expo/ui 1.0 stable watch
-- **Auth/session:** web cookie-preferred, mobile secure storage adapter
+- **Auth/session:** saf Firebase Auth (web `firebase/auth`, mobile `@react-native-firebase/auth`); ID token, backend session/cookie yok; yetki Security Rules + Cloud Functions `context.auth`; mobile `expo-secure-store` (ADR-021)
 - **i18n:** i18next + react-i18next
 - **Docs/governance:** ADR set + dependency policy + compatibility matrix + audit/DoD
 
@@ -742,19 +749,26 @@ Bu nedenle vendor değil, önce event contract kilitlenmiştir.
 
 # 16. Auth / Session / Secure Storage Kararı
 
+> Güncelleme (2026-06-26, ADR-021): Bu alanın canonical kararı saf Firebase Auth'tur. ADR-010'un "backend-managed secure cookie preferred session" tercihi ADR-021 ile supersede edilmiştir; aşağıdaki seçim Firebase Auth modeline güncellenmiştir. Bu karar ADR-020 backend platformu (Firebase) ile birebir hizalıdır.
+
 ## 16.1. Seçim
 
-- **Web:** backend-managed secure cookie preferred session
-- **Mobile:** secure storage adapter
+- **Auth platform:** saf Firebase Auth (ADR-021)
+- **Giriş:** client SDK ile — web `firebase/auth`, mobile `@react-native-firebase/auth`
+- **Token modeli:** Firebase ID token; kendi backend session/cookie modeli yoktur
+- **Authorization:** Firestore Security Rules (`request.auth`, okuma) + Cloud Functions `context.auth` (yazma)
+- **Lifecycle:** `onAuthStateChanged` tabanlı auth state machine
+- **Token persistence:** mobile `@react-native-firebase/auth` otomatik persistence + hassas veride `expo-secure-store`; web Firebase Auth persistence
 - **UI-facing auth state:** sanitized summary
-- **Generic global store:** raw auth artefact taşımaz
+- **Generic global store:** raw auth artefact (ID token dâhil) taşımaz
 
 ## 16.2. Ne anlama gelir?
 
-- token convenience-first dağıtılmaz
+- token convenience-first dağıtılmaz; ham ID token UI'ya / state'e / log'a sızmaz
 - logout sadece boolean temizliği değildir
-- user switch / session expiry deterministic cleanup ister
-- auth provider UI’ya vendor kokusu olarak sızmaz
+- user switch / session expiry deterministic cleanup ister (`LogoutCleanupContract` korunur)
+- auth provider UI’ya vendor kokusu olarak sızmaz (`AuthPort` üzerinden tüketilir)
+- yetki ayrı bir backend session'a değil, Firebase ID token'ın taşıdığı kimliğe dayanır
 
 ---
 
@@ -1283,3 +1297,54 @@ Her revalidation'da aşağıdaki alanlar kontrol edilir:
 | Canonical kütüphanede EOL duyurusu                    | Migration planı başlatılır          | 1 çeyrek içinde |
 | Expo SDK deprecated uyarısı                           | Upgrade planı oluşturulur           | Sonraki sprint  |
 | Major ekosistem değişikliği (ör. React major release) | Compatibility revalidation          | 1-2 hafta       |
+
+---
+
+# 30. Backend & Database Kararı (2026-06-26 Eki / ADR-020, ADR-021)
+
+Bu bölüm, ADR-020 (Backend and Data Platform) ve ADR-021 (Authentication Platform) ile kilitlenen backend, database, server logic ve auth kararlarını canonical stack özetine bağlar. Bu alan da web/mobile runtime gibi **kapalı canonical karardır**; alternatif backend önerisi sıradan değerlendirme değil, ADR revision talebidir.
+
+## 30.1. Seçim
+
+- **Backend & data platform:** Firebase (BaaS) — türetilen tüm projeler için zorunlu canonical
+- **Database:** Cloud Firestore (NoSQL document store, koleksiyon-merkezli)
+- **Server logic:** Cloud Functions for Firebase (callable `onCall` / HTTPS `onRequest` / Firestore trigger / scheduled / task)
+- **Object storage:** Cloud Storage for Firebase
+- **Scheduled jobs:** Cloud Scheduler + scheduled Cloud Functions (`onSchedule`)
+- **Async queue:** Cloud Tasks (`onTaskDispatched`)
+- **Push delivery:** FCM (ADR-013 ile hizalı)
+- **Auth:** saf Firebase Auth (ADR-021)
+
+## 30.2. Read/Write Contract (en kritik ilke)
+
+> Yazma ve iş mantığı Cloud Functions üzerinden yürür; okuma client SDK ile doğrudan Firestore'dan yapılır.
+
+- **Yazma (canonical):** tüm `create` / `update` / `delete` ve domain iş mantığı callable / HTTPS Cloud Functions üzerinden. Client doğrudan Firestore'a **yazmaz**; Firestore Security Rules yazma tarafında varsayılan-reddet kurulur.
+- **Okuma (canonical):** client SDK ile doğrudan Firestore'dan; tek seferlik (`getDoc` / `getDocs`) ve realtime (`onSnapshot`). Okuma Security Rules ile korunur.
+- Bu sınır boilerplate'in backend güvenlik modelinin temelidir ve gevşetilemez.
+
+## 30.3. SDK Stratejisi ve Port/Adapter
+
+- **Web:** `firebase` JS SDK (modular, v11.x)
+- **Mobile:** `@react-native-firebase` (native modüller; Expo development build zorunlu, Expo Go desteklenmez — ADR-002 / ADR-018)
+- **`packages/core`:** SDK-free; yalnızca port arayüzlerini tanımlar (`AuthPort`, `DataReadPort`, `FunctionsCallPort`). SDK import'ları yalnızca app-level adapter katmanında bulunur.
+
+## 30.4. Gerekçe
+
+- managed BaaS ile time-to-product ve operasyonel yük dengesi
+- web + mobile için tek platform ailesinde data / server logic / storage / jobs / push / auth bütünlüğü ve cross-platform parity
+- realtime first-class destek (`onSnapshot`)
+- yazma ve iş mantığının tek, denetlenebilir boundary'de (Cloud Functions) toplanması
+- port/adapter ile test edilebilir ve SDK-bağımsız core
+
+## 30.5. Reddedilen Yönler
+
+- **Inngest / BullMQ ve harici job queue'lar:** reddedildi; karşılığı Cloud Scheduler + Cloud Tasks (platform-içi).
+- **SQL ORM (Drizzle / Prisma) ve relational model:** reddedildi; canonical database Cloud Firestore (NoSQL).
+- **Hono / custom Node backend:** reddedildi; server logic canonical katmanı Cloud Functions, webhook/HTTPS ihtiyacı `onRequest`.
+- **Supabase:** reddedildi; ikinci BaaS'ı canonical tutmak boilerplate parity hedefiyle çelişir.
+- **Neon / serverless Postgres:** reddedildi; relational paradigma ve ayrı host canonical Firebase yüzeyiyle uyumsuz.
+- **Client-direct write:** reddedildi; yazma yalnızca Cloud Functions üzerinden (Bölüm 30.2).
+- **Backend-managed cookie/session, Better Auth, üçüncü taraf auth:** reddedildi; auth saf Firebase Auth (ADR-021).
+
+> Kapanış: Backend ve data platform için canonical karar Firebase'dir (zorunlu). Database Cloud Firestore, server logic Cloud Functions; yazma ve iş mantığı Functions üzerinden, okuma client SDK ile doğrudan Firestore'dan (`onSnapshot` realtime). Inngest/BullMQ/SQL ORM/Hono/Supabase/Neon/client-direct-write canonical değildir. Detay: `docs/adr/ADR-020-backend-and-data-platform.md`, `docs/adr/ADR-021-authentication-platform.md`.

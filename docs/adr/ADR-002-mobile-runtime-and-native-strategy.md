@@ -127,28 +127,34 @@ Bu boilerplate’in hedefleri açısından en uygun seçimin neden React Native 
 ## 6.1. Neden React Native?
 
 ### 6.1.1. Cross-platform zihinsel model uyumu
+
 Web tarafında React seçilmişken mobile tarafta React Native kullanmak:
+
 - component modeli
 - state/orchestration yaklaşımı
 - shared domain mantığı
 - bazı test ve tooling zihinsel modelleri
-açısından güçlü uyum sağlar.
+  açısından güçlü uyum sağlar.
 
 ### 6.1.2. Gerçek native UI yüzeyi
+
 Bu proje mobile tarafı “web görünümü sarmalayalım” mantığında ele almıyor.  
 Gerçek mobil ergonomi, safe area, gesture, sheet, keyboard, native performance ve platform hissi önemlidir.  
 React Native bu alanlarda doğru zemini sunar.
 
 ### 6.1.3. Design system-first yapı ile uyum
+
 Shared token sistemi, semantic theming, reusable primitives ve cross-platform component family mantığı React Native ile doğal taşınabilir.
 
 ### 6.1.4. Ekosistem olgunluğu
+
 React Native:
+
 - geniş ekosistem,
 - geniş topluluk,
 - güçlü belgelendirme kaynakları,
 - production-grade kullanım örnekleri
-sunmaktadır.
+  sunmaktadır.
 
 ---
 
@@ -157,16 +163,20 @@ sunmaktadır.
 Expo seçimi bu boilerplate için “kolay olsun diye” değil, **kontrollü foundation** sağladığı için yapılmıştır.
 
 ### 6.2.1. Standardize mobile bootstrap
+
 Expo:
+
 - config
 - assets
 - build pipeline
 - environment wiring
 - runtime ergonomisi
-alanlarında başlangıç standardizasyonu sağlar.
+  alanlarında başlangıç standardizasyonu sağlar.
 
 ### 6.2.2. Daha düşük erken bakım maliyeti
+
 Bare RN başlangıçta şu yükleri artırır:
+
 - native proje bakım yüzeyi
 - iOS/Android toolchain hassasiyetleri
 - config dağınıklığı
@@ -175,37 +185,46 @@ Bare RN başlangıçta şu yükleri artırır:
 Expo-first yaklaşım bu erken yükü azaltır.
 
 ### 6.2.3. Documentation-first akışla uyum
+
 Bu boilerplate’in amacı önce foundation’ı sağlam kurmaktır.  
 Expo, başlangıç foundation’ını daha öngörülebilir hale getirir ve erken native kaosa sürüklenmeyi azaltır.
 
 ### 6.2.4. Geniş production uygunluğu
+
 Expo artık yalnızca prototipleme aracı gibi düşünülmemelidir.  
 Doğru kullanıldığında production-grade ürünler için güçlü temeldir.
 
 ### 6.2.5. Controlled native expansion imkanı
+
 Expo seçmek native sınırların sonsuza kadar kapalı olduğu anlamına gelmez.  
 Doğru yaklaşım:
+
 - varsayılan çözüm Expo-first
 - gerçek ihtiyaçta documented native widening
 
 ### 6.2.6. Development-build-first çalışma kuralı
 
 Expo ekosisteminde `Expo Go`, öğrenme ve sınırlı sandbox denemeleri için yararlı olabilir; ancak bu boilerplate için **production-grade mobile geliştirme baseline'ı değildir**. Canonical kural:
+
 - günlük geliştirme ve gerçek feature doğrulaması development build üzerinde yapılır,
 - native modül, config plugin, linking, push, auth, secure storage ve benzeri kabiliyetler Expo Go varsayımıyla tasarlanmaz,
 - “Expo Go'da açılıyor” done kanıtı sayılmaz.
+
+> **Amendment — 2026-06-26 (ADR-020):** `@react-native-firebase` native modülleri nedeniyle Expo development build zorunludur; Expo Go ile çalışma desteklenmez. Canonical backend & data platform kararı (ADR-020) ve auth platform kararı (ADR-021) `@react-native-firebase` native modüllerine dayandığından, development-build-first kuralı bu boilerplate için kesin zorunluluğa dönüşür.
 
 ### 6.2.7. Bootstrap doğrulama kapısı
 
 Mobile bootstrap tamamlandı sayılmadan önce şu doğrulamalar zorunludur:
 
 **Temel doğrulamalar:**
+
 - `expo-doctor` temiz geçer (New Architecture uyumsuzluğu dahil),
 - development build fiziksel cihaz veya emülatörde açılır,
 - config plugin zinciri ve autolinking beklenen paketleri görür,
 - appearance/theming zinciri için `userInterfaceStyle: "automatic"` ve gerekli durumda `expo-system-ui` doğrulanır.
 
 **New Architecture doğrulamaları (ADR-018 ile entegre):**
+
 - Fabric renderer aktif olmalı (React DevTools'ta "Fabric: true" görünmeli),
 - TurboModules lazy-loading çalışıyor olmalı,
 - Hermes V1 aktif olmalı (`global.HermesInternal` mevcudiyeti ile doğrulanabilir),
@@ -230,7 +249,9 @@ Ama bu boilerplate için varsayılan foundation olarak seçilmemesinin nedeni ba
 ## 7.2. Nedenleri
 
 ### 7.2.1. Fazla erken altyapı maliyeti
+
 Boilerplate şu anda şunları çözmek zorunda:
+
 - mimari foundation
 - design system
 - quality gates
@@ -238,16 +259,19 @@ Boilerplate şu anda şunları çözmek zorunda:
 - product shell modeli
 
 Bare RN ise erken şu alanları büyütür:
+
 - pod/gradle/native config
 - build pipeline detayları
 - platform-specific infra bakımı
 - local dev kırılganlığı
 
 ### 7.2.2. Documentation-first akışa zarar verme riski
+
 Native setup karmaşıklığı büyüdükçe konuşma mimari ve ürün kalitesinden toolchain söndürmeye kayar.  
 Bu, bu projenin öncelikleriyle çelişir.
 
 ### 7.2.3. Ekip enerjisinin yanlış yere gitmesi
+
 Boilerplate seviyesinde ilk problem native plumbing olmamalıdır.
 
 ## 7.3. Sonuç
@@ -281,19 +305,21 @@ Flutter seçimi proje yönünü kökten değiştirir.
 # 9. Neden Web Wrapper / Hybrid Yaklaşım Seçilmedi?
 
 Bu boilerplate mobile’ı:
+
 - embedded web shell,
 - PWA-benzeri mobile shell,
 - webview-heavy hybrid yaklaşım
-olarak kurgulamaz.
+  olarak kurgulamaz.
 
 Çünkü hedef:
+
 - gerçek mobil UX,
 - native ergonomi,
 - kaliteli motion,
 - safe area,
 - keyboard,
 - system integration
-alanlarında taviz vermemektir.
+  alanlarında taviz vermemektir.
 
 Bu nedenle hybrid yaklaşım canonical mobile foundation değildir.
 
@@ -351,20 +377,25 @@ Bu tek cümle çok önemlidir.
 ## 11.2. Ne anlama gelir?
 
 ### 11.2.1. Expo-first
+
 Yeni mobile capability ihtiyacı doğduğunda ilk sorulan soru:
 “Bunu Expo uyumlu ve mevcut stack ile çözebilir miyiz?”
 
 ### 11.2.2. Native escape hatch allowed
+
 Cevap hayırsa, native düzeyde çözüm açmak otomatik olarak yasak değildir.
 
 ### 11.2.3. Policy-controlled
+
 Ama bu karar:
+
 - belgesiz,
 - rastgele,
 - “bu paketi kurdum oldu”
-seviyesinde verilmez.
+  seviyesinde verilmez.
 
 Native genişleme şu sorularla değerlendirilir:
+
 - capability gerçekten gerekli mi?
 - Expo uyumlu alternatif var mı?
 - platform parity etkisi ne?
@@ -425,22 +456,24 @@ Bu sorular cevapsızsa native widening erken ve zayıf karardır.
 ## 14.1. Karar
 
 Mobile navigation canonical olarak:
+
 - native-feeling stack/tab/sheet modelini destekleyen
 - React ekosisteminde olgun
 - app shell ile uyumlu
-bir runtime üzerinden kurulmalıdır.
+  bir runtime üzerinden kurulmalıdır.
 
 Canonical stack decision bunu React Navigation yönünde kilitlemiştir.
 
 ## 14.2. Neden?
 
 Çünkü mobile taraf:
+
 - stack progression
 - tab structure
 - modal/sheet davranışı
 - deep link handling
 - nested flows
-alanlarında güçlü navigation model ister.
+  alanlarında güçlü navigation model ister.
 
 ## 14.3. Kural
 
@@ -491,7 +524,7 @@ Bu ADR doğrudan state tool kararını vermez; ama şunu garanti eder:
 - query/cache layer ile doğal çalışabilecek
 - form runtime ile uyumlu
 - feature orchestration’ı platform-specific native plumbing’e boğmayacak
-bir foundation kurulacaktır.
+  bir foundation kurulacaktır.
 
 Bu, Zustand + TanStack Query + RHF + Zod zincirinin mobile’da doğal çalışabilmesi için kritiktir.
 
@@ -559,10 +592,12 @@ Bu kararın ana avantajları şunlardır:
 Dürüst olmak gerekir. Bu kararın riskleri de vardır.
 
 ## 22.1. Expo bazı edge-case native ihtiyaçlarda sınır yaratabilir
+
 Bu gerçek bir risktir.  
 Ama bu risk native escape hatch policy ile yönetilir.
 
 ## 22.2. “Expo-first” yanlış anlaşılırsa ekipte rehavet oluşabilir
+
 Yani insanlar şunu düşünebilir:
 “Nasıl olsa Expo var, detayları sonra çözeriz.”
 
@@ -570,9 +605,11 @@ Bu yanlış yorumdur.
 Bu risk, contribution ve governance belgeleriyle kapatılmalıdır.
 
 ## 22.3. Native widening geç yapılırsa bazı kararlar pahalılaşabilir
+
 Bu yüzden gerçek native ihtiyaçlar erken dürüstçe işaretlenmelidir.
 
 ## 22.4. Android ve iOS parity’si yanlış yorumlanabilir
+
 Özellikle iOS HIG hassasiyeti yüksekken Android tarafı “ikinci sınıf” bırakılmamalıdır.
 
 ---
@@ -623,17 +660,23 @@ Bu ADR kabul edildiğinde aşağıdaki sonuçlar doğar:
 # 26. Reddedilen Alternatiflerin Kısa Özeti
 
 ## 26.1. Bare React Native as default
+
 Reddedildi çünkü:
+
 - erken bakım maliyeti yüksektir
 - foundation aşamasında yanlış odak yaratır
 
 ## 26.2. Flutter
+
 Reddedildi çünkü:
+
 - React temelli cross-platform zihinsel modeli kırar
 - mevcut belge seti ve canonical stack ile uyumsuzdur
 
 ## 26.3. Hybrid/web-wrapper mobile
+
 Reddedildi çünkü:
+
 - gerçek mobile UX hedefiyle uyumsuzdur
 - native ergonomiyi zayıflatır
 

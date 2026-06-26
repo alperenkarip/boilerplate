@@ -1,10 +1,10 @@
 # Teknoloji Stack'i
 
-Son Güncelleme: 2026-06-05
+Son Güncelleme: 2026-06-26
 
 ## Genel Bakış
 
-Bu proje, React ve React Native (Expo) uzerine kurulu cross-platform bir boilerplate'tir. Web tarafi Vite 8 ile derlenen React 19 SPA olarak, mobil taraf ise Expo SDK 55 uzerinde calisan React Native 0.83 uygulamasi olarak konumlandirilmistir. Tüm teknoloji secimleri ADR-001'den ADR-019'a kadar uzanan mimari karar kayitlariyla kilitlenmis olup alternatif öneri veya tartisma yasaktir.
+Bu proje, React ve React Native (Expo) uzerine kurulu cross-platform bir boilerplate'tir. Web tarafi Vite 8 ile derlenen React 19 SPA olarak, mobil taraf ise Expo SDK 55 uzerinde calisan React Native 0.83 uygulamasi olarak konumlandirilmistir. Tüm teknoloji secimleri ADR-001'den ADR-021'e kadar uzanan mimari karar kayitlariyla kilitlenmis olup alternatif öneri veya tartisma yasaktir. Backend, database ve auth Firebase'e kilitlenmistir (ADR-020, ADR-021).
 
 Monorepo yapisi pnpm 10 ve Turborepo 2 ile yonetilmektedir. TypeScript 5.9 strict mode tüm platformlarda zorunludur. State yonetiminden test altyapisina, kimlik dogrulamadan gizlilik uyumuna kadar her katman için canonical bir seçim belirlenmis ve governance dokumanlariyla güvence altina alinmistir.
 
@@ -109,17 +109,43 @@ ADR-009 ile tanimlanan observability katmanı, Sentry 10.x tabanli hata takibi v
 
 ---
 
+## Backend & Database
+
+ADR-020 ile backend ve data platform Firebase (BaaS) olarak zorunlu canonical kabul edilmistir. Database Cloud Firestore (NoSQL, koleksiyon-merkezli), server logic Cloud Functions'tir. Read/write contract nettir: yazma (create/update/delete) ve is mantigi Cloud Functions (callable `onCall` / HTTPS `onRequest`) uzerinden yurur; client dogrudan Firestore'a yazmaz (Security Rules write varsayilan-reddet). Okuma client SDK ile dogrudan Firestore'dan yapilir (Rules korumali) ve realtime ihtiyacinda `onSnapshot` kullanilir. Zamanli isler Cloud Scheduler, async isler Cloud Tasks ile yurur (Inngest/BullMQ yasak).
+
+| Teknoloji | Amac | Platform | ADR |
+|-----------|------|----------|-----|
+| Firebase Auth | Kimlik dogrulama (client SDK + ID token) | Web + Mobile | ADR-021 |
+| Cloud Firestore | NoSQL document database (koleksiyon-merkezli) | Cross-platform | ADR-020 |
+| Cloud Functions | Server logic ve canonical yazma yolu (onCall/onRequest) | Backend | ADR-020 |
+| Cloud Storage for Firebase | Object/blob storage | Cross-platform | ADR-020 |
+| Cloud Scheduler + Cloud Tasks | Zamanli (cron) ve async queue isler | Backend | ADR-020 |
+| FCM (Firebase Cloud Messaging) | Push delivery | Mobile | ADR-013 / ADR-020 |
+
+**SDK stratejisi:**
+
+| Katman | SDK | Sorumluluk |
+|--------|-----|------------|
+| `apps/web` | `firebase` JS SDK (modular, v11.x) | Web adapter |
+| `apps/mobile` | `@react-native-firebase` (~v21.x, native) | Mobile adapter (Expo development build zorunlu) |
+| `packages/core` | SDK-free port/adapter | `AuthPort`, `DataReadPort`, `FunctionsCallPort` arayuzleri |
+
+`packages/core` hicbir Firebase SDK'sini import etmez; cross-platform parity port/adapter seviyesinde saglanir (ADR-020). `@react-native-firebase` native modulleri nedeniyle Expo development build zorunludur, Expo Go desteklenmez (ADR-002 / ADR-018 New Architecture uyumu).
+
+---
+
 ## Auth ve Security
 
-ADR-010 ile platform bazli kimlik doğrulama mimarisi belirlenmistir. Web'de backend tarafindan yonetilen HttpOnly cookie'ler, mobilde Expo SecureStore sifreleme, destekleyici olarak da biyometrik kimlik doğrulama kullanilmaktadir. Auth token'lari kesinlikle log'lara yazilmamalidir.
+ADR-021 ile kimlik doğrulama mimarisi saf Firebase Auth olarak belirlenmistir (ADR-010 supersede edilmistir). Kullanici client SDK ile giris yapar (web `firebase/auth`, mobile `@react-native-firebase/auth`), kimlik Firebase ID token ile tasinir; kendi backend session/cookie modeli yoktur. Yetkilendirme Firestore Security Rules (`request.auth`, okuma) ve Cloud Functions `context.auth` (yazma) ile yapilir. Auth lifecycle `onAuthStateChanged` ile yonetilir. Hassas uygulama verisi icin `expo-secure-store`, yerel unlock icin biyometrik kimlik doğrulama korunur. Auth token'lari (ID token dahil) kesinlikle log'lara yazilmaz ve UI'ya sizmaz.
 
 | Teknoloji | Platform | Amac |
 |-----------|----------|------|
-| HttpOnly Cookies (backend-managed) | Web | Oturum yönetimi |
-| expo-secure-store | Mobile | Sifreli yerel depolama |
-| expo-local-authentication | Mobile | Biyometrik kimlik doğrulama |
+| Firebase Auth (firebase/auth) | Web | Kimlik dogrulama (ID token, Firebase persistence) |
+| Firebase Auth (@react-native-firebase/auth) | Mobile | Kimlik dogrulama (ID token, otomatik persistence) |
+| expo-secure-store | Mobile | Hassas yerel veri (Firebase oturumu disi) |
+| expo-local-authentication | Mobile | Biyometrik yerel unlock |
 
-Detay için: `docs/adr/ADR-010-...` ve `docs/quality/27-security-and-secrets-baseline.md`
+Detay için: `docs/adr/ADR-021-authentication-platform.md`, `docs/adr/ADR-020-backend-and-data-platform.md` ve `docs/quality/27-security-and-secrets-baseline.md`
 
 ---
 
@@ -299,7 +325,7 @@ Tüm teknoloji secimleri asagidaki ADR'larla kilitlenmistir. Alternatifleri tart
 | ADR-007 | Styling/tokens (Tailwind CSS 4.x + NativeWind 5.x) |
 | ADR-008 | Testing (Vitest 4.x + jest-expo + Playwright 1.58.x) |
 | ADR-009 | Observability (Sentry 10.x + vendor-agnostic analytics) |
-| ADR-010 | Auth (HttpOnly cookies + SecureStore + Biometric) |
+| ADR-010 | Auth baseline (ADR-021 ile supersede edildi) |
 | ADR-011 | i18n (i18next 26.x, namespace-based) |
 | ADR-012 | Navigation (React Router 7.x web + React Navigation 7.x mobile) |
 | ADR-013 | Push Notification (expo-notifications + FCM/APNs) |
@@ -309,6 +335,8 @@ Tüm teknoloji secimleri asagidaki ADR'larla kilitlenmistir. Alternatifleri tart
 | ADR-017 | Privacy/Compliance (GDPR + KVKK) |
 | ADR-018 | New Architecture (Fabric + JSI + TurboModules + Hermes V1) |
 | ADR-019 | Local Storage (MMKV + SecureStore + Zustand persist) |
+| ADR-020 | Backend & Data Platform (Firebase: Firestore + Cloud Functions + Storage + Scheduler/Tasks + FCM) |
+| ADR-021 | Authentication Platform (saf Firebase Auth: client SDK + ID token) |
 
 **Governance dokumanlari:**
 

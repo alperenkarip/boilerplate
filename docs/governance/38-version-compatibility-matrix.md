@@ -142,6 +142,11 @@ Bu boilerplate için çekirdek omurga aşağıdaki sürüm hattı üzerinden kab
 - **Mobile Runtime:** Expo SDK 55.x
 - **React Native:** 0.83.x
 - **React Native Web:** 0.21.x
+- **Firebase (web client SDK):** `firebase` 11.x (modular)
+- **Firebase (mobile SDK):** `@react-native-firebase` ~21.x (RN 0.83 / Expo 55 uyumlu stabil hat, native modül)
+- **Firebase Admin SDK:** `firebase-admin` (current stable)
+- **Cloud Functions SDK:** `firebase-functions` (current stable)
+- **Cloud Functions runtime:** Node.js 20 (`nodejs20`)
 - **Tailwind CSS:** 4.x
 - **NativeWind:** 5.x candidate track (pre-release status doğrulanmadan production baseline sayılmaz)
 - **Zustand:** 5.x
@@ -494,6 +499,16 @@ Aşağıdaki tablo, çekirdek omurganın üzerine eklenen yardımcı kütüphane
 | sonner                             | 2.x             | React 19 uyumlu, web-only | Patch              |
 | clsx                               | (latest stable) | Bağımsız                  | Patch              |
 | tailwind-merge                     | (latest stable) | Tailwind 4 uyumlu         | Patch              |
+
+### Backend / Firebase (ADR-020, ADR-021)
+
+| Kütüphane                 | Canonical Track | Baseline Notu                                           | Upgrade Politikası                        |
+| ------------------------- | --------------- | ------------------------------------------------------- | ----------------------------------------- |
+| firebase (web)            | 11.x            | Modular JS SDK, `apps/web` adapter                      | Strategic — ADR-020                       |
+| @react-native-firebase/\* | ~21.x           | RN 0.83 / Expo 55 uyumlu stabil hat, native modül       | Strategic — Expo/RN zinciri (ADR-020/018) |
+| firebase-admin            | (latest stable) | Server-side admin SDK, Cloud Functions                  | Strategic — ADR-020                       |
+| firebase-functions        | (latest stable) | `functions/` workspace runtime SDK                      | Strategic — ADR-020                       |
+| Cloud Functions runtime   | nodejs20        | Functions deploy runtime, repo Node baseline ile hizalı | Strategic — ADR-020                       |
 
 ---
 
@@ -899,4 +914,31 @@ Uyumsuzluk tespit edilirse detaylı hata mesajı ve önerilen versiyon gösteril
 
 Bu dokümanın ana çıktısı şudur:
 
-> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 8.x stable baseline, React Router 7.x, Tailwind 4.x, NativeWind 5.x candidate track, Zustand 5.x, **TanStack Query 5.x conditional track**, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Storybook 10.x, Playwright 1.58.x, React Navigation 7.x ve i18next 26.x hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.
+> Bu boilerplate’in canonical compatibility omurgası; Node 20.19.x, pnpm 10.x, Turbo 2.x, Expo SDK 55.x, React Native 0.83.x, React 19.2.x, Vite 8.x stable baseline, React Router 7.x, Tailwind 4.x, NativeWind 5.x candidate track, Zustand 5.x, **TanStack Query 5.x conditional track**, RHF 7.x, Zod 4.x, Jest 30.x, Vitest 4.x, Storybook 10.x, Playwright 1.58.x, React Navigation 7.x, i18next 26.x ve **Firebase (firebase 11.x web / @react-native-firebase ~21.x mobile, firebase-admin, firebase-functions, Cloud Functions runtime nodejs20)** hatları üzerine kuruludur. Exact patch pin’ler manifest/lockfile’da yaşar; bu belge ise hangi sürüm ailelerinin birlikte meşru olduğunu ve hangi upgrade’lerin resmi yeniden doğrulama gerektirdiğini tanımlar.
+
+---
+
+# 34. Firebase Backend Uyumluluğu (2026-06-26 Eki / ADR-020, ADR-021)
+
+ADR-020 (Backend and Data Platform) ve ADR-021 (Authentication Platform) ile backend, database ve auth Firebase'e kilitlenmiştir. Bu bölüm Firebase yüzeyinin canonical sürüm hatlarını ve uyumluluk notlarını tanımlar.
+
+## 34.1. Canonical Firebase Sürüm Hattı
+
+| Bileşen                   | Canonical Track | Notlar                                                            |
+| ------------------------- | --------------- | ----------------------------------------------------------------- |
+| firebase (web client SDK) | 11.x            | Modular API; tree-shakeable import'lar; `apps/web` adapter        |
+| @react-native-firebase/\* | ~21.x           | RN 0.83 / Expo SDK 55 uyumlu stabil hat; native modül             |
+| firebase-admin            | current stable  | Server-side admin SDK (Cloud Functions / privileged backend)      |
+| firebase-functions        | current stable  | Cloud Functions runtime SDK (`functions/` workspace)              |
+| Cloud Functions runtime   | nodejs20        | Functions deploy runtime; repo Node baseline (20.19.x) ile hizalı |
+
+## 34.2. New Architecture (ADR-018) Uyumu
+
+`@react-native-firebase` native modülleri New Architecture (Fabric + TurboModules) ile uyumlu olmalıdır. Expo SDK 55 New Architecture'ı zorunlu kıldığından (ADR-018), seçilen `@react-native-firebase` sürümü TurboModule/Fabric uyumlu hat olmak zorundadır. Native Firebase modülleri nedeniyle Expo development build zorunludur; Expo Go desteklenmez (ADR-002 / ADR-020 §16).
+
+## 34.3. Upgrade Kuralı
+
+- `@react-native-firebase` major hattı Expo SDK / React Native zinciriyle birlikte değerlendirilir; bağımsız sıçratılmaz.
+- `firebase` (web) major upgrade'i `apps/web` adapter katmanı ve `AuthPort` / `DataReadPort` / `FunctionsCallPort` sözleşmeleriyle birlikte doğrulanır.
+- Cloud Functions runtime (`nodejs20`) repo Node baseline'ı (Bölüm 7) ile hizalı tutulur.
+- Bu satırlar değişmeden Firebase çekirdek hattı değiştirilemez (Bölüm 26 mantığı Firebase için de geçerlidir).
