@@ -57,15 +57,18 @@ Bu tez su sonuclari dogurur:
 
 Turetme surecine baslamadan once asagidaki on kosullar saglanmis olmalidir:
 
-| On Kosul | Aciklama |
-|---|---|
-| Node.js 20.x | `.nvmrc` ile kilitlenen exact hat. `nvm use` veya esdeger runtime hint ile dogrulanir |
-| pnpm 10.x | Workspace manager. `corepack enable && corepack prepare` ile saglanir |
-| Git | Versiyon kontrol sistemi. Repo baslatmak icin zorunlu |
-| Turborepo 2.x | Build orchestrator. pnpm ile birlikte gelir (`turbo` komutu erisebilir olmali) |
-| Boilerplate erisimi | Boilerplate repo'sunun clone/fork edilebilir olmasi veya scaffold script'inin mevcut olmasi |
-| Turkce dokumantasyon | Tum proje belgeleri Turkce yazilir. Bu kural boilerplate'in felsefi miras katmanindan gelir |
-| Boundary contract bilgisi | `45-boilerplate-project-boundary-contract.md` belgesi okunmus ve anlasimis olmali |
+| On Kosul                          | Aciklama                                                                                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js 20.x                      | `.nvmrc` ile kilitlenen exact hat. `nvm use` veya esdeger runtime hint ile dogrulanir                                                                                       |
+| pnpm 10.x                         | Workspace manager. `corepack enable && corepack prepare` ile saglanir                                                                                                       |
+| Git                               | Versiyon kontrol sistemi. Repo baslatmak icin zorunlu                                                                                                                       |
+| Turborepo 2.x                     | Build orchestrator. pnpm ile birlikte gelir (`turbo` komutu erisebilir olmali)                                                                                              |
+| Boilerplate erisimi               | Boilerplate repo'sunun clone/fork edilebilir olmasi veya scaffold script'inin mevcut olmasi                                                                                 |
+| Turkce dokumantasyon              | Tum proje belgeleri Turkce yazilir. Bu kural boilerplate'in felsefi miras katmanindan gelir                                                                                 |
+| Boundary contract bilgisi         | `45-boilerplate-project-boundary-contract.md` belgesi okunmus ve anlasimis olmali                                                                                           |
+| Firebase CLI (`firebase-tools`)   | Canonical backend (ADR-020) icin zorunlu. `npm i -g firebase-tools` veya `pnpm dlx firebase-tools` ile kurulur, `firebase login` ile kimlik dogrulanir                      |
+| Firebase hesabi ve faturalandirma | Firebase Console erisimi gerekli. Cloud Functions deploy icin **Blaze (pay-as-you-go)** plani zorunludur; emulator suite ise plan gerektirmez                               |
+| Mobil development build           | `@react-native-firebase` native modul kullanir. **Expo Go DESTEKLENMEZ** — iOS/Android development build (EAS veya yerel) zorunludur (ADR-020 Bolum 16 / ADR-002 amendment) |
 
 On kosullar saglanmadan turetme sureci baslatilmaz.
 
@@ -90,14 +93,15 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
    ```
 6. **`.sync-config.yaml` dosyasini olustur** (upstream sync degiskenleri):
    ```yaml
-   upstream_repo: "github.com/<org>/boilerplate"
-   project_name: "<yeni-proje-adi>"
-   org_scope: "@<org>"
+   upstream_repo: 'github.com/<org>/boilerplate'
+   project_name: '<yeni-proje-adi>'
+   org_scope: '@<org>'
    ```
 7. **`tooling/sync/derived-projects.txt`'e yeni projeyi ekle** (boilerplate reposunda):
    Boilerplate maintainer'a bildir veya PR ac.
 
 **Dogrulama:**
+
 - [ ] Repo fiziksel olarak mevcut ve proje adi root `package.json`'da dogru
 - [ ] Git gecmisi temiz veya fork olarak baglantili
 - [ ] Remote origin dogru repo'ya isaret ediyor
@@ -112,17 +116,18 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 **Kontrol edilecek dosyalar:**
 
-| Dosya | Dogrulama |
-|---|---|
-| `.nvmrc` | Node versiyonu `20.19.x` hattinda mi? |
-| `pnpm-workspace.yaml` | Workspace tanimlari (`apps/*`, `packages/*`, `tooling/*`) mevcut mu? |
-| `turbo.json` | Task pipeline (`build`, `lint`, `typecheck`, `test`) tanimli mi? |
-| `tsconfig.base.json` | TypeScript baseline ayarlari boilerplate ile uyumlu mu? |
-| `eslint.config.js` | Flat config yapisi mevcut mu? Shared config zincirleri dogru mu? |
-| `.prettierrc` veya `prettier.config.*` | Format kurallari tanimli mi? |
-| `.gitignore` | Standart ignore pattern'leri mevcut mu? (`node_modules`, `.env.local`, `dist` vb.) |
+| Dosya                                  | Dogrulama                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `.nvmrc`                               | Node versiyonu `20.19.x` hattinda mi?                                              |
+| `pnpm-workspace.yaml`                  | Workspace tanimlari (`apps/*`, `packages/*`, `tooling/*`) mevcut mu?               |
+| `turbo.json`                           | Task pipeline (`build`, `lint`, `typecheck`, `test`) tanimli mi?                   |
+| `tsconfig.base.json`                   | TypeScript baseline ayarlari boilerplate ile uyumlu mu?                            |
+| `eslint.config.js`                     | Flat config yapisi mevcut mu? Shared config zincirleri dogru mu?                   |
+| `.prettierrc` veya `prettier.config.*` | Format kurallari tanimli mi?                                                       |
+| `.gitignore`                           | Standart ignore pattern'leri mevcut mu? (`node_modules`, `.env.local`, `dist` vb.) |
 
 **Dogrulama:**
+
 - [ ] Tum config dosyalari mevcut ve icerik olarak beklenen baseline'i karsiiliyor
 - [ ] Hicbir config dosyasi bos veya placeholder degil
 - [ ] Config dosyalari arasinda celiski yok
@@ -140,9 +145,82 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 3. `pnpm turbo run build --dry-run` ile saglik kontrolu yap
 
 **Dogrulama:**
+
 - [ ] `.env.local` olusturuldu, eksik degisken yok
 - [ ] `pnpm install` peer warning veya error olmadan tamamlandi
 - [ ] Dry-run basariyla cikti uretti
+
+---
+
+## Adim 3.5: Firebase Proje Kurulumu (Canonical Backend)
+
+**Amac:** Projenin canonical backend'i olan Firebase'i (ADR-020 / ADR-021) turetilen proje icin olustur ve bagla. Backend = Firestore (DB) + Cloud Functions (canonical yazma/is mantigi) + Firebase Auth + Storage + FCM. Bu adim atlanamaz; Firebase zorunlu miras katmanidir (bkz. Bolum 7.8).
+
+**Mimari ozet:**
+
+- Yazma yolu: client direct-write YOK. Tum create/update/delete callable Cloud Functions uzerinden Admin SDK ile yapilir (`firestore.rules` icinde `allow write: if false`).
+- Okuma yolu: client SDK Firestore okumasi, ownership ile sinirli (`isOwner` kurali).
+- Web: `firebase` JS SDK, config `.env.local` icindeki `VITE_FIREBASE_*` degiskenlerinden okunur.
+- Mobil: `@react-native-firebase`, config native `google-services.json` (Android) ve `GoogleService-Info.plist` (iOS) dosyalarindan **otomatik** okunur. Mobil tarafta Firebase icin `.env` degiskeni KULLANILMAZ.
+
+**Yapilacaklar:**
+
+1. Firebase CLI'ye giris yap: `firebase login`
+
+2. Firebase Console'da (`console.firebase.google.com`) yeni proje olustur. Proje ID'sini not al.
+
+3. Uygulamalari kaydet ve config dosyalarini indir:
+   - **Web app** ekle → web config nesnesini (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`) al.
+   - **iOS app** ekle (bundle identifier: `com.<org>.<app>`) → `GoogleService-Info.plist` indir.
+   - **Android app** ekle (package name: `com.<org>.<app>`) → `google-services.json` indir.
+   - Bundle ID / package name, Adim 4'te ve `apps/mobile/app.json` icinde tanimli degerle ayni olmalidir.
+
+4. Firebase urunlerini etkinlestir: **Authentication** (kullanilacak provider'lari sec), **Firestore Database**, **Cloud Functions** (Blaze plani gerekebilir), **Storage**.
+
+5. `.firebaserc` dosyasindaki `default` proje ID'sini gercek deger ile degistir (`"your-project-id"` → gercek proje ID).
+
+6. `.env.local` dosyasina web config degerlerini gir. Asagidaki degiskenlerin tamami gereklidir:
+
+   ```
+   VITE_FIREBASE_API_KEY=
+   VITE_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=<project-id>
+   VITE_FIREBASE_STORAGE_BUCKET=<project-id>.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=
+   VITE_FIREBASE_APP_ID=
+   VITE_FIREBASE_FUNCTIONS_REGION=us-central1
+   VITE_FIREBASE_USE_EMULATOR=true
+   ```
+
+   `VITE_FIREBASE_USE_EMULATOR=true` gelistirmede emulator suite'ine baglanir; production build'de `false` yapilir veya kaldirilir.
+
+7. Mobil native config dosyalarini yerlestir:
+   - Indirilen `google-services.json`'i `apps/mobile/google-services.json` olarak kopyala (sablon: `apps/mobile/google-services.example.json`).
+   - Indirilen `GoogleService-Info.plist`'i `apps/mobile/GoogleService-Info.plist` olarak kopyala (sablon: `apps/mobile/GoogleService-Info.example.plist`).
+   - Bu iki dosya `.gitignore` icindedir ve **commit edilmez** (ADR-020). Her gelistirici kendi makinesine indirir.
+
+8. Lokal emulator suite ile calistir: `firebase emulators:start`. Portlar `firebase.json` ile sabittir — Auth 9099, Firestore 8080, Functions 5001, Storage 9199, Emulator UI 4000. Web `VITE_FIREBASE_USE_EMULATOR=true` ile, mobil ise `__DEV__` modunda (Android `10.0.2.2`, iOS `localhost`) emulator'a otomatik baglanir.
+
+9. Cloud Functions'i build edip deploy et:
+
+   ```bash
+   pnpm --filter @project/functions build
+   firebase deploy --only functions
+   ```
+
+10. Firestore kurallari + indeksleri ve Storage kurallarini deploy et:
+    ```bash
+    firebase deploy --only firestore:rules,firestore:indexes,storage
+    ```
+
+**Dogrulama:**
+
+- [ ] Firebase projesi olusturuldu; web + iOS + Android app kayitli
+- [ ] `.firebaserc` gercek proje ID'sine isaret ediyor (artik `your-project-id` degil)
+- [ ] `.env.local` icindeki tum `VITE_FIREBASE_*` degiskenleri dolu
+- [ ] `apps/mobile/google-services.json` ve `apps/mobile/GoogleService-Info.plist` yerlestirildi (gitignore'da, commit edilmedi)
+- [ ] `firebase emulators:start` 4000 portunda UI aciyor; web ve mobil emulator'a baglaniyor
+- [ ] Cloud Functions build + deploy basarili; `firestore:rules`, `firestore:indexes`, `storage` deploy edildi
 
 ---
 
@@ -152,15 +230,16 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 **Guncellenecek dosyalar:**
 
-| Dosya | Yapilacak |
-|---|---|
-| `CLAUDE.md` | Proje adi, ozel kurallar ve canonical kararlari proje baglamina guncelle |
-| `AGENTS.md` | Proje-ozel review kurallari ekle (alt dizinlere de yerlestirilebilir) |
-| `.github/CODEOWNERS` | Ekip yapisina gore sahiplik tanimlarini duzenle |
-| `.claudeignore` | Hassas dosya pattern'lerini dogrula (`.env*`, `*.pem`, `*.key` vb.) |
-| Root ve alt `package.json`'lar | Proje adi, description, repository URL guncelle |
+| Dosya                          | Yapilacak                                                                |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `CLAUDE.md`                    | Proje adi, ozel kurallar ve canonical kararlari proje baglamina guncelle |
+| `AGENTS.md`                    | Proje-ozel review kurallari ekle (alt dizinlere de yerlestirilebilir)    |
+| `.github/CODEOWNERS`           | Ekip yapisina gore sahiplik tanimlarini duzenle                          |
+| `.claudeignore`                | Hassas dosya pattern'lerini dogrula (`.env*`, `*.pem`, `*.key` vb.)      |
+| Root ve alt `package.json`'lar | Proje adi, description, repository URL guncelle                          |
 
 **Dogrulama:**
+
 - [ ] AI talimat dosyalari (CLAUDE.md, AGENTS.md) proje-ozel bilgilerle guncellendi
 - [ ] CODEOWNERS ekip yapisini yansitiyor
 - [ ] Tum `package.json` dosyalarindaki proje adi tutarli
@@ -188,6 +267,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
    - CLAUDE.md ve AGENTS.md'deki sentinel yorumlarinin (`UPSTREAM-SYNC-START/END`, `PROJECT-SPECIFIC-START/END`) mevcut oldugunu dogrula
 
 **Dogrulama:**
+
 - [ ] Boundary contract okundu ve zorunlu miras kurallari kabul edildi
 - [ ] Override gereksinimleri belirlendi ve belgelendi (varsa)
 - [ ] `BOUNDARY.md` root dizinde olusturuldu
@@ -211,6 +291,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 4. `pnpm --filter design-tokens build` ile token export surface'ini dogrula.
 
 **Dogrulama:**
+
 - [ ] Proje-ozel degerler tanimli, hiyerarsi (raw → semantic → component) bozulmamis
 - [ ] Token paketi basariyla build ediliyor
 - [ ] Light/dark tema degerleri tanimli
@@ -234,6 +315,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 **Onemli:** Faz A-C tamamlanmadan sonraki fazlara gecilemez. Bu siralama zorunludur.
 
 **Dogrulama:**
+
 - [ ] Faz A tamamlandi, done kaniti mevcut
 - [ ] Faz B tamamlandi, done kaniti mevcut
 - [ ] Faz C tamamlandi, done kaniti mevcut
@@ -252,6 +334,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 3. CI pipeline'i aktif et: `.github/workflows/` altinda workflow dosyasi, push/PR event'lerinde 4 kalite adimi, branch protection kurallari.
 
 **Dogrulama:**
+
 - [ ] Tum kalite komutlari (`typecheck`, `lint`, `test`, `build`) basarili
 - [ ] CI pipeline aktif ve push/PR'da calisiyor
 - [ ] Branch protection kurallari aktif
@@ -270,6 +353,7 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 4. Docs dizinini organize et: `docs/adr/` (boilerplate ADR'leri, read-only), `docs/onboarding/` (yeni gelistirici rehberleri). `project/` altindaki adlar bu türetilen proje icin olusturulur; boilerplate doküman arşivinde fiziksel olarak bulunmak zorunda degildir.
 
 **Dogrulama:**
+
 - [ ] `project/adr/` dizini mevcut ve naming convention belirli
 - [ ] Docs dizini organize edildi
 
@@ -283,11 +367,15 @@ On kosullar saglanmadan turetme sureci baslatilmaz.
 
 1. Basit ama anlamli bir feature sec (ornek: `39-default-screens-and-components-spec.md` S25 List → S26 Detail → S27 Form akisi).
 
-2. Feature su katmanlari kapsamali: route entry, UI primitives kullanimi, ADR-005 kararı doğrultusunda en az bir fetch/query data flow, loading/error/empty/success state'leri, en az bir form interaction (RHF + Zod), en az bir mutation, i18n copy (inline string yok), auth/session-aware shell, test coverage, a11y degerlendirmesi.
+2. Feature su katmanlari kapsamali: route entry, UI primitives kullanimi, loading/error/empty/success state'leri, en az bir form interaction (RHF + Zod), i18n copy (inline string yok), auth/session-aware shell, test coverage, a11y degerlendirmesi. Backend canonical Firebase oldugu icin (ADR-020) data akisi su uc parcayi mutlaka icermelidir:
+   - **En az bir Firestore okuma** — client SDK ile, ownership ile sinirli (ornek: `sampleItems` koleksiyonu okuma, bkz. `firestore.rules`).
+   - **En az bir callable yazma** — Cloud Function uzerinden (ornek: `createSampleItem` callable). Client direct-write (`setDoc`/`addDoc`/`updateDoc`/`deleteDoc`) YASAKTIR; tum yazma callable Functions ile yapilir (ADR-020 Bolum 7.1).
+   - **Firebase Auth login akisi** — gercek bir kimlik dogrulama akisi (web `firebase/auth`, mobil `@react-native-firebase/auth`). Session-aware shell bu kimlige bagli calismali.
 
 3. Full DoD (`32-definition-of-done.md`) uygula ve ilk PR template'ini kullanarak PR ac.
 
 **Dogrulama:**
+
 - [ ] Vertical slice end-to-end calisiyor, tum katmanlar dahil
 - [ ] DoD maddeleri karsilaniyor ve CI tum kontrolleri gecti
 
@@ -321,18 +409,19 @@ Proje ADR'si hicbir durumda boilerplate ADR'sini gecersiz kilamaz. Canonical sta
 
 Her adim sonrasi asagidaki kontrol noktasi checklist'i uygulanir:
 
-| Adim | Kontrol Noktasi | Dogrulama Yontemi |
-|---|---|---|
-| 1. Repo olustur | Repo fiziksel, proje adi dogru, remote bagli | `git remote -v`, `package.json` kontrolu |
-| 2. Temel config | Tum config dosyalari mevcut ve uyumlu | Dosya varlik kontrolu, icerik incelemesi |
-| 3. Environment | `.env.local` tamam, install basarili | `pnpm install` exit code, dry-run |
-| 4. Proje-ozel | CLAUDE.md, AGENTS.md, CODEOWNERS guncellendi | Dosya icerik incelemesi |
-| 5. Boundary | Contract okundu, BOUNDARY.md olusturuldu | `BOUNDARY.md` varlik ve icerik kontrolu |
-| 6. Token'lar | Proje degerleri girildi, hiyerarsi korundu | Token build, gorsel inceleme |
-| 7. Bootstrap | Faz A-C tamamlandi, done kanitlari mevcut | Faz bazli done kaniti kontrolu |
-| 8. Kalite | Tum kalite komutlari pass, CI aktif | `pnpm typecheck && lint && test && build` |
-| 9. Belgeler | project/adr/ hazir, docs organize | Dizin yapisi kontrolu |
-| 10. Vertical slice | End-to-end calisiyor, DoD karsilandi | PR review, CI gecisi |
+| Adim               | Kontrol Noktasi                                                                          | Dogrulama Yontemi                                  |
+| ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| 1. Repo olustur    | Repo fiziksel, proje adi dogru, remote bagli                                             | `git remote -v`, `package.json` kontrolu           |
+| 2. Temel config    | Tum config dosyalari mevcut ve uyumlu                                                    | Dosya varlik kontrolu, icerik incelemesi           |
+| 3. Environment     | `.env.local` tamam, install basarili                                                     | `pnpm install` exit code, dry-run                  |
+| 3.5. Firebase      | Proje olusturuldu, `.firebaserc` + `.env.local` + native config dolu, emulator calisiyor | `firebase emulators:start`, `.firebaserc` kontrolu |
+| 4. Proje-ozel      | CLAUDE.md, AGENTS.md, CODEOWNERS guncellendi                                             | Dosya icerik incelemesi                            |
+| 5. Boundary        | Contract okundu, BOUNDARY.md olusturuldu                                                 | `BOUNDARY.md` varlik ve icerik kontrolu            |
+| 6. Token'lar       | Proje degerleri girildi, hiyerarsi korundu                                               | Token build, gorsel inceleme                       |
+| 7. Bootstrap       | Faz A-C tamamlandi, done kanitlari mevcut                                                | Faz bazli done kaniti kontrolu                     |
+| 8. Kalite          | Tum kalite komutlari pass, CI aktif                                                      | `pnpm typecheck && lint && test && build`          |
+| 9. Belgeler        | project/adr/ hazir, docs organize                                                        | Dizin yapisi kontrolu                              |
+| 10. Vertical slice | End-to-end calisiyor, DoD karsilandi                                                     | PR review, CI gecisi                               |
 
 **Kural:** Bir adim tamamlanmadan sonraki adima gecilmesi onerilmez. Adim 1-5 kesinlikle sirayla tamamlanmalidir. Adim 6-10 arasinda sinirli paralellik mumkundur (ornegin Adim 6 ve Adim 9 paralel ilerleyebilir).
 
@@ -397,6 +486,14 @@ Asagidaki anti-pattern'ler turetme surecinde en sik karsilasilan hatalardir. Bu 
 **Sonuc:** Sistemin birlikte calistigi sanilir ama gercek veri akisinda sorunlar gorulmez.
 
 **Cozum:** Adim 10'da vertical slice en az bir gercek query fetch, bir mutation ve bir form interaction icermeli.
+
+## 7.8. Firebase Yerine Baska Backend Secmek
+
+**Hata:** Canonical backend Firebase (ADR-020) iken, turetilen projede alternatif bir backend secmek — ornegin SQL veritabani (Postgres/MySQL), custom HTTP API (Hono/Express/Fastify), ayri bir job queue (Inngest/BullMQ) veya farkli bir auth saglayicisi. Firestore + Cloud Functions + Firebase Auth + Storage yerine bunlari koymak.
+
+**Sonuc:** Zorunlu miras ihlali. ADR-020 canonical stack'ten override sureci olmadan sapma, boundary contract'ta blocker bulgu uretir. Proje audit'te gecemez; iki uyumsuz backend modeli olusur.
+
+**Cozum:** Firebase zorunlu mirastir. Backend ihtiyaclari Firebase primitifleriyle karsilanir: kalici veri → Firestore, is mantigi/yazma → callable Cloud Functions, kimlik → Firebase Auth, dosya → Storage, zamanlanmis is → Cloud Scheduler/Tasks, bildirim → FCM. Gercekten farkli bir backend gerekiyorsa `45-boilerplate-project-boundary-contract.md` Bolum 7 override sureci ve bir ADR revision zorunludur; aksi halde sapma gecersizdir.
 
 ---
 
@@ -469,17 +566,19 @@ npx create-derived-project
 
 Otomatize edilen islem akisi su adimlari kapsar:
 
-| Adim | Aciklama | Otomasyon |
-|------|----------|-----------|
-| 1. Clone | Boilerplate repo'su indirilir (git history olmadan) | `degit` veya custom downloader |
-| 2. Rename | Root `package.json`'da proje adi, description ve tum alt paketlerde scope guncellenir | Script: `find & replace` |
-| 3. Brand Config | Renk paleti, font ailesi, uygulama ikonu ve splash screen template'leri icin sorular sorulur | Interaktif prompt (inquirer/prompts) |
-| 4. Bundle ID | iOS bundle identifier ve Android application ID belirlenir | Script: `app.json` / `app.config.ts` guncelleme |
-| 5. Desteklenen Diller | Varsayilan locale ve desteklenen diller sorulur, i18n namespace dosyalari olusturulur | Script: locale dosyalari uretimi |
-| 6. Dependency Install | `pnpm install` calistirilir | Otomatik |
-| 7. CI Setup | `.github/workflows/` icindeki workflow dosyalarinda proje adlari guncellenir | Script: sed/replace |
-| 8. BOUNDARY.md | Boilerplate surumu, tarih ve proje adi ile `BOUNDARY.md` otomatik olusturulur | Template dosyasi + degisken injection |
-| 9. Git Init | Temiz git gecmisi baslatilir ve ilk commit olusturulur | `git init && git add . && git commit` |
+| Adim                  | Aciklama                                                                                                                         | Otomasyon                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1. Clone              | Boilerplate repo'su indirilir (git history olmadan)                                                                              | `degit` veya custom downloader                       |
+| 2. Rename             | Root `package.json`'da proje adi, description ve tum alt paketlerde scope guncellenir                                            | Script: `find & replace`                             |
+| 3. Brand Config       | Renk paleti, font ailesi, uygulama ikonu ve splash screen template'leri icin sorular sorulur                                     | Interaktif prompt (inquirer/prompts)                 |
+| 4. Bundle ID          | iOS bundle identifier ve Android application ID belirlenir                                                                       | Script: `app.json` guncelleme                        |
+| 5. Firebase Config    | `.firebaserc` proje ID'si ve `.env.local` icindeki `VITE_FIREBASE_*` degiskenleri doldurulur                                     | Script: `.firebaserc` + `.env.local` injection       |
+| 6. Firebase Native    | `google-services.json` ve `GoogleService-Info.plist`, ornek dosyalardan kopyalanir; bundle/package ve proje ID degerleri yazilir | Script: example → gercek dosya, placeholder degisimi |
+| 7. Desteklenen Diller | Varsayilan locale ve desteklenen diller sorulur, i18n namespace dosyalari olusturulur                                            | Script: locale dosyalari uretimi                     |
+| 8. Dependency Install | `pnpm install` calistirilir                                                                                                      | Otomatik                                             |
+| 9. CI Setup           | `.github/workflows/` icindeki workflow dosyalarinda proje adlari guncellenir                                                     | Script: sed/replace                                  |
+| 10. BOUNDARY.md       | Boilerplate surumu, tarih ve proje adi ile `BOUNDARY.md` otomatik olusturulur                                                    | Template dosyasi + degisken injection                |
+| 11. Git Init          | Temiz git gecmisi baslatilir ve ilk commit olusturulur                                                                           | `git init && git add . && git commit`                |
 
 ## 9.4. Interaktif Konfigurasyon Sorulari
 
@@ -494,10 +593,17 @@ Setup script'i calistirildiginda asagidaki sorular sorulur:
 ? Varsayilan dil: tr
 ? Ek desteklenen diller (virgul ile): en,de
 ? Birincil marka rengi (hex): #2563EB
+? Firebase Project ID: my-awesome-app
+? Firebase Web API Key: AIza...
+? Firebase Messaging Sender ID (project number): 123456789012
+? Firebase Web App ID: 1:123456789012:web:abc123
+? Firebase Functions Region (varsayilan us-central1): us-central1
 ? Sentry DSN (bos birakilabilir):
 ```
 
-Bu bilgiler toplanarak tum ilgili dosyalara (package.json, app.json, design-tokens, i18n, .env.example) yansitilir.
+`authDomain` ve `storageBucket` ayri sorulmaz; script bunlari Firebase Project ID'den turetir (`<project-id>.firebaseapp.com` ve `<project-id>.appspot.com`).
+
+Bu bilgiler toplanarak ilgili dosyalara yansitilir: `package.json` (proje adi/scope), `app.json` (bundle ID/slug/scheme), `.firebaserc` (proje ID), `.env.local` (`VITE_FIREBASE_*`), `apps/mobile/google-services.json` + `GoogleService-Info.plist` (native config), `packages/design-tokens` (marka rengi) ve i18n namespace dosyalari. Sablon dosyalari (`.env.example`, `*.example.json`, `*.example.plist`) degistirilmez; script yeni dosyalar uretir.
 
 ## 9.5. Git History Temizleme
 
@@ -517,20 +623,46 @@ Setup script'i, `45-boilerplate-project-boundary-contract.md` Bolum 9.1'deki for
 # BOUNDARY.md
 
 ## Boilerplate Surumu
+
 - Kaynak: <org>/boilerplate
 - Surum: v<sürüm>
 - Turetme tarihi: <tarih>
 
 ## Aktif Override'lar
+
 (Henuz yok — override gerektiginde bu bolum guncellenir)
 
 ## Proje-Ozel Eklemeler
+
 (Boilerplate'te olmayan, projeye ozel eklenen dependency/config/kural)
 
 ## Son Audit
+
 - Tarih: <turetme-tarihi>
 - Sonuc: Baslangic — ilk audit henuz yapilmadi
 ```
+
+## 9.7. Firebase Yapilandirma Injection
+
+Setup script'i (`scripts/setup-derived.js`) Firebase yapilandirmasini turetilen projeye enjekte eder. Bu, canonical backend'in (ADR-020) ilk gunden dogru baglanmasini garanti eder.
+
+Script'in Firebase ile ilgili sorumluluklari:
+
+| Hedef                                  | Islem                                                                                                                                                                                        |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.firebaserc`                          | `projects.default` degeri Firebase Project ID ile degistirilir (`your-project-id` → gercek deger)                                                                                            |
+| `.env.local`                           | `.env.example` sablonundan uretilir; `VITE_FIREBASE_*` degiskenleri toplanan degerlerle (apiKey, authDomain, projectId, storageBucket, messagingSenderId, appId, functionsRegion) doldurulur |
+| `apps/mobile/google-services.json`     | `google-services.example.json`'dan kopyalanir; `PLACEHOLDER_PROJECT_ID`, `PLACEHOLDER_PROJECT_NUMBER`, `package_name` gercek degerlerle degistirilir                                         |
+| `apps/mobile/GoogleService-Info.plist` | `GoogleService-Info.example.plist`'ten kopyalanir; `PLACEHOLDER_PROJECT_ID`, `PLACEHOLDER_PROJECT_NUMBER`, `BUNDLE_ID` gercek degerlerle degistirilir                                        |
+| `apps/mobile/app.json`                 | `bundleIdentifier`, Android `package`, `name`, `slug`, `scheme` proje degerlerine guncellenir                                                                                                |
+
+**Onemli kisitlar (script bir turetme aracidir, boilerplate'i kirmamalidir):**
+
+- Sablon dosyalari (`.env.example`, `*.example.json`, `*.example.plist`) hicbir kosulda degistirilmez veya silinmez.
+- Script idempotenttir: ayni degerlerle tekrar calistirildiginda ek degisiklik uretmez.
+- API key ve native config gibi gizli degerler commit edilen sablonlara yazilmaz; yalnizca gitignore'daki gercek dosyalara (`.env.local`, `google-services.json`, `GoogleService-Info.plist`) yazilir.
+- `--dry-run` modunda hicbir dosya degistirilmeden planlanan degisiklikler raporlanir.
+- Web Firebase config `.env.local`'den okunur; mobil Firebase config native dosyalardan okunur. Mobil tarafta Firebase icin `.env` degiskeni enjekte EDILMEZ.
 
 ---
 
@@ -544,13 +676,13 @@ Derived project olusturulduktan sonra ve yasam suresi boyunca, boilerplate bound
 
 Derived project'in ilk CI pipeline calistirmasinda asagidaki boundary contract kontrolleri otomatik olarak yapilir:
 
-| Kontrol | Ne Denetlenir | Basarisizlik Durumu |
-|---------|--------------|-------------------|
-| **Canonical dependency kontrolu** | `package.json`'lardaki core dependency'lerin `38-version-compatibility-matrix.md` ile uyumu | CI warning (ilk hafta), CI fail (sonrasi) |
-| **Zorunlu dosya varligi** | `BOUNDARY.md`, `CLAUDE.md`, `AGENTS.md`, `.claudeignore` dosyalarinin varligi | CI fail |
-| **Config uyumu** | `tsconfig.base.json`, `eslint.config.js` dosyalarinin boilerplate baseline'i ile uyumu | CI warning |
-| **Token hiyerarsi kontrolu** | `packages/design-tokens/` altinda raw → semantic → component hiyerarsisinin korunuyor olmasi | CI fail |
-| **Yasak dependency kontrolu** | `37-dependency-policy.md`'de yasaklanan dependency'lerin (orn. moment.js, lodash full bundle) yuklu olmamasi | CI fail |
+| Kontrol                           | Ne Denetlenir                                                                                                | Basarisizlik Durumu                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| **Canonical dependency kontrolu** | `package.json`'lardaki core dependency'lerin `38-version-compatibility-matrix.md` ile uyumu                  | CI warning (ilk hafta), CI fail (sonrasi) |
+| **Zorunlu dosya varligi**         | `BOUNDARY.md`, `CLAUDE.md`, `AGENTS.md`, `.claudeignore` dosyalarinin varligi                                | CI fail                                   |
+| **Config uyumu**                  | `tsconfig.base.json`, `eslint.config.js` dosyalarinin boilerplate baseline'i ile uyumu                       | CI warning                                |
+| **Token hiyerarsi kontrolu**      | `packages/design-tokens/` altinda raw → semantic → component hiyerarsisinin korunuyor olmasi                 | CI fail                                   |
+| **Yasak dependency kontrolu**     | `37-dependency-policy.md`'de yasaklanan dependency'lerin (orn. moment.js, lodash full bundle) yuklu olmamasi | CI fail                                   |
 
 ## 10.3. Quarterly Scheduled Audit
 
@@ -572,6 +704,7 @@ Audit sonuclari `BOUNDARY.md`'nin "Son Audit" bolumune yazilir:
 
 ```markdown
 ## Son Audit
+
 - Tarih: 2026-07-01
 - Sonuc: PASS (2 uyari)
 - Uyarilar:
@@ -600,6 +733,7 @@ Bu belge asagidaki kosullar saglandiginda uygulamaya hazir kabul edilir:
 - [ ] 10 adimlik turetme sureci eksiksiz ve siralii olarak yazilmistir
 - [ ] Her adim icin yapilacaklar ve dogrulama kriterleri belirtilmistir
 - [ ] Boundary contract entegrasyonu (Adim 5) belgeye islenmiistir
+- [ ] Firebase canonical backend kurulumu (Adim 3.5) belgeye islenmistir; `.firebaserc`, `.env.local`, mobil native config ve emulator adimlari tanimlidir
 - [ ] `BOUNDARY.md` manifest formati orneklendirilmistir
 - [ ] Proje-ozel ADR politikasi (dizin yapisi, catismazlik kurali, sablon) tanimlanmistir
 - [ ] Kontrol noktasi checklist'i her adim icin olusturulmustur
