@@ -183,3 +183,58 @@ pnpm test
 ```
 
 Test dosyalari kaynak dosyanin yaninda `*.test.ts(x)` uzantisiyla bulunur. Yapilandirma: `jest.config.js`.
+
+## Firebase Entegrasyonu (ADR-020 / ADR-021)
+
+Backend canonical olarak Firebase'dir. Mobil taraf `@react-native-firebase` native SDK'sini kullanir:
+
+- `@react-native-firebase/app`, `@react-native-firebase/auth`, `@react-native-firebase/firestore`, `@react-native-firebase/functions` (sabit `21.14.0` hatti — RN 0.83 / Expo 55 uyumlu, namespaced API).
+
+### Development Build Zorunlulugu
+
+`@react-native-firebase` native modul icerir; **Expo Go DESTEKLENMEZ** (ADR-002 amendment / ADR-020 Bolum 16). New Architecture zaten development build gerektiriyordu; Firebase bunu pekistirir. Akis degismez: `npx expo prebuild` -> `npx expo run:ios` / `run:android` -> sonraki dongulerde `pnpm dev`.
+
+### google-services.json / GoogleService-Info.plist
+
+Native Firebase config dosyalari **commit edilmez** (`.gitignore`'dadir). Repoda yalnizca PLACEHOLDER ornekleri bulunur:
+
+```bash
+# Android: Firebase Console > Project Settings > Android app > google-services.json indir
+cp google-services.example.json google-services.json
+
+# iOS: Firebase Console > Project Settings > iOS app > GoogleService-Info.plist indir
+cp GoogleService-Info.example.plist GoogleService-Info.plist
+```
+
+Ardindan indirilen gercek dosyalari bu konumlara koyun. `app.json` bunlari `ios.googleServicesFile` / `android.googleServicesFile` ile referans alir ve `@react-native-firebase/app` config plugin'i prebuild sirasinda native projeye yerlestirir.
+
+### iOS Static Frameworks
+
+`@react-native-firebase` iOS'ta static framework gerektirir. `app.json` icindeki `expo-build-properties` plugin'i bunu ayarlar:
+
+```json
+["expo-build-properties", { "ios": { "newArchEnabled": true, "useFrameworks": "static" } }]
+```
+
+### Yerel Emulator Suite
+
+Gelistirme sirasinda kok dizindeki `firebase.json` emulator yapilandirmasi kullanilir (auth 9099, firestore 8080, functions 5001):
+
+```bash
+# Proje kokunden (firebase-tools gerekir)
+firebase emulators:start
+```
+
+`src/firebase/config.ts` icindeki `connectFirebaseEmulators()`, `__DEV__` modunda SDK'lari otomatik emulator'a baglar. iOS simulator `localhost`, Android emulator host makineye `10.0.2.2` uzerinden erisir (kod bunu otomatik secer).
+
+### Adapter Mimarisi (Port/Adapter — ADR-020 Bolum 14)
+
+`packages/core` SDK-free port sozlesmelerini tanimlar; mobil adapter'lar `src/firebase/` altinda bunlari `@react-native-firebase` ile uygular:
+
+- `authAdapter.ts` -> `AuthPort` (giris/kayit/cikis, sanitize edilmis `AuthSummary`)
+- `dataReadAdapter.ts` -> `DataReadPort` (client SDK okuma + `onSnapshot`; yazma YOK)
+- `functionsAdapter.ts` -> `FunctionsCallPort` (callable Cloud Functions; `HttpsError` -> `CallableError`)
+
+KURAL: Okuma client SDK + owner-scoped (`ownerId == uid`, Security Rules); yazma YALNIZCA callable Cloud Functions. Client dogrudan Firestore'a yazmaz.
+
+Auth state `src/auth/AuthProvider.tsx` (context + `useAuth()`) ile uygulamaya saglanir.

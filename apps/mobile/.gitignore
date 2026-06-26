@@ -1,0 +1,11 @@
+# Firebase native config — GERCEK degerler, ASLA commit edilmez (ADR-020).
+# Kurulum: *.example dosyalarini kopyalayip Firebase Console degerleriyle doldurun:
+#   cp google-services.example.json google-services.json        (Android)
+#   cp GoogleService-Info.example.plist GoogleService-Info.plist (iOS)
+google-services.json
+GoogleService-Info.plist
+
+# Expo / native prebuild ciktilari
+/ios
+/android
+.expo

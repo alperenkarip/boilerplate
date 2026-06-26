@@ -1,0 +1,30 @@
+{
+  "_comment": "PLACEHOLDER — gercek dosya degildir. Firebase Console > Project Settings > Android app uzerinden google-services.json indirin, bu dosyayi 'google-services.json' olarak kopyalayip asagidaki PLACEHOLDER degerleri gercek degerlerle degistirin. Gercek dosya .gitignore'dadir ve commit edilmez (ADR-020).",
+  "project_info": {
+    "project_number": "PLACEHOLDER_PROJECT_NUMBER",
+    "project_id": "PLACEHOLDER_PROJECT_ID",
+    "storage_bucket": "PLACEHOLDER_PROJECT_ID.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "PLACEHOLDER_MOBILESDK_APP_ID",
+        "android_client_info": {
+          "package_name": "com.project.boilerplate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "PLACEHOLDER_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

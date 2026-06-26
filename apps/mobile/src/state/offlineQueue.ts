@@ -1,7 +1,12 @@
-// M.3.5 — Offline queue persistence (ADR-019)
-// TanStack Query mutation queue + netinfo + exponential backoff
+// M.3.5 — Offline yazma kuyrugu (ADR-019 + ADR-020)
+// Canonical yazma yolu callable Cloud Functions oldugundan, offline yazma =
+// callable mutasyonlarinin (functionsAdapter.call) yeniden oynatma kuyrugudur.
+// Client dogrudan Firestore'a YAZMAZ; TanStack Query mutasyonlari, ag geri
+// geldiginde otomatik olarak duraklatilip yeniden oynatilir (onlineManager +
+// exponential backoff). Mutasyon retry/retryDelay varsayilanlari App.tsx'te
+// bu modulun calculateRetryDelay/shouldRetryOnError yardimcilarina baglanir.
 //
-// @react-native-community/netinfo install sonrasi aktiflesecek.
+// @react-native-community/netinfo install sonrasi ag tespiti netinfo'ya tasinacak.
 
 import { onlineManager, type QueryClient } from '@tanstack/react-query';
 

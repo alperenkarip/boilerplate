@@ -1,15 +1,34 @@
 // S08 — Login Screen (Mobile)
-// Kullanici giris ekrani
+// Kullanici giris ekrani — AuthProvider.signIn ile baglandi
 import { useState } from 'react';
-import { Stack, Heading, Text, TextField, Button } from '@project/ui';
+import { Stack, Heading, Text, TextField, Button, Banner } from '@project/ui';
+import { useNavigation } from '@react-navigation/native';
+
+import { useAuth } from '../../auth/AuthProvider';
+import type { AuthStackScreenProps, RootStackScreenProps } from '../../navigation/types';
 
 export function LoginScreen() {
+  const navigation = useNavigation<AuthStackScreenProps<'Login'>['navigation']>();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    // Giris islemi burada tetiklenir
-    void { email, password };
+  const handleSubmit = async () => {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await signIn(email, password);
+      // Basarili giris — kok navigator'i Main'e sifirla (geri tusu login'e donmez).
+      navigation
+        .getParent<RootStackScreenProps<'Auth'>['navigation']>()
+        ?.reset({ index: 0, routes: [{ name: 'Main' }] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Giris yapilamadi.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -19,28 +38,39 @@ export function LoginScreen() {
         <Text color="secondary">Hesabiniza giris yapin</Text>
       </Stack>
 
+      {error !== null && <Banner variant="error">{error}</Banner>}
+
       <Stack gap={4}>
         <TextField
           label="E-posta"
+          type="email"
+          autoCapitalize="none"
           placeholder="ornek@email.com"
           value={email}
-          onChange={(e) => setEmail((e.target as any).value)}
+          onChange={(e) => setEmail((e.target as unknown as { value: string }).value)}
         />
         <TextField
           label="Sifre"
           type="password"
           placeholder="Sifrenizi girin"
           value={password}
-          onChange={(e) => setPassword((e.target as any).value)}
+          onChange={(e) => setPassword((e.target as unknown as { value: string }).value)}
         />
-        <Button onClick={handleSubmit} fullWidth>
+        <Button
+          onClick={() => {
+            void handleSubmit();
+          }}
+          fullWidth
+          isLoading={isSubmitting}
+          isDisabled={isSubmitting}
+        >
           Giris Yap
         </Button>
       </Stack>
 
-      <Text color="secondary" style={{ textAlign: 'center', fontSize: 14 }}>
+      <Button variant="ghost" onClick={() => navigation.navigate('Register')}>
         Hesabiniz yok mu? Kayit olun.
-      </Text>
+      </Button>
     </Stack>
   );
 }

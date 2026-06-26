@@ -23,16 +23,18 @@
       [
         "expo-build-properties",
         {
-          "ios": { "newArchEnabled": true },
+          "ios": { "newArchEnabled": true, "useFrameworks": "static" },
           "android": { "newArchEnabled": true }
         }
       ],
+      "@react-native-firebase/app",
       "expo-secure-store",
       "expo-local-authentication"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.project.boilerplate",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/icon.png",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Guvenli giris icin biyometrik dogrulama kullanilir."
@@ -41,6 +43,7 @@
     },
     "android": {
       "package": "com.project.boilerplate",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
