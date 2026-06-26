@@ -5,10 +5,19 @@ Paylasilan is mantigi ve yardimci fonksiyonlar paketi. API istemcisi, ortak hook
 ## Kullanim
 
 ```typescript
-import { createApiClient } from '@project/core';
+// DOM-free main surface ("."): mobile + web guvenle import eder
 import { useDebounce, useAsync } from '@project/core';
 import { isEmail, isStrongPassword } from '@project/core';
+import type { AuthSummary, AuthPort, DataReadPort } from '@project/core';
+
+// DOM-bound HTTP surface ("./http"): yalnizca web / harici REST
+import { createApiClient } from '@project/core/http';
 ```
+
+`@project/core` (ana barrel) DOM-free'dir: ports, auth tipleri, validation ve
+hook'lari icerir; React Native (lib: ES2022, DOM yok) dogrudan import edebilir.
+DOM'a bagli HTTP client (`createApiClient`) `@project/core/http` altinda durur ve
+yalnizca web / harici REST tuketicileri tarafindan import edilir (ADR-020).
 
 ## Dosya Yapisi
 

@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// Firestore Security Rules — ADR-020 read/write contract.
+//
+// CONTRACT:
+//   - WRITES are default-deny for ALL clients. create/update/delete and every
+//     piece of business logic flow exclusively through Cloud Functions, which use
+//     the Admin SDK. The Admin SDK BYPASSES these rules, so denying client writes
+//     here does NOT block the canonical write path — it enforces it.
+//   - READS are allowed for authenticated clients, scoped by ownership.
+//
+// Client SDK direct writes (setDoc/addDoc/updateDoc/deleteDoc) are forbidden by
+// ADR-020 Section 7.1 and are structurally prevented by `allow write: if false`.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers ---------------------------------------------------------
+
+    // True when the request carries a valid Firebase Auth identity.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Ownership check: the document's `ownerId` field matches the caller's uid.
+    // Used on READ; writes never reach client rules (Functions/Admin own writes).
+    function isOwner(resource) {
+      return isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // --- Sample collection (ADR-020 reference model) ---------------------
+    // sampleItems documents are owned by a single user (ownerId == auth uid).
+    match /sampleItems/{itemId} {
+      // Read: only the owner may read their own items (get + list).
+      allow read: if isOwner(resource);
+
+      // Write: ALWAYS denied for clients. createSampleItem / updateSampleItem /
+      // deleteSampleItem callable Cloud Functions perform writes via Admin SDK.
+      allow write: if false;
+    }
+
+    // --- Global default-deny --------------------------------------------
+    // Anything not explicitly matched above is denied for both read and write.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

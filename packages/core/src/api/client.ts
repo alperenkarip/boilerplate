@@ -1,4 +1,12 @@
 // API client — fetch-first (ADR-005), 3rd party bagimlilik yok
+//
+// @deprecated-for-internal-data (ADR-020): This REST client is NOT the canonical
+// path for internal app data. Canonical internal data flows through the core ports:
+//   - reads  -> DataReadPort      (client SDK Firestore + onSnapshot)
+//   - writes -> FunctionsCallPort (callable Cloud Functions)
+// Keep this client ONLY for external / 3rd-party REST integrations (ADR-020 exception).
+// Still exported for backward compatibility; do not use it for Firestore-backed data.
+//
 // @MX:ANCHOR: [AUTO] Central HTTP client factory — all API calls flow through createApiClient()
 // @MX:REASON: Single entry point for data fetching; retry/timeout/auth logic affects every API consumer
 // @MX:WARN: [AUTO] Complex async retry loop with exponential backoff — 210 lines, multiple error paths

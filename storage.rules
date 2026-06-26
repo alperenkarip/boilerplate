@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Cloud Storage Security Rules — ADR-020 Section 11.
+//
+// CONTRACT:
+//   - READ is allowed for authenticated, owner-scoped clients.
+//   - WRITE (upload/delete) is default-deny for clients. Sensitive upload/download
+//     flows go through Cloud Functions / Admin SDK or signed URLs. The Admin SDK
+//     bypasses these rules, so the canonical write path is unaffected.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // True when the request carries a valid Firebase Auth identity.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // User-scoped files live under users/{userId}/...
+    match /users/{userId}/{allPaths=**} {
+      // Read: only the owner may read their own files.
+      allow read: if isSignedIn() && request.auth.uid == userId;
+
+      // Write: denied for clients. Functions/Admin SDK or signed URLs handle uploads.
+      allow write: if false;
+    }
+
+    // Global default-deny for anything not explicitly matched above.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

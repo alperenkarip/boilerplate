@@ -32,8 +32,11 @@ export function isStrongPassword(value: string): boolean {
 /** URL gecerlilik kontrolu */
 export function isURL(value: string): boolean {
   try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    // React Native'in URL tipi `.protocol` ozelligini tanimlamaz (lib: ES2022,
+    // DOM yok) ama polyfill calisma zamaninda saglar. Bu paketi DOM-free tutmak
+    // icin protocol'e tip-guvenli sekilde erisiyoruz; davranis degismez.
+    const { protocol } = new URL(value) as { protocol?: string };
+    return protocol === 'http:' || protocol === 'https:';
   } catch {
     return false;
   }

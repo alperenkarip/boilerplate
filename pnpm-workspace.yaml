@@ -1,6 +1,7 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  - 'functions'
 
 catalog:
   # Core Runtime (ADR-001, ADR-002)
