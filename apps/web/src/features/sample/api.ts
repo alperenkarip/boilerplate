@@ -1,72 +1,65 @@
-// Sample feature — veri erisim katmani (mock)
-import type { SampleItem } from './types';
+// Sample feature — data access (ADR-020).
+//
+// Reads:  client SDK Firestore via DataReadPort, ALWAYS owner-scoped
+//         (where ownerId == auth uid) to satisfy owner-scoped Security Rules.
+// Writes: callable Cloud Functions via FunctionsCallPort. Clients never write to
+//         Firestore directly (`allow write: if false`).
+//
+// Ordering is applied client-side (createdAt desc) to avoid requiring a
+// composite Firestore index for the owner filter + sort combination.
 
-// Degismez kaynak (single source of truth). mockItems bundan turetilir.
-const INITIAL_ITEMS: readonly SampleItem[] = [
-  {
-    id: '1',
-    title: 'Ilk Kayit',
-    description: 'Ornek aciklama metni',
-    status: 'active',
-    createdAt: '2026-04-01',
-  },
-  {
-    id: '2',
-    title: 'Ikinci Kayit',
-    description: 'Baska bir aciklama',
-    status: 'active',
-    createdAt: '2026-04-02',
-  },
-  {
-    id: '3',
-    title: 'Arsivlenmis Kayit',
-    description: 'Bu kayit arsivde',
-    status: 'archived',
-    createdAt: '2026-03-15',
-  },
-];
+import type { DataQuery } from '@project/core';
+import { dataReadAdapter } from '../../firebase/dataReadAdapter';
+import { functionsAdapter } from '../../firebase/functionsAdapter';
+import { authAdapter } from '../../firebase/authAdapter';
+import type {
+  SampleItem,
+  SampleItemRef,
+  CreateSampleItemInput,
+  UpdateSampleItemInput,
+} from './types';
 
-// INITIAL_ITEMS'in derin kopyasi — caller'lar orijinalleri mutate edemez.
-function freshInitialItems(): SampleItem[] {
-  return INITIAL_ITEMS.map((item) => ({ ...item }));
+const COLLECTION = 'sampleItems';
+
+/** Resolve the current owner uid; reads are impossible without an auth identity. */
+function requireOwnerId(): string {
+  const user = authAdapter.getCurrentUser();
+  if (!user?.userId) {
+    throw new Error('Cannot read sampleItems without an authenticated user');
+  }
+  return user.userId;
 }
 
-let mockItems: SampleItem[] = freshInitialItems();
-
-/**
- * Mock veriyi baslangic durumuna (INITIAL_ITEMS) dondurur.
- * Test izolasyonu ve tuketiciler arasi state sizintisini onler.
- */
-export function resetSampleItems(): void {
-  mockItems = freshInitialItems();
+/** Owner-scoped query (Security Rules require ownerId == request.auth.uid). */
+function ownerQuery(ownerId: string): DataQuery {
+  return { where: [{ field: 'ownerId', op: '==', value: ownerId }] };
 }
 
-// Fetch-style API — TanStack Query ile tuketilecek
-export async function fetchSampleItems(): Promise<SampleItem[]> {
-  await delay(500);
-  return [...mockItems];
+// --- Reads (client SDK Firestore) ------------------------------------------
+
+export async function listSampleItems(): Promise<SampleItem[]> {
+  const items = await dataReadAdapter.listDocs<SampleItem>(
+    COLLECTION,
+    ownerQuery(requireOwnerId()),
+  );
+  // Newest first; createdAt is an ISO string so lexical compare is chronological.
+  return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export async function fetchSampleItem(id: string): Promise<SampleItem | null> {
-  await delay(300);
-  return mockItems.find((item) => item.id === id) ?? null;
+export function getSampleItem(id: string): Promise<SampleItem | null> {
+  return dataReadAdapter.getDocById<SampleItem>(COLLECTION, id);
 }
 
-// @MX:WARN: [AUTO] Mutates module-level mutable state (mockItems.push) — shared array persists across the app session; resetSampleItems() now mitigates leakage but the mutation itself remains.
-// @MX:REASON: This mock mutation still leaks state between consumers until resetSampleItems() is called; when replaced by a real API the in-memory write must be removed or it will mask server-side persistence bugs.
-export async function createSampleItem(
-  data: Omit<SampleItem, 'id' | 'createdAt'>,
-): Promise<SampleItem> {
-  await delay(400);
-  const newItem: SampleItem = {
-    ...data,
-    id: String(Date.now()),
-    createdAt: new Date().toISOString().split('T')[0]!,
-  };
-  mockItems.push(newItem);
-  return newItem;
+// --- Writes (callable Cloud Functions) -------------------------------------
+
+export function createSampleItem(input: CreateSampleItemInput): Promise<SampleItemRef> {
+  return functionsAdapter.call<CreateSampleItemInput, SampleItemRef>('createSampleItem', input);
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function updateSampleItem(input: UpdateSampleItemInput): Promise<SampleItemRef> {
+  return functionsAdapter.call<UpdateSampleItemInput, SampleItemRef>('updateSampleItem', input);
+}
+
+export function deleteSampleItem(id: string): Promise<SampleItemRef> {
+  return functionsAdapter.call<{ id: string }, SampleItemRef>('deleteSampleItem', { id });
 }

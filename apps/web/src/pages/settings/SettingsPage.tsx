@@ -1,12 +1,20 @@
 // S20 — Settings Screen
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { Stack, Heading, Card, ListItem, Switch, SectionHeader } from '@project/ui';
+import { Link, useNavigate } from 'react-router-dom';
+import { Stack, Heading, Card, ListItem, Switch, SectionHeader, Button } from '@project/ui';
 import { useTheme } from '@project/ui';
+import { useAuthContext } from '../../auth/AuthProvider';
 
 export function Component() {
   const { t } = useTranslation('shell');
   const { resolvedMode, toggle } = useTheme();
+  const { logout } = useAuthContext();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/auth/login');
+  };
 
   return (
     <Stack gap={6} style={{ padding: '24px 0' }}>
@@ -49,6 +57,10 @@ export function Component() {
           <ListItem title={t('settings.deleteAccount')} />
         </Link>
       </Card>
+
+      <Button variant="destructive" fullWidth onClick={handleLogout}>
+        Cikis Yap
+      </Button>
     </Stack>
   );
 }

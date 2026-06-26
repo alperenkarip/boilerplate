@@ -1,51 +1,38 @@
-// L.1.3 — Web: Cookie-preferred session yonu (ADR-010)
-// HttpOnly cookie backend tarafindan set edilir.
-// Frontend token'a dogrudan erismez — sadece cookie varligini kontrol eder.
+// Web session — Firebase Auth backed (ADR-021).
+//
+// Replaces the previous cookie/`/api/auth/me` design. The authoritative initial
+// auth state comes from Firebase's first onAuthStateChanged signal (which fires
+// after persisted-session restoration). Sign-out is best-effort so the caller's
+// client teardown (cache clear, state reset) always runs.
 
-import type { AuthStatus } from '@project/core';
+import type { AuthSummary, Unsubscribe } from '@project/core';
+import { authAdapter } from '../firebase/authAdapter';
 
 /**
- * Session durumunu kontrol eder.
- * Backend /api/auth/me endpoint'ine istek atar.
- * HttpOnly cookie otomatik gonderilir.
+ * Resolve the initial session by awaiting the first auth-state signal.
+ * Firebase invokes the listener once persisted-session restoration completes,
+ * yielding either an authenticated or unauthenticated summary.
  */
-// @MX:ANCHOR: [AUTO] External system integration point — backend /api/auth/me session check; relies on HttpOnly cookie (frontend never touches the token, ADR-010). Return-shape {status,userId} is the auth boundary contract.
-// @MX:REASON: Backend integration boundary (fan_in=1: useAuth.ts). Cookie-preferred design and the 401->unauthenticated / other->expired mapping are invariants downstream auth state depends on.
-export async function checkSession(): Promise<{ status: AuthStatus; userId: string | null }> {
-  try {
-    const res = await fetch('/api/auth/me', { credentials: 'include' });
-    if (res.ok) {
-      const data = await res.json();
-      return { status: 'authenticated', userId: data.userId };
-    }
-    if (res.status === 401) {
-      return { status: 'unauthenticated', userId: null };
-    }
-    return { status: 'expired', userId: null };
-  } catch (err) {
-    // Network/offline/DNS/CORS hatasi != oturum kapali. Kullaniciyi login'e
-    // zorlamamak icin kurtarilabilir 'expired' statusu dondur ve hatayi logla
-    // (sessiz yutma debug'i imkansiz kilar).
-    console.warn(
-      '[Auth] checkSession failed (network/offline), returning recoverable status:',
-      err,
-    );
-    return { status: 'expired', userId: null };
-  }
+// @MX:ANCHOR: [AUTO] Session bootstrap boundary — resolves the first Firebase auth-state signal into an AuthSummary one-shot; intended for route loaders/guards that need a single authoritative session check.
+// @MX:REASON: Public auth boundary replacing the prior /api/auth/me contract (reactive state lives in useAuth's onAuthStateChanged subscription instead). "Wait for the first onAuthStateChanged emission" is the invariant that prevents premature unauthenticated redirects during session restore.
+export function checkSession(): Promise<AuthSummary> {
+  return new Promise((resolve) => {
+    const unsubscribe: Unsubscribe = authAdapter.onAuthStateChanged((summary) => {
+      unsubscribe();
+      resolve(summary);
+    });
+  });
 }
 
 /**
- * Logout — backend'e istek at, cookie'yi temizle.
- * Best-effort: server logout basarisiz olsa bile (network/5xx) bu fonksiyon
- * hata firlatmaz, boylece cagiran taraftaki client teardown (cache temizleme,
- * state reset) her zaman calisir (L.1.7 wrong-user leak onleme).
+ * Sign the user out (Firebase Auth). Best-effort: a failed sign-out is logged
+ * and swallowed, never rethrown, so the caller's logout teardown still runs.
  */
 export async function logout(): Promise<void> {
   try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await authAdapter.signOut();
   } catch (err) {
-    // Server logout best-effort — hata yutulur ve loglanir, rethrow yok.
-    // Client tarafi teardown'in atlanmamasi icin promise reject etmemeli.
-    console.warn('[auth] server logout failed (best-effort, ignored):', err);
+    // Best-effort sign-out — swallow and log so client teardown is never skipped.
+    console.warn('[auth] sign-out failed (best-effort, ignored):', err);
   }
 }

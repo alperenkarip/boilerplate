@@ -1,103 +1,110 @@
-// useAuth logout cleanup contract testi (L.1.5 + L.1.7)
-//
-// NOT: Bu dosyadaki testler React render (renderHook) gerektirir. Monorepo'da
-// su an react (19.2.0) ve react-dom (19.2.4) versiyonlari uyusmuyor; bu yuzden
-// apps/web'deki TUM render bazli testler (Button.test.tsx dahil) toplanamiyor.
-// Bu, bu guvenlik duzeltmesiyle ilgisiz, onceden var olan bir bagimlilik sorunu.
-// react/react-dom ayni versiyona hizalandiginda bu testler otomatik calisir.
-//
-// Logout teardown garantisinin asil reproduction'i react-dom'dan bagimsiz olarak
-// session.test.ts icinde dogrulanir (session.logout fetch reject etse bile
-// resolve eder => useAuth icindeki queryClient.clear()/state reset her zaman calisir).
+// useAuth tests — Firebase Auth state + logout cleanup contract (L.1.5 + L.1.7).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuth } from './useAuth';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import type { AuthSummary } from '@project/core';
 
-// session modulunu mockla — checkSession ve logout kontrollu calissin
-vi.mock('./session', () => ({
-  checkSession: vi.fn().mockResolvedValue({ status: 'authenticated', userId: 'u1' }),
-  logout: vi.fn(),
+const AUTHENTICATED: AuthSummary = { status: 'authenticated', userId: 'u1', displayName: 'User' };
+
+// Mock the firebase auth adapter and the session module.
+vi.mock('../firebase/authAdapter', () => ({
+  authAdapter: {
+    onAuthStateChanged: vi.fn(),
+    signIn: vi.fn(),
+    signUp: vi.fn(),
+  },
 }));
+vi.mock('./session', () => ({ logout: vi.fn() }));
 
+import { useAuth } from './useAuth';
+import { authAdapter } from '../firebase/authAdapter';
 import { logout as logoutSession } from './session';
 
-// react/react-dom uyumu var mi? Yoksa render bazli testleri atla.
-async function canRenderReact(): Promise<boolean> {
-  try {
-    const react = await import('react');
-    const reactDom = await import('react-dom');
-    return react.version === reactDom.version;
-  } catch {
-    return false;
-  }
+function makeWrapper(queryClient: QueryClient) {
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children);
+  };
 }
-
-const renderable = await canRenderReact();
-const describeRender = renderable ? describe : describe.skip;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: emit an authenticated state immediately on subscribe.
+  vi.mocked(authAdapter.onAuthStateChanged).mockImplementation((cb) => {
+    cb(AUTHENTICATED);
+    return vi.fn();
+  });
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describeRender('useAuth logout cleanup contract', () => {
-  function makeWrapper(queryClient: QueryClient) {
-    return function Wrapper({ children }: { children: ReactNode }) {
-      return createElement(QueryClientProvider, { client: queryClient }, children);
-    };
-  }
-
-  it('server logout reject etse bile cache temizlenir ve state sifirlanir', async () => {
-    const { renderHook, act, waitFor } = await import('@testing-library/react');
-
-    // Server logout fetch'i hata atiyor (network/5xx)
-    vi.mocked(logoutSession).mockRejectedValueOnce(new Error('logout server down'));
-
+describe('useAuth', () => {
+  it('reflects authenticated state from onAuthStateChanged', async () => {
     const queryClient = new QueryClient();
-    const clearSpy = vi.spyOn(queryClient, 'clear');
-
-    const { result } = renderHook(() => useAuth(), {
-      wrapper: makeWrapper(queryClient),
-    });
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.status).toBe('authenticated');
+    expect(result.current.userId).toBe('u1');
+  });
 
+  it('login delegates to authAdapter.signIn', async () => {
+    vi.mocked(authAdapter.signIn).mockResolvedValueOnce(AUTHENTICATED);
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await result.current.login('a@b.com', 'pw');
+    });
+
+    expect(authAdapter.signIn).toHaveBeenCalledWith('a@b.com', 'pw');
+  });
+
+  it('register delegates to authAdapter.signUp', async () => {
+    vi.mocked(authAdapter.signUp).mockResolvedValueOnce(AUTHENTICATED);
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await act(async () => {
+      await result.current.register('a@b.com', 'pw123456');
+    });
+
+    expect(authAdapter.signUp).toHaveBeenCalledWith('a@b.com', 'pw123456');
+  });
+
+  it('logout clears the query cache and resets state even if sign-out rejects', async () => {
+    // L.1.7 — wrong-user leak prevention must hold even on a failed sign-out.
+    vi.mocked(logoutSession).mockRejectedValueOnce(new Error('logout down'));
+    const queryClient = new QueryClient();
+    const clearSpy = vi.spyOn(queryClient, 'clear');
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => {
       await result.current.logout();
     });
 
-    // L.1.7 — wrong-user leak onleme: cache MUTLAKA temizlenmeli
     expect(clearSpy).toHaveBeenCalledTimes(1);
-    // L.1.5 — auth state reset MUTLAKA calismali
     expect(result.current.status).toBe('unauthenticated');
     expect(result.current.userId).toBeNull();
   });
 
-  it('server logout basariliyken de teardown calisir', async () => {
-    const { renderHook, act, waitFor } = await import('@testing-library/react');
-
+  it('logout teardown also runs when sign-out succeeds', async () => {
     vi.mocked(logoutSession).mockResolvedValueOnce(undefined);
-
     const queryClient = new QueryClient();
     const clearSpy = vi.spyOn(queryClient, 'clear');
-
-    const { result } = renderHook(() => useAuth(), {
-      wrapper: makeWrapper(queryClient),
-    });
+    const { result } = renderHook(() => useAuth(), { wrapper: makeWrapper(queryClient) });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-
     await act(async () => {
       await result.current.logout();
     });
 
     expect(clearSpy).toHaveBeenCalledTimes(1);
     expect(result.current.status).toBe('unauthenticated');
-    expect(result.current.userId).toBeNull();
   });
 });

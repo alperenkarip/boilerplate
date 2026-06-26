@@ -4,12 +4,13 @@
 // 2. ThemeProvider
 // 3. QueryClientProvider
 // 4. I18nProvider (i18next init import)
-// 5. AuthProvider (Faz L'de eklenecek)
+// 5. AuthProvider (Firebase Auth context)
 // 6. RouterProvider (en ic)
 
 import { ErrorBoundary, ThemeProvider } from '@project/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
+import { AuthProvider } from './auth/AuthProvider';
 import { router } from './router';
 
 // i18n bootstrap — import side-effect olarak init calistirir
@@ -43,7 +44,9 @@ export function App() {
     <ErrorBoundary fallback={ErrorFallback}>
       <ThemeProvider defaultMode="system">
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>

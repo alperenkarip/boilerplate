@@ -19,6 +19,7 @@
     "@sentry/react": "catalog:",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "catalog:",
+    "firebase": "^11.10.0",
     "i18next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
