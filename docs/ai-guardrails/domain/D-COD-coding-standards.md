@@ -2,9 +2,9 @@
 id: D-COD
 type: domain
 name: Kodlama Standartlari & Dosya Konvansiyonlari
-kaynak-dokümanlar: 50, 51, 52, 07
+kaynak-dokümanlar: 50, 51, 52, 07, ADR-020
 miras-tipi: zorunlu
-son-güncelleme: 2026-04-03
+son-güncelleme: 2026-06-26
 ---
 
 # D-COD: Kodlama Standartlari Guardrail
@@ -52,8 +52,8 @@ son-güncelleme: 2026-04-03
 
 ### Mimari Katman Kurallari
 
-23. [ZORUNLU] UI katmanindan dogrudan repository/data access YASAK
-24. [ZORUNLU] Akis: UI → Hook → UseCase → Repository → Infrastructure
+23. [ZORUNLU] UI/component katmanindan dogrudan repository/data access veya Firebase SDK (firebase / @react-native-firebase) cagrisi YASAK — okuma DataReadPort, yazma FunctionsCallPort uzerinden (ADR-020)
+24. [ZORUNLU] Akis: UI → Hook → UseCase → Repository → Port (DataReadPort/FunctionsCallPort) → Firebase SDK adapter
 25. [ZORUNLU] Repository'de business logic YASAK (saf veri operasyonu)
 26. [ZORUNLU] UseCase'de UI bagimliligi YASAK (toast, navigation, React hook yok)
 27. [ZORUNLU] Her UseCase tek sorumluluk (Single Responsibility)
@@ -135,7 +135,7 @@ son-güncelleme: 2026-04-03
 
 - [ZAYIF] 1000+ satir "god file" — bolunmeli
 - [ZAYIF] `data`, `temp`, `stuff`, `misc` gibi anlamsiz isimler
-- [ZAYIF] Screen component'ten dogrudan Firestore/API cagrisi
+- [ZAYIF] Screen component'ten dogrudan Firebase SDK (Firestore/Functions) cagrisi — DataReadPort/FunctionsCallPort kullan
 - [ZAYIF] Repository'de business validation
 - [ZAYIF] UseCase'de toast/navigation cagrisi
 - [ZAYIF] 500+ satir mega-component
@@ -156,6 +156,7 @@ son-güncelleme: 2026-04-03
 - [ ] Hardcoded renk/spacing/font yok mu?
 - [ ] bp- prefix token kullanilmis mi?
 - [ ] Raw platform primitive kullanilmamis mi?
+- [ ] Component'ten dogrudan Firebase SDK cagrisi yok mu (DataReadPort/FunctionsCallPort kullanildi mi)?
 - [ ] Form: react-hook-form + Zod kullanilmis mi?
 - [ ] Async: try/catch var mi?
 - [ ] Listener/subscription cleanup var mi?

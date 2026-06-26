@@ -2,26 +2,28 @@
 id: A-OFFLINE
 type: activity
 name: Offline Support / Cache Persistence
-tetiklenen-domain-guardrails: [D-DAT, D-PLT, D-OFL]
+tetiklenen-domain-guardrails: [D-DAT, D-PLT, D-OFL, D-FIR]
 araç-zorunlulukları:
   spec: zorunlu
   stitch: —
   codex: zorunlu
-son-güncelleme: 2026-04-02
+son-güncelleme: 2026-06-26
 ---
 
 # A-OFFLINE: Offline Support Guardrail
 
 ## Aktiviteye Özel Kurallar
+
 1. Offline indicator göster — kullanıcı offline olduğunu bilmeli
 2. Cached data'yı göster — beyaz ekran gösterme
-3. Offline'da yapılan değişiklikleri queue'la
+3. Offline'da yapılan değişiklikleri queue'la — yazma Cloud Functions callable üzerinden olduğundan callable replay queue'su kullanılır
 4. Online olunca sync et — conflict resolution stratejisi tanımla
-5. Cache invalidation stratejisi net olmalı (ADR-005; query-layer adopt edilmişse TanStack Query policy ile)
-6. Firestore offline persistence varsa chosen query/cache modeli ile koordine et (D-FIR)
+5. Okuma cache'i Firestore offline persistence ile sağlanır; TanStack Query üstte read invalidation katmanı verir (ADR-020, D-DAT)
+6. Firestore offline persistence canonical ve koşulsuz aktiftir — okuma offline'da SDK cache'inden servis edilir, `onSnapshot` cache→server geçişini yönetir (D-FIR, D-OFL)
 7. Platform-specific offline davranışı düşün (D-PLT)
 
 ## Offline Smoke Test
+
 8. Airplane mode senaryoları — her offline PR'ında ve quarterly regression olarak çalıştırılmalı:
    1. **Cache'li veri görüntüleme** — Offline'da daha önce yüklenmiş veri gösteriliyor mu?
    2. **Offline banner** — Kullanıcıya bağlantı durumu bildiriliyor mu?
@@ -34,8 +36,10 @@ son-güncelleme: 2026-04-02
 11. **Sıklık:** Her offline PR + quarterly regression
 
 ## DoD Ek Maddeleri
+
 - [ ] Offline indicator var
-- [ ] Cached data gösteriliyor
+- [ ] Cached data gösteriliyor (Firestore offline persistence ile)
+- [ ] Offline yazma callable replay queue'su tanımlı
 - [ ] Sync stratejisi tanımlı
 - [ ] Conflict resolution planlanmış
 - [ ] Offline smoke test senaryoları geçiyor (cache, banner, queue, replay, stale badge, disabled butonlar)
