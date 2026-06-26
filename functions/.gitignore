@@ -1,0 +1,12 @@
+# Compiled output
+lib/
+
+# Dependencies
+node_modules/
+
+# Firebase / local
+*.local
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

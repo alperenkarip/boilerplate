@@ -1,0 +1,30 @@
+{
+  // Standalone Cloud Functions tsconfig. This workspace is a Node backend and does
+  // NOT extend the monorepo bundler/ESM base (packages/config-typescript); it compiles
+  // CommonJS for the nodejs20 runtime. CommonJS + node module resolution matches the
+  // official Firebase Functions template (resolves firebase-functions/v2/* subpaths).
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "outDir": "lib",
+    "rootDir": "src",
+    "sourceMap": true,
+    "declaration": false,
+
+    "strict": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "lib"]
+}
