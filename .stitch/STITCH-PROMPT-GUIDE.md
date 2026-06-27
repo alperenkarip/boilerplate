@@ -3,6 +3,13 @@
 > Bu dosya Stitch'e dogrudan yapistirilmaz.
 > Bu dosya Codex, Claude Code CLI veya benzeri agent modellerine verilir.
 > Agent, Google Stitch MCP araclarini kullanarak ekranlari uretir.
+>
+> **Tek yapisitirma kullanimi:** Bu dosyanin tamami bir agent oturumuna yapistirilabilir.
+> `RUN THIS EXACT AGENT PROMPT` blogu icerisinde tum ekranlarin detayli semantic brief'leri,
+> timeout/pacing kurallari ve kalite kontrolleri mevcuttur. Agent, ek prompt beklemeden
+> tum zorunlu ekranlari otonom olarak olusturur.
+> Dosyanin geri kalan bolumleri (ornek prompt'lar, iterasyon kurallari, coverage felsefesi vb.)
+> ilk autonomous build sonrasi iteratif calisma icin referans olarak korunmustur.
 
 ## Bu belge ne icin var
 
@@ -434,7 +441,7 @@ The goal is to create reference/test screens and starter screens that can later 
 Agent + Stitch MCP akisini gercekten calistirmak icin bu sirayla ilerle:
 
 1. Eger varsa mevcut `DESIGN.md` dosyasini agent oturumuna ekle.
-2. Asagidaki `RUN THIS EXACT AGENT PROMPT` blogunu tek parca olarak Codex veya Claude Code CLI'ya ver.
+2. Asagidaki `RUN THIS EXACT AGENT PROMPT` blogunu tek parca olarak Codex veya Claude Code CLI'ya ver. Bu blok icerisinde tum ekranlarin detayli brief'leri mevcuttur; ek ekran prompt'u gerekmez.
 3. Agent'in Google Stitch MCP araclariyla zorunlu ekran ailelerini otonom sekilde tamamlamasina izin ver.
 4. Ilk tam tur bittikten sonra ancak gerekiyorsa `Iterative Single-Screen Build` moduna gec.
 5. Tutarlilik olustugunda `DESIGN.md` export al.
@@ -443,6 +450,31 @@ Kisa kural:
 
 - once master prompt ile baseline'i kur
 - sonra gerekirse tekil iterasyon yap
+
+### Timeout Yonetimi ve Ardisik Ekran Olusturma Kurallari
+
+Bu kurallar hem autonomous full build hem de iterative build sirasinda gecerlidir.
+Bu kurallar ayni zamanda `RUN THIS EXACT AGENT PROMPT` icerisinde de agent'a verilmistir.
+
+**Timeout ≠ basarisizlik.**
+Timeout almak, ekran olusturma isleminin baslamadigini veya basarisiz oldugunu gostermez.
+Stitch arka planda tasarimi olusturmaya baslamis olabilir.
+
+**Her ekran icin zorunlu akis:**
+
+1. **Olustur:** Ekran olusturma komutunu gonder.
+2. **Bekle:** Olusturma tamamlanmasi icin yeterli sure bekle. Hemen ardisik bir sonraki ekrani olusturmaya baslaMA.
+3. **Dogrula:** Ekranin basariyla olusup olusmadigini kontrol et (`list_screens` veya `get_screen` ile).
+4. **Karar ver:**
+   - Olustuysa → bir sonraki ekrana gec (adim 1'e don).
+   - Timeout aldiysa → belli araliklarla tekrar kontrol et. Olustuysa ilerle. Olusmadiysa hatayi degerlendir.
+   - Gercek hata aldiysa → durumu degerlendir, gerekirse duraklat.
+
+**Kesinlikle yapMA:**
+
+- Timeout sonrasi ayni ekrani hemen tekrar olusturma. Bu **duplicate ekranlara** yol acar.
+- Ardisik ekranlari arasinda bekleme ve dogrulama yapmadan arka arkaya olusturma. Bu hem **timeout riskini arttirir** hem de **her ardisik ekranda tasarim kalitesini dusurur**.
+- Ayni anda birden fazla ekran olusturma komutu gonderme.
 
 ---
 
@@ -511,7 +543,18 @@ Autonomous execution rules:
 - prefer platform-natural behavior over fake parity
 - if a screen exists on both web and mobile but should not share the exact same structure, create platform-appropriate variants under the same design system
 - do not stop after only one family or one screen
-- after generating screens, visually inspect and refine them through the Stitch MCP workflow when possible
+- after generating each screen, visually inspect and verify it through the Stitch MCP workflow before moving to the next
+
+Screen creation pacing and timeout rules [CRITICAL]:
+- after sending each screen creation command, wait for completion before starting the next screen
+- do not fire multiple screen creation commands back to back without verifying each one
+- if a timeout occurs, it does NOT mean the screen failed — the design may still be generating in the background
+- after a timeout, check whether the screen was actually created (use list_screens or get_screen) before deciding to retry
+- never blindly retry a timed-out screen creation — this causes duplicate screens
+- if a screen was created despite the timeout, move on to the next screen
+- if a screen truly was not created after verification, evaluate the error and retry once or pause for user input
+- rushing through screens degrades design quality on each successive screen — pacing is mandatory, not optional
+- execution flow for each screen: CREATE → WAIT → VERIFY → DECIDE (next / check again / pause)
 
 Language rule:
 - use Turkish placeholder copy consistently across this run
@@ -543,59 +586,288 @@ Mandatory build order:
 5. Vertical slice reference screens
 6. Foundation / reference test screens
 
-Mandatory screen inventory:
+Mandatory screen inventory with per-screen briefs:
 
-System / utility:
-- Splash Screen
-- Force Update Screen
-- No Internet / Offline Screen
-- Maintenance Screen
-- Not Found / 404 Screen
-- Full-screen Error Screen
-- Full-screen App Bootstrap Loading Screen
+Each screen below includes its platform target, semantic purpose, required content, key states, and user flow.
+Use this information as the brief for each screen. Do not ask for additional briefs.
+Follow the mandatory build order above. Create one screen at a time. Verify before moving to the next.
 
-Auth:
-- Login Screen
-- Register Screen
-- Forgot Password Screen
-- Reset Password Screen
-- Email Verification / OTP Screen
-- Biometric Prompt Screen
+=== FAMILY 1: SYSTEM / UTILITY SCREENS ===
 
-Onboarding:
-- Welcome Slides
-- Permission Primer
-- Profile Setup
+--- Splash Screen ---
+Platform: Mobile
+Purpose: Brand entry point, shown briefly during app cold start.
+Content: brand logo or mark, optional tagline, minimal background.
+States: default display only.
+Flow: Appears on cold start, transitions automatically to app bootstrap loading.
 
-Main shell:
-- Home / Dashboard
-- Profile
-- Edit Profile
-- Settings
-- Notification Preferences
-- Change Password
-- Delete Account
-- About / Legal
+--- Full-screen App Bootstrap Loading Screen ---
+Platform: both
+Purpose: Show that the app is initializing, loading configuration, checking auth state.
+Content: loading indicator, optional brand mark, optional status text.
+States: loading in progress, transition to next state.
+Flow: After splash, leads to force update check, maintenance check, offline check, error, or auth entry.
 
-Vertical slice reference:
-- List Screen
-- Detail Screen
-- Create / Edit Form Screen
+--- Force Update Screen ---
+Platform: both
+Purpose: Block the user when the current app version is no longer supported.
+Content: clear title, explanation text, primary update action linking to store, optional secondary dismiss if soft update.
+States: hard block (no dismiss), soft update (dismissable).
+Flow: User updates or is blocked.
 
-Foundation / reference test screens:
-- UI Kit / Component Gallery
-- Typography Reference
-- Color Roles and Theme Reference
-- Spacing / Radius / Elevation Reference
-- Iconography and Symbol Reference
-- Navigation Patterns Reference
-- Form Patterns and Validation Reference
-- Data Display Patterns Reference
-- Feedback States Reference
-- Overlay Patterns Reference
-- Motion and Interaction Reference
-- Accessibility and Contrast Reference
-- Utility and Quality Patterns Reference
+--- Maintenance Screen ---
+Platform: both
+Purpose: Inform the user that the service is temporarily unavailable for scheduled maintenance.
+Content: maintenance title, explanation, estimated return time if available, visual cue distinguishing from error.
+States: default maintenance, optional countdown.
+Flow: User waits and retries later.
+
+--- No Internet / Offline Screen ---
+Platform: both
+Purpose: Clear, calm, recoverable full-screen offline state when the app cannot continue because network access is unavailable.
+Content: clear offline message, short explanation text, retry action, optional secondary guidance for checking connection, visual state distinguishing from maintenance or generic error.
+States: initial offline, retry in progress, auto-recovery ready state.
+Flow: User opens or returns to the app without connectivity, understands the issue quickly, retries, and recovers when the connection returns.
+
+--- Full-screen Error Screen ---
+Platform: both
+Purpose: Catch-all for unexpected fatal errors during bootstrap or runtime.
+Content: error title, explanation, retry action, optional support/report link.
+States: generic error, retry in progress.
+Flow: User encounters unexpected failure, retries or contacts support.
+
+--- Not Found / 404 Screen ---
+Platform: web
+Purpose: Dead-end-safe screen when a route or destination cannot be found.
+Content: clear not-found title, short explanation, primary action to go home, secondary action to go back if useful.
+States: default not-found state, optional deep-link context hint if useful.
+Flow: User lands on a missing route and can recover immediately without confusion.
+
+=== FAMILY 2: AUTH SCREENS ===
+
+--- Login Screen ---
+Platform: both
+Purpose: Primary sign-in entry point for unauthenticated users. Should feel simple, credible, accessible, and production-ready.
+Content: email input, password input with visibility toggle, primary sign-in action, forgot password link, register link, optional social sign-in area, optional biometric continuation area if it fits the system.
+States: default, validation errors, credential failure, loading on submit, success / redirect-ready.
+Flow: User enters credentials, understands failures inline, and proceeds into the main app shell on success.
+
+--- Register Screen ---
+Platform: both
+Purpose: New account creation.
+Content: name input, email input, password input with strength indicator, confirm password, terms acceptance, register action, login link.
+States: default, field validation, server error, loading, success.
+Flow: User creates account, validates fields inline, proceeds to verification or onboarding.
+
+--- Forgot Password Screen ---
+Platform: both
+Purpose: Initiate password recovery.
+Content: email input, submit action, back to login link, explanation text.
+States: default, validation, loading, success confirmation.
+Flow: User requests password reset, receives confirmation, checks email.
+
+--- Reset Password Screen ---
+Platform: both
+Purpose: Set a new password from a recovery link.
+Content: new password input with strength indicator, confirm password, submit action.
+States: default, validation, token expired/invalid, loading, success.
+Flow: User arrives from email link, sets new password, redirected to login.
+
+--- Email Verification / OTP Screen ---
+Platform: both
+Purpose: Let the user enter a one-time verification code after registration or a protected auth flow.
+Content: short explanatory title, masked destination hint if appropriate, segmented OTP entry pattern, resend code affordance, countdown timer, inline error messaging.
+States: waiting for code, invalid code, resend locked, resend available, verification success.
+Flow: User receives a code, enters or pastes it, sees clear validation, and proceeds on success.
+
+--- Biometric Prompt Screen ---
+Platform: Mobile
+Purpose: Offer biometric authentication as a quick re-entry method.
+Content: biometric icon/animation, explanation text, authenticate action, fallback to password link.
+States: waiting, authentication in progress, success, failure with fallback.
+Flow: User authenticates biometrically or falls back to password.
+
+=== FAMILY 3: ONBOARDING SCREENS ===
+
+--- Welcome Slides ---
+Platform: both
+Purpose: Introduce the product system in a short onboarding flow with 3 to 5 slides. Teach product shape quickly, not a marketing microsite.
+Content: concise title and supporting text per slide, illustration or visual storytelling area, progress indication, next / continue action, skip option, final primary CTA.
+States: first slide, intermediate slide, final CTA slide.
+Flow: User quickly understands the product and moves into the next required onboarding or auth step.
+
+--- Permission Primer ---
+Platform: Mobile
+Purpose: Explain the value of a system permission in plain language before the system dialog appears.
+Content: one permission focus at a time, icon or symbolic cue, simple why-this-matters explanation, primary allow action, secondary not-now action.
+States: push notification primer, location primer, camera or media primer.
+Flow: User understands why permission is needed and makes an informed decision before the native system prompt.
+
+--- Profile Setup ---
+Platform: both
+Purpose: Collect initial profile information after registration.
+Content: avatar upload area, display name input, optional bio or role, save action, skip option.
+States: default, uploading, validation, saving, success.
+Flow: User completes basic profile, proceeds to main shell.
+
+=== FAMILY 4: MAIN SHELL SCREENS ===
+
+--- Home / Dashboard ---
+Platform: both
+Purpose: Authenticated user's default landing screen, showing a welcoming overview, quick actions, and starter content regions. Reusable shell dashboard, not a product-specific analytics page.
+Content: welcome area, quick action cards, recent activity or recent items section, one or two content modules that can later be replaced by real product modules, navigation-aware shell feeling.
+States: first-use but authenticated, normal populated starter state, section-level loading, section-level empty state.
+Flow: User lands after auth, understands the shell quickly, and moves deeper into the product.
+
+--- Profile ---
+Platform: both
+Purpose: View own profile information.
+Content: avatar, display name, email, role/bio, edit profile action, account stats if useful.
+States: default, loading.
+Flow: User views profile, taps edit if needed.
+
+--- Edit Profile ---
+Platform: both
+Purpose: Edit profile fields.
+Content: avatar change, display name, bio/role, save and cancel actions, validation.
+States: default, dirty, validation errors, saving, success, unsaved changes warning.
+Flow: User edits fields, saves or cancels.
+
+--- Settings ---
+Platform: both
+Purpose: Reusable settings hub covering account, notifications, appearance, security, about, and destructive actions. Should feel structured, calm, and highly scannable.
+Content: grouped settings sections, navigation items, in-place toggles where appropriate, theme and language preferences, biometric preference entry, destructive zone for sign out and delete account.
+States: default, saving / toggling, permission-disabled banner if relevant, destructive confirmation entry point.
+Flow: User scans grouped settings, updates preferences confidently, and navigates into deeper sub-settings when needed.
+
+--- Notification Preferences ---
+Platform: both
+Purpose: Granular notification control.
+Content: grouped notification categories, toggle switches, push/email channel control, save action.
+States: default, permission disabled, saving.
+Flow: User adjusts notification preferences by category.
+
+--- Change Password ---
+Platform: both
+Purpose: Update account password.
+Content: current password input, new password input with strength indicator, confirm password, save action.
+States: default, validation errors, wrong current password, loading, success.
+Flow: User changes password securely.
+
+--- Delete Account ---
+Platform: both
+Purpose: Irreversible account deletion with proper friction.
+Content: warning explanation, consequences list, confirmation input or checkbox, delete action, cancel action.
+States: default warning, confirmation required, deleting, success/goodbye.
+Flow: User understands consequences, confirms deliberately, account deleted.
+
+--- About / Legal ---
+Platform: both
+Purpose: App info, version, legal links.
+Content: app name and version, terms of service link, privacy policy link, licenses, support/contact link.
+States: default.
+Flow: User reviews app information and legal links.
+
+=== FAMILY 5: VERTICAL SLICE REFERENCE SCREENS ===
+
+--- List Screen ---
+Platform: both
+Purpose: Reusable paginated list screen pattern that can support real product data later. Should demonstrate a serious list experience with loading, empty, error, and pagination thinking.
+Content: page title and context header, filter/search affordance, list items or cards, pagination or infinite-loading logic cues, empty state, inline retry area for list-level failure.
+States: first load, populated list, no results, empty source data, list failure, next-page loading.
+Flow: User enters the list, understands content status quickly, browses items, and can recover from empty or failed states.
+
+--- Detail Screen ---
+Platform: both
+Purpose: Reusable detail view for a single entity.
+Content: header with entity identity, key information sections, action buttons (edit, delete, share), related items area.
+States: loading, populated, not found, action in progress.
+Flow: User views entity details, takes actions, navigates back to list.
+
+--- Create / Edit Form Screen ---
+Platform: both
+Purpose: Reusable create/edit form pattern with validation, dirty-state thinking, submit lifecycle, and success/error handling.
+Content: form header with clear mode awareness, text fields, textarea or long-form input, select or picker field, media or attachment placeholder if useful, save and cancel actions, validation guidance.
+States: create mode, edit mode, validation errors, submitting, submit success, submit failure, unsaved changes warning.
+Flow: User can create or edit an entity, understand inline validation, complete submission, and safely handle navigation away.
+
+=== FAMILY 6: FOUNDATION / REFERENCE TEST SCREENS ===
+
+These are internal reference screens for design system breadth and component coverage.
+Design them as desktop-first web reference surfaces.
+
+--- UI Kit / Component Gallery ---
+Purpose: Show the core reusable UI building blocks in one internal reference screen so design and implementation can share the same visual vocabulary.
+Content: button variants and sizes, text fields, password field, textarea, select, search, checkbox, radio, switch, cards, badges, chips, list items, avatars, banners, toast examples, tabs, segmented controls, header patterns, empty state and error state blocks, a small table/list preview.
+States: default, hover / focus / pressed where meaningful, disabled, loading, error / validation.
+Coverage target: Avatar, Badge, Card, Chip, ListItem, Button, Checkbox, Radio, Select, Switch, TextArea, TextField.
+
+--- Typography Reference ---
+Purpose: Show the typographic hierarchy, text roles, weight spectrum, helper text language, caption rhythm, and readability behavior used by the boilerplate.
+Content: display, screen title, section title, body, helper, caption, overline, status text examples, weight variations, long-form paragraph sample, button label and form label samples, dark and light readability snippets if useful.
+States: default text roles, emphasized vs muted text, success / warning / error text examples.
+
+--- Color Roles and Theme Reference ---
+Purpose: Semantic color roles, theme behavior, light/dark contrast.
+Content: primary, secondary, surface, background, error, warning, success, info color roles, text-on-surface combinations, dark mode equivalents.
+States: light theme, dark theme.
+
+--- Spacing / Radius / Elevation Reference ---
+Purpose: Spatial rhythm, corner radius scale, elevation/shadow levels.
+Content: spacing scale examples, radius scale examples, elevation/shadow levels, padding and margin demonstrations.
+States: default reference display.
+
+--- Iconography and Symbol Reference ---
+Purpose: Icon set preview and usage patterns.
+Content: common icons grouped by category (navigation, action, status, social), icon sizing scale, icon + text pairing examples.
+States: default reference display.
+
+--- Navigation Patterns Reference ---
+Purpose: Navigation component coverage.
+Content: header patterns, tab bar, segmented control, step indicator, breadcrumb, sidebar/drawer entry, bottom sheet navigation.
+States: active, inactive, disabled, badge/notification indicator.
+Coverage target: Header, SegmentedControl, StepIndicator, TabBar.
+
+--- Form Patterns and Validation Reference ---
+Purpose: Advanced form input coverage and validation patterns.
+Content: password field with strength, phone input, search bar, date picker, slider, form group, field shell, inline validation examples, form-level error summary.
+States: default, focused, valid, invalid, disabled, loading.
+Coverage target: PasswordField, PhoneInput, SearchBar, DatePicker, Slider, FormActions, FormGroup, FieldShell.
+
+--- Data Display Patterns Reference ---
+Purpose: Data presentation component coverage.
+Content: table/list views, data cards, stat blocks, key-value pairs, timeline/activity feed, avatar + metadata patterns.
+States: populated, loading, empty.
+
+--- Feedback States Reference ---
+Purpose: Show how loading, empty, error, success, warning, and recovery states should appear across the boilerplate.
+Content: full-screen loading, section-level loading, empty state with CTA, no-results empty state, error state with retry, success confirmation examples, inline validation examples, banner and toast examples, destructive confirmation example.
+States: full-screen state, section-level state, inline state, transient feedback state.
+Coverage target: Banner, ConsentBanner, NetworkStatusBanner, Toast, EmptyState, ErrorState, LoadingState, ProgressBar, Skeleton, Spinner.
+
+--- Overlay Patterns Reference ---
+Purpose: Overlay and dialog component coverage.
+Content: action sheet, bottom sheet, confirm dialog, drawer, modal, popover, tooltip examples.
+States: open, closed, nested overlay.
+Coverage target: ActionSheet, BottomSheet, ConfirmDialog, Drawer, Modal, Popover, Tooltip.
+
+--- Motion and Interaction Reference ---
+Purpose: Interaction quality, motion restraint, and state transitions.
+Content: hover, focus, pressed, and selected examples, accordion or disclosure interaction, modal/sheet/popover entry/exit example, loading-to-content transition example, swipe or gesture-aware pattern if useful for mobile, reduced-motion-friendly behavior cues.
+States: hover state, focus-visible state, pressed state, expanded state, loading transition state, reduced-motion-friendly state.
+Coverage target: Accordion, PullToRefreshWrapper, InfiniteScrollList.
+
+--- Accessibility and Contrast Reference ---
+Purpose: Accessibility readiness and contrast-aware design behavior.
+Content: focus-visible examples, readable text contrast examples, disabled vs inactive distinction, large-text / dynamic type stress cases, form error readability, keyboard and screen-reader friendly interaction cues.
+States: default readable state, focus-visible state, disabled state, error readability state, large-text stress state.
+Coverage target: SkipToContent, focus-visible, dynamic type, contrast-sensitive surfaces.
+
+--- Utility and Quality Patterns Reference ---
+Purpose: Non-feature but production-critical UI patterns.
+Content: app lock or protected-entry pattern, network status banner, consent/banner examples, sticky footer pattern, skip-to-content or accessibility utility cue, webview placeholder or embedded-content fallback, countdown timer, divider with label.
+States: protected state, warning banner state, fallback placeholder state, utility action state.
+Coverage target: AppLockScreen, StickyFooter, WebViewPlaceholder, CountdownTimer, DividerWithLabel.
 
 Starter flow logic:
 - Splash -> App Bootstrap Loading
@@ -656,11 +928,19 @@ Neden:
 - Stitch, tek ekran ve net brief ile daha guclu sonuc verir
 - system consistency daha iyi korunur
 - bozulma ve scope drift azalir
+- **ardisik hizli olusturmalarda her ekranin tasarim kalitesi duser** — bu gozlemlenmis bir davranistir
 
 Istisna:
 
 - yakin iliskili internal reference ekran ailesi bazen ayni oturumda ardarda uretilip ayni system'e baglanabilir
 - ama yine de ayni prompt icinde 3-4 ana ekran istemek tavsiye edilmez
+
+Timeout ve dogrulama kurali:
+
+- her ekran olusturulduktan sonra basarili olup olmadigini dogrula, ancak ondan sonra siradakine gec
+- timeout alindiysa ayni ekrani hemen tekrar olusturma — once gercekten olusup olusmadigi kontrol edilmeli
+- timeout sonrasi duplicate ekran olusturma **kesinlikle yasaktir**
+- detayli akis icin `Hemen Calistirilabilir Akis > Timeout Yonetimi ve Ardisik Ekran Olusturma Kurallari` bolumune bak
 
 ---
 
@@ -1908,6 +2188,7 @@ Ilk ekran ciktiktan sonra `edit_screens` icin su mantikla ilerle:
 - same design system
 - same semantic role
 - same quality level
+- **her iterasyondan sonra sonucu dogrula, sonra siradakine gec** — timeout alindiysa ayni edit'i hemen tekrarlama
 
 Ornek iterasyon brief'leri:
 

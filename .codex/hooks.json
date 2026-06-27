@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/alperenkarip/Projects/boilerplate/.codex/hooks/pre-edit-guardrail.sh'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/alperenkarip/Projects/boilerplate/.codex/hooks/block-prebuild.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/alperenkarip/Projects/boilerplate/.codex/hooks/post-edit-guardrail.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

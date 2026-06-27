@@ -1,0 +1,15 @@
+[mcp_servers.context7]
+args = [
+    "-l",
+    "-c",
+    "exec npx -y @upstash/context7-mcp@latest",
+]
+command = "/bin/bash"
+
+[mcp_servers.sequential-thinking]
+args = [
+    "-l",
+    "-c",
+    "exec npx -y @modelcontextprotocol/server-sequential-thinking",
+]
+command = "/bin/bash"
